@@ -1,53 +1,63 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
-import { query } from '@/lib/db';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
-    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
+
     const body = await request.json();
     const { height, weight, age, bodyFat, desiredBodyText } = body;
-    let targetUserId = session.userId;
+    let targetUserId = user.id;
 
     // If admin is managing, allow setting different client ID
-    if (session.role === 'admin' && body.userId) {
-      targetUserId = parseInt(body.userId, 10);
+    if (userRole === 'admin' && body.userId) {
+      targetUserId = body.userId;
     }
 
     if (!height || !weight || !age || !bodyFat) {
       return NextResponse.json({ error: 'အချက်အလက်အားလုံး ပြည့်စုံစွာ ဖြည့်သွင်းပေးပါ' }, { status: 400 });
     }
 
-    // Upsert user profile using INSERT ... ON DUPLICATE KEY UPDATE
-    await query(
-      `INSERT INTO user_profiles (user_id, height_cm, starting_weight, age, body_fat_percent, desired_body_text)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-       height_cm = VALUES(height_cm),
-       starting_weight = VALUES(starting_weight),
-       age = VALUES(age),
-       body_fat_percent = VALUES(body_fat_percent),
-       desired_body_text = VALUES(desired_body_text)`,
-      [targetUserId, parseFloat(height), parseFloat(weight), parseInt(age, 10), parseInt(bodyFat, 10), desiredBodyText || '']
-    );
+    // Upsert user profile
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: targetUserId,
+        height_cm: parseFloat(height),
+        starting_weight: parseFloat(weight),
+        age: parseInt(age, 10),
+        body_fat_percent: parseInt(bodyFat, 10),
+        desired_body_text: desiredBodyText || '',
+      }, { onConflict: 'user_id' });
+
+    if (profileError) throw profileError;
 
     // Also insert or update the first daily tracker entry weight as baseline
     const today = new Date().toISOString().split('T')[0];
-    await query(
-      `INSERT INTO daily_trackers (user_id, date, body_weight)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-       body_weight = VALUES(body_weight)`,
-      [targetUserId, today, parseFloat(weight)]
-    );
+    const { error: trackerError } = await supabase
+      .from('daily_trackers')
+      .upsert({
+        user_id: targetUserId,
+        date: today,
+        body_weight: parseFloat(weight),
+      }, { onConflict: 'user_id, date' });
+
+    if (trackerError) throw trackerError;
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

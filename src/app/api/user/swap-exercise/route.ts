@@ -1,23 +1,30 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
-import { query } from '@/lib/db';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { userId, workoutExerciseId, originalExerciseId, replacementExerciseId } = body;
 
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
-    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
+
     // Security check: Only allow matching user OR admin
-    if (session.userId !== userId && session.role !== 'admin') {
+    if (user.id !== userId && userRole !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -26,33 +33,44 @@ export async function POST(request: Request) {
     }
 
     // Save persistent swap mapping
-    await query(
-      `INSERT INTO exercise_swaps (user_id, original_exercise_id, replacement_exercise_id)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE replacement_exercise_id = ?`,
-      [userId, originalExerciseId, replacementExerciseId, replacementExerciseId]
-    );
+    const { error: swapError } = await supabase
+      .from('exercise_swaps')
+      .upsert({
+        user_id: userId,
+        original_exercise_id: originalExerciseId,
+        replacement_exercise_id: replacementExerciseId,
+      }, { onConflict: 'user_id, original_exercise_id' });
+
+    if (swapError) throw swapError;
 
     // Fetch replacement details
-    const replacements = await query(
-      'SELECT exercise_name, sets_default, reps_default FROM exercise_library WHERE id = ?',
-      [replacementExerciseId]
-    );
+    const { data: replacements, error: libraryError } = await supabase
+      .from('exercise_library')
+      .select('exercise_name, sets_default, reps_default')
+      .eq('id', replacementExerciseId);
+
+    if (libraryError) throw libraryError;
 
     if (replacements && replacements.length > 0 && workoutExerciseId) {
       const repEx = replacements[0];
       // Update today's active exercise record
-      await query(
-        `UPDATE workout_exercises 
-         SET exercise_name = ?, target_sets = ?, target_reps = ?, actual_weight = NULL, actual_reps = NULL
-         WHERE id = ?`,
-        [repEx.exercise_name, repEx.sets_default, repEx.reps_default, workoutExerciseId]
-      );
+      const { error: exError } = await supabase
+        .from('workout_exercises')
+        .update({
+          exercise_name: repEx.exercise_name,
+          target_sets: repEx.sets_default,
+          target_reps: repEx.reps_default,
+          actual_weight: null,
+          actual_reps: null,
+        })
+        .eq('id', workoutExerciseId);
+
+      if (exError) throw exError;
     }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('Swap exercise error:', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error: ' + err.message }, { status: 500 });
   }
 }

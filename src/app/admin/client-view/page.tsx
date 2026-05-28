@@ -16,7 +16,7 @@ export default async function ClientViewPage(props: {
     redirect('/login');
   }
 
-  const clientId = searchParams.id ? parseInt(searchParams.id, 10) : 0;
+  const clientId = searchParams.id || '';
 
   // Verify client belongs to trainer
   const clients = await query(

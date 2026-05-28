@@ -9,7 +9,7 @@ interface ClientViewClientProps {
   program: any;
   checkins: any[];
   selectedWeek: number | null;
-  clientId: number;
+  clientId: string;
 }
 
 export default function ClientViewClient({

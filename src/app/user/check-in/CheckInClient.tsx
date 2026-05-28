@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface CheckInClientProps {
-  targetUserId: number;
+  targetUserId: string;
   isAdminViewing: boolean;
   clientQuery: string;
   currentWeek: number;

@@ -1,35 +1,17 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
 import { promises as fs } from 'fs';
 import path from 'path';
-import bcrypt from 'bcryptjs';
+import { createClient } from '@supabase/supabase-js';
+
+// Instantiate Supabase Admin Client using Service Role Key
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-
-    // Table initialization if not exists
-    await query(`
-      CREATE TABLE IF NOT EXISTS \`program_registrations\` (
-        \`id\` int(11) NOT NULL AUTO_INCREMENT,
-        \`user_id\` int(11) DEFAULT NULL,
-        \`name\` varchar(100) NOT NULL,
-        \`age\` int(11) NOT NULL,
-        \`height\` varchar(50) NOT NULL,
-        \`weight\` decimal(5,2) NOT NULL,
-        \`email\` varchar(100) NOT NULL,
-        \`phone\` varchar(50) NOT NULL,
-        \`workout_split\` varchar(50) NOT NULL,
-        \`notes\` text NOT NULL,
-        \`photo_front\` varchar(255) DEFAULT NULL,
-        \`photo_back\` varchar(255) DEFAULT NULL,
-        \`photo_side\` varchar(255) DEFAULT NULL,
-        \`payment_screenshot\` varchar(255) DEFAULT NULL,
-        \`status\` enum('pending','approved') DEFAULT 'pending',
-        \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
-        PRIMARY KEY (\`id\`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `);
 
     const name = (formData.get('username') as string) || '';
     const age = parseInt((formData.get('age') as string) || '0', 10);
@@ -67,59 +49,93 @@ export async function POST(request: Request) {
     const photo_side = await saveFile(photoSideFile, 'photo_side');
     const payment_screenshot = await saveFile(paymentScreenshotFile, 'payment_screenshot');
 
-    // Check if email already exists in users table
-    const existingUsers = await query('SELECT id FROM users WHERE email = ?', [email]);
-    let userId = existingUsers && existingUsers.length > 0 ? existingUsers[0].id : null;
+    // Check if email already exists in profiles
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    let userId = existingProfile ? existingProfile.id : null;
 
     if (!userId) {
       // Create new user account automatically with password = phone
-      const hashedPassword = await bcrypt.hash(phone, 10);
-      
-      const admins = await query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+      const { data: admins } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1);
+        
       const trainerId = admins && admins.length > 0 ? admins[0].id : null;
 
-      const userInsert = await query(
-        'INSERT INTO users (username, email, password, role, trainer_id) VALUES (?, ?, ?, "user", ?)',
-        [name, email, hashedPassword, trainerId]
-      );
-      userId = userInsert.insertId;
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: phone, // phone is the default password
+        email_confirm: true,
+        user_metadata: {
+          username: name,
+        },
+      });
+
+      if (createError) throw createError;
+      userId = newUser.user.id;
 
       if (userId) {
+        // Trigger handle_new_user executes automatically to create profiles record.
+        // We update trainer_id on profiles.
+        if (trainerId) {
+          const { error: updateProfileError } = await supabaseAdmin
+            .from('profiles')
+            .update({ trainer_id: trainerId })
+            .eq('id', userId);
+            
+          if (updateProfileError) throw updateProfileError;
+        }
+
         // Create default program (12 weeks)
-        await query(
-          'INSERT INTO programs (user_id, duration_weeks, start_date) VALUES (?, 12, CURDATE())',
-          [userId]
-        );
+        const today = new Date().toISOString().split('T')[0];
+        const { error: programInsertError } = await supabaseAdmin
+          .from('programs')
+          .insert({
+            user_id: userId,
+            duration_weeks: 12,
+            start_date: today,
+          });
+
+        if (programInsertError) throw programInsertError;
 
         // Add default motivational quote
-        await query(
-          "INSERT INTO motivational_quotes (user_id, quote) VALUES (?, 'Believe in yourself and exceed your limits!')",
-          [userId]
-        );
+        const { error: quoteInsertError } = await supabaseAdmin
+          .from('motivational_quotes')
+          .insert({
+            user_id: userId,
+            quote: 'Believe in yourself and exceed your limits!',
+          });
+
+        if (quoteInsertError) throw quoteInsertError;
       }
     }
 
     // Insert into program_registrations
-    await query(
-      `INSERT INTO program_registrations 
-       (user_id, name, age, height, weight, email, phone, workout_split, notes, photo_front, photo_back, photo_side, payment_screenshot) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
+    const { error: regError } = await supabaseAdmin
+      .from('program_registrations')
+      .insert({
+        user_id: userId,
         name,
         age,
         height,
         weight,
         email,
         phone,
-        split,
+        workout_split: split,
         notes,
         photo_front,
         photo_back,
         photo_side,
-        payment_screenshot
-      ]
-    );
+        payment_screenshot,
+      });
+
+    if (regError) throw regError;
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

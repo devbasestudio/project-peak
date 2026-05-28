@@ -12,7 +12,7 @@ interface DashboardClientProps {
   role: 'admin' | 'user';
   isAdminViewing: boolean;
   clientQuery: string;
-  targetUserId: number;
+  targetUserId: string;
   initialQuote: string;
   dates: string[];
   weights: number[];

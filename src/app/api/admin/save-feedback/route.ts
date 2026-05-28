@@ -1,15 +1,26 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
-    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session || session.role !== 'admin') {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
+
+    if (userRole !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -20,10 +31,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Check-in ID is required' }, { status: 400 });
     }
 
-    await query(
-      'UPDATE weekly_checkins SET admin_feedback = ? WHERE id = ?',
-      [admin_feedback || null, parseInt(checkin_id, 10)]
-    );
+    const { error: feedbackError } = await supabase
+      .from('weekly_checkins')
+      .update({ admin_feedback: admin_feedback || null })
+      .eq('id', checkin_id);
+
+    if (feedbackError) throw feedbackError;
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface SetupScheduleClientProps {
-  userId: number;
+  userId: string;
   programType: string;
   initialSchedule: any[];
 }

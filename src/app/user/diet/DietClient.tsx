@@ -19,7 +19,7 @@ interface NutritionItem {
 }
 
 interface DietClientProps {
-  userId: number;
+  userId: string;
   isAdminViewing: boolean;
   clientQuery: string;
   targetCalories: number;

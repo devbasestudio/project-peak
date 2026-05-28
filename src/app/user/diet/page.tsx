@@ -20,7 +20,7 @@ export default async function DietPage(props: {
   let isAdminViewing = false;
 
   if (session.role === 'admin' && searchParams.client_id) {
-    targetUserId = parseInt(searchParams.client_id, 10);
+    targetUserId = searchParams.client_id;
     isAdminViewing = true;
   } else if (session.role !== 'user') {
     redirect('/login');

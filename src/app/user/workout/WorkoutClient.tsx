@@ -31,7 +31,7 @@ interface LastLog {
 }
 
 interface WorkoutClientProps {
-  targetUserId: number;
+  targetUserId: string;
   isAdminViewing: boolean;
   clientQuery: string;
   today: string;

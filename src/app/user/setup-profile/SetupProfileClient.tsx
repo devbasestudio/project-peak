@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface SetupProfileClientProps {
-  userId: number;
+  userId: string;
   username: string;
   initialProfile: any;
 }

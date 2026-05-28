@@ -1,52 +1,91 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
-import { query } from '@/lib/db';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
-    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
+
     const body = await request.json();
     const { schedule } = body;
-    let targetUserId = session.userId;
+    let targetUserId = user.id;
 
-    if (session.role === 'admin' && body.userId) {
-      targetUserId = parseInt(body.userId, 10);
+    if (userRole === 'admin' && body.userId) {
+      targetUserId = body.userId;
     }
 
     if (!schedule || !Array.isArray(schedule) || schedule.length !== 7) {
       return NextResponse.json({ error: '၇ ရက်စာ အစီအစဉ်အပြည့်အစုံ ရွေးချယ်ပေးပါ' }, { status: 400 });
     }
 
-    // Begin transaction style (delete existing, then insert)
-    await query('DELETE FROM weekly_schedule WHERE user_id = ?', [targetUserId]);
+    // Delete existing weekly schedule
+    const { error: deleteError } = await supabase
+      .from('weekly_schedule')
+      .delete()
+      .eq('user_id', targetUserId);
 
-    for (const item of schedule) {
-      const { dayOfWeek, splitName, isRest } = item;
-      await query(
-        'INSERT INTO weekly_schedule (user_id, day_of_week, split_name, is_rest) VALUES (?, ?, ?, ?)',
-        [targetUserId, dayOfWeek, splitName, isRest ? 1 : 0]
-      );
-    }
+    if (deleteError) throw deleteError;
 
-    // Set onboarding complete
-    await query('UPDATE users SET onboarding_complete = 1 WHERE id = ?', [targetUserId]);
+    // Insert new weekly schedule rows
+    const scheduleRows = schedule.map((item) => ({
+      user_id: targetUserId,
+      day_of_week: item.dayOfWeek,
+      split_name: item.splitName,
+      is_rest: !!item.isRest,
+    }));
+
+    const { error: insertError } = await supabase
+      .from('weekly_schedule')
+      .insert(scheduleRows);
+
+    if (insertError) throw insertError;
+
+    // Set onboarding complete in profiles table
+    const { error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({ onboarding_complete: true })
+      .eq('id', targetUserId);
+
+    if (profileUpdateError) throw profileUpdateError;
 
     // Ensure default program row exists
-    const existingPrograms = await query('SELECT id FROM programs WHERE user_id = ?', [targetUserId]);
+    const { data: existingPrograms, error: programQueryError } = await supabase
+      .from('programs')
+      .select('id')
+      .eq('user_id', targetUserId);
+
+    if (programQueryError) throw programQueryError;
+
     if (!existingPrograms || existingPrograms.length === 0) {
-      await query(
-        `INSERT INTO programs (user_id, duration_weeks, target_calories, macros_p, macros_c, macros_f, program_type, start_date)
-         VALUES (?, 12, 1800, 150, 180, 50, 'skinnyfat_recomp', CURDATE())`,
-        [targetUserId]
-      );
+      const today = new Date().toISOString().split('T')[0];
+      const { error: programInsertError } = await supabase
+        .from('programs')
+        .insert({
+          user_id: targetUserId,
+          duration_weeks: 12,
+          target_calories: 1800,
+          macros_p: 150,
+          macros_c: 180,
+          macros_f: 50,
+          program_type: 'skinnyfat_recomp',
+          start_date: today,
+        });
+
+      if (programInsertError) throw programInsertError;
     }
 
     return NextResponse.json({ success: true });

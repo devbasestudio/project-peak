@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -11,6 +12,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,20 +20,39 @@ export default function RegisterPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+      // Validate inputs
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      let finalEmail = email.trim();
+      
+      // If it is a phone number (e.g. starting with 09), we suggest an email format since Supabase email signup expects standard emails
+      if (!emailRegex.test(finalEmail)) {
+        if (/^\d+$/.test(finalEmail)) {
+          finalEmail = `${finalEmail}@projectpeak.local`;
+        } else {
+          setError('Email format မမှန်ကန်ပါ။ ကျေးဇူးပြု၍ ပြန်လည်စစ်ဆေးပေးပါ။');
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: finalEmail,
+        password,
+        options: {
+          data: {
+            username: username.trim(),
+          },
+        },
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        // Successful registration redirects to dashboard
+      if (signUpError) {
+        setError(signUpError.message);
+      } else if (data.user) {
+        // Redirect to setup profile or dashboard
         router.push('/user/dashboard');
         router.refresh();
       } else {
-        setError(data.error || 'Registration လုပ်ရာတွင် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။');
+        setError('Signup ပြုလုပ်ရာတွင် အမှားအယွင်းရှိခဲ့ပါသည်။');
       }
     } catch (err) {
       setError('ကွန်ရက် အမှားအယွင်း ဖြစ်ပေါ်နေပါသည်။ ကျေးဇူးပြု၍ ထပ်မံကြိုးစားကြည့်ပါ။');

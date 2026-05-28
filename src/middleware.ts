@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { decrypt } from './lib/session';
+import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Exclude static paths
+
+  // Exclude static assets and next internal paths
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -15,15 +15,62 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionCookie = request.cookies.get('session')?.value;
-  const session = sessionCookie ? await decrypt(sessionCookie) : null;
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // Initialize Supabase Client in Middleware
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          );
+          response = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Retrieve user authentication status
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Protect Admin dashboard
   if (pathname.startsWith('/admin')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
-    if (session.role !== 'admin') {
+    
+    // Check role: Fallback to email admin@projectpeak.com or query profiles
+    let isAdmin = user.email === 'admin@projectpeak.com';
+    
+    if (!isAdmin) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      if (profile && profile.role === 'admin') {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
       // Redirect unauthorized users to user dashboard
       return NextResponse.redirect(new URL('/user/dashboard', request.url));
     }
@@ -31,15 +78,27 @@ export async function middleware(request: NextRequest) {
 
   // Protect User pages
   if (pathname.startsWith('/user')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
   // Redirect authenticated users away from auth pages
   if (pathname === '/login' || pathname === '/register') {
-    if (session) {
-      if (session.role === 'admin') {
+    if (user) {
+      let isAdmin = user.email === 'admin@projectpeak.com';
+      if (!isAdmin) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (profile && profile.role === 'admin') {
+          isAdmin = true;
+        }
+      }
+      
+      if (isAdmin) {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       } else {
         return NextResponse.redirect(new URL('/user/dashboard', request.url));
@@ -47,9 +106,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

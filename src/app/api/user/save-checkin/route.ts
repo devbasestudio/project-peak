@@ -1,27 +1,34 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
-    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
 
     const formData = await request.formData();
 
     // Determine target user
-    let targetUserId = session.userId;
-    if (session.role === 'admin' && formData.get('client_id')) {
-      targetUserId = parseInt(formData.get('client_id') as string, 10);
-    } else if (session.role !== 'user') {
+    let targetUserId = user.id;
+    if (userRole === 'admin' && formData.get('client_id')) {
+      targetUserId = formData.get('client_id') as string;
+    } else if (userRole !== 'user' && userRole !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -45,11 +52,14 @@ export async function POST(request: Request) {
     const progressPhotoFile = formData.get('progress_photo') as File | null;
 
     // Load existing check-in to preserve photo if not uploaded
-    const existing = await query(
-      'SELECT progress_photo_url FROM weekly_checkins WHERE user_id = ? AND week_number = ?',
-      [targetUserId, week_number]
-    );
-    let progress_photo_url = existing && existing.length > 0 ? existing[0].progress_photo_url : null;
+    const { data: existing } = await supabase
+      .from('weekly_checkins')
+      .select('progress_photo_url')
+      .eq('user_id', targetUserId)
+      .eq('week_number', week_number)
+      .single();
+      
+    let progress_photo_url = existing ? existing.progress_photo_url : null;
 
     // Handle file upload
     if (progressPhotoFile && progressPhotoFile.size > 0) {
@@ -68,25 +78,10 @@ export async function POST(request: Request) {
     }
 
     // Save/Update Check-in
-    await query(
-      `INSERT INTO weekly_checkins 
-       (user_id, week_number, avg_weight, progress_photo_url, energy_workout, energy_workout_notes, energy_daily, energy_daily_notes, motivation, motivation_notes, struggle_notes, improvement_notes, upcoming_disruptions, changes_wanted) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
-       avg_weight = VALUES(avg_weight), 
-       progress_photo_url = VALUES(progress_photo_url), 
-       energy_workout = VALUES(energy_workout), 
-       energy_workout_notes = VALUES(energy_workout_notes), 
-       energy_daily = VALUES(energy_daily), 
-       energy_daily_notes = VALUES(energy_daily_notes), 
-       motivation = VALUES(motivation), 
-       motivation_notes = VALUES(motivation_notes), 
-       struggle_notes = VALUES(struggle_notes), 
-       improvement_notes = VALUES(improvement_notes), 
-       upcoming_disruptions = VALUES(upcoming_disruptions), 
-       changes_wanted = VALUES(changes_wanted)`,
-      [
-        targetUserId,
+    const { error: checkinError } = await supabase
+      .from('weekly_checkins')
+      .upsert({
+        user_id: targetUserId,
         week_number,
         avg_weight,
         progress_photo_url,
@@ -99,9 +94,10 @@ export async function POST(request: Request) {
         struggle_notes,
         improvement_notes,
         upcoming_disruptions,
-        changes_wanted
-      ]
-    );
+        changes_wanted,
+      }, { onConflict: 'user_id, week_number' });
+
+    if (checkinError) throw checkinError;
 
     return NextResponse.json({ success: true, progress_photo_url });
   } catch (err: any) {

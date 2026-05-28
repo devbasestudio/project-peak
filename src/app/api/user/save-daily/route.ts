@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
-import { query } from '@/lib/db';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -22,16 +20,26 @@ export async function POST(request: Request) {
       difficultWith,
     } = body;
 
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
-    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Retrieve user's role from the public profiles table
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
+
     // Security check: Only allow matching user OR admin
-    if (session.userId !== userId && session.role !== 'admin') {
+    if (user.id !== userId && userRole !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -39,67 +47,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Date is required.' }, { status: 400 });
     }
 
-    // Normalize undefined fields to null or appropriate defaults to prevent mysql2 driver crash
+    // Normalize empty values
     const bodyWeightVal = bodyWeight !== undefined && bodyWeight !== '' && bodyWeight !== null ? bodyWeight : null;
     const stepsVal = steps !== undefined && steps !== '' && steps !== null ? steps : null;
     const sleepScoreVal = sleepScore !== undefined && sleepScore !== '' && sleepScore !== null ? sleepScore : null;
-    const water3lVal = water3l ? 1 : 0;
-    const omega3Val = omega3 ? 1 : 0;
-    const bedPhoneFilterVal = bedPhoneFilter ? 1 : 0;
-    const mealPlanAdheredVal = mealPlanAdhered ? 1 : 0;
-    const toiletVal = toilet ? 1 : 0;
+    const water3lVal = !!water3l;
+    const omega3Val = !!omega3;
+    const bedPhoneFilterVal = !!bedPhoneFilter;
+    const mealPlanAdheredVal = !!mealPlanAdhered;
+    const toiletVal = !!toilet;
 
     const dietStatusVal = dietStatus !== undefined && dietStatus !== '' && dietStatus !== null ? dietStatus : null;
     const satisfiedWithVal = satisfiedWith !== undefined && satisfiedWith !== '' && satisfiedWith !== null ? satisfiedWith : null;
     const difficultWithVal = difficultWith !== undefined && difficultWith !== '' && difficultWith !== null ? difficultWith : null;
 
     // Upsert daily_trackers
-    await query(
-      `INSERT INTO daily_trackers 
-       (user_id, date, body_weight, steps, sleep_score, water_3l, omega_3, bed_phone_filter, meal_plan_adhered, toilet) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE 
-       body_weight = ?, steps = ?, sleep_score = ?, water_3l = ?, omega_3 = ?, bed_phone_filter = ?, meal_plan_adhered = ?, toilet = ?`,
-      [
-        userId,
+    const { error: trackerError } = await supabase
+      .from('daily_trackers')
+      .upsert({
+        user_id: userId,
         date,
-        bodyWeightVal,
-        stepsVal,
-        sleepScoreVal,
-        water3lVal,
-        omega3Val,
-        bedPhoneFilterVal,
-        mealPlanAdheredVal,
-        toiletVal,
-        bodyWeightVal,
-        stepsVal,
-        sleepScoreVal,
-        water3lVal,
-        omega3Val,
-        bedPhoneFilterVal,
-        mealPlanAdheredVal,
-        toiletVal,
-      ]
-    );
+        body_weight: bodyWeightVal,
+        steps: stepsVal,
+        sleep_score: sleepScoreVal,
+        water_3l: water3lVal,
+        omega_3: omega3Val,
+        bed_phone_filter: bedPhoneFilterVal,
+        meal_plan_adhered: mealPlanAdheredVal,
+        toilet: toiletVal,
+      }, { onConflict: 'user_id, date' });
+
+    if (trackerError) throw trackerError;
 
     // Upsert journaling
-    await query(
-      `INSERT INTO journaling 
-       (user_id, date, diet_status, satisfied_with, difficult_with) 
-       VALUES (?, ?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE 
-       diet_status = ?, satisfied_with = ?, difficult_with = ?`,
-      [
-        userId,
+    const { error: journalError } = await supabase
+      .from('journaling')
+      .upsert({
+        user_id: userId,
         date,
-        dietStatusVal,
-        satisfiedWithVal,
-        difficultWithVal,
-        dietStatusVal,
-        satisfiedWithVal,
-        difficultWithVal,
-      ]
-    );
+        diet_status: dietStatusVal,
+        satisfied_with: satisfiedWithVal,
+        difficult_with: difficultWithVal,
+      }, { onConflict: 'user_id, date' });
+
+    if (journalError) throw journalError;
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

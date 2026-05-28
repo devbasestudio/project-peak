@@ -20,7 +20,7 @@ export default async function DailyLogPage(props: {
   let isAdminViewing = false;
 
   if (session.role === 'admin' && searchParams.client_id) {
-    targetUserId = parseInt(searchParams.client_id, 10);
+    targetUserId = searchParams.client_id;
     isAdminViewing = true;
   } else if (session.role !== 'user') {
     redirect('/login');
@@ -87,9 +87,16 @@ export default async function DailyLogPage(props: {
   const trackerMap: Record<string, any> = {};
   const journalMap: Record<string, any> = {};
 
+  const formatDate = (d: any) => {
+    if (!d) return '';
+    if (d instanceof Date) return d.toISOString().split('T')[0];
+    if (typeof d === 'string') return d.split('T')[0];
+    return String(d);
+  };
+
   days.forEach((d) => {
-    trackerMap[d.date] = trackerDataList.find((t) => t.date.toISOString().split('T')[0] === d.date) || {};
-    journalMap[d.date] = journalDataList.find((j) => j.date.toISOString().split('T')[0] === d.date) || {};
+    trackerMap[d.date] = trackerDataList.find((t) => formatDate(t.date) === d.date) || {};
+    journalMap[d.date] = journalDataList.find((j) => formatDate(j.date) === d.date) || {};
   });
 
   // Check if today falls in the week

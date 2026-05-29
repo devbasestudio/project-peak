@@ -3,7 +3,8 @@ import Link from "next/link";
 type NavKey = "home" | "progress" | "learn" | "climb";
 
 interface BottomNavProps {
-  active: NavKey;
+  /** Highlighted tab; omit on pages that aren't one of the four tabs (e.g. check-in). */
+  active?: NavKey;
   /** e.g. "?client_id=..." when an admin is viewing a client, otherwise "" */
   clientQuery?: string;
 }

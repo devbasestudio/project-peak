@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Noto+Sans+Myanmar:wght@300;400;700;900&display=swap');
 
+/* Tailwind v4 — imported here so its theme/preflight/utilities sit in their own
+   cascade layers. The existing (legacy) styles below are UNLAYERED, so they keep
+   winning over Tailwind on pages not yet converted → zero visual regression.
+   As each page is converted to Tailwind utilities, its bespoke rules are removed. */
+@import "tailwindcss";
+
 :root {
     --primary-color: #f8fafc;
     --secondary-color: #ffffff;
@@ -1565,116 +1571,9 @@ td input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accen
 /* ============================================================
    LOGIN PAGE STYLES
    ============================================================ */
-.login-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #1c2b29 0%, #2a3f3c 50%, #1c2b29 100%);
-    position: relative;
-    overflow: hidden;
-    padding: 2rem;
-}
-.login-bg-shapes {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-}
-.login-shape {
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.06;
-    background: #5f827d;
-}
-.login-shape-1 { width: 400px; height: 400px; top: -100px; right: -100px; animation: floatShape 20s ease-in-out infinite; }
-.login-shape-2 { width: 300px; height: 300px; bottom: -50px; left: -80px; animation: floatShape 25s ease-in-out infinite reverse; }
-.login-shape-3 { width: 200px; height: 200px; top: 40%; left: 50%; animation: floatShape 18s ease-in-out infinite 5s; }
-.login-card {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-    padding: 2.5rem;
-    border-radius: 28px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 25px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: cardFadeUp 0.6s cubic-bezier(0.16,1,0.3,1);
-    z-index: 1;
-}
-.login-brand-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: rgba(255,107,53,0.15);
-    margin-bottom: 1.5rem;
-    animation: iconPulse 3s ease-in-out infinite;
-}
-.login-brand-icon i { font-size: 2rem; color: #ff6b35; }
-.login-title {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: #fff;
-    margin: 0 0 0.5rem 0;
-}
-.login-title .kanji { color: #ff6b35; }
-.login-subtitle {
-    color: rgba(255,255,255,0.5);
-    font-size: 0.95rem;
-    margin: 0 0 2rem 0;
-    line-height: 1.5;
-    font-weight: 500;
-}
-.login-error {
-    color: #ef4444;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    background: rgba(239,68,68,0.1);
-    padding: 0.8rem;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    border: 1px solid rgba(239,68,68,0.2);
-    font-weight: 600;
-    animation: shake 0.4s ease;
-}
-.google-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-    padding: 1rem 1.5rem;
-    border-radius: 50px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.08);
-    color: #fff;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 1rem;
-    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-    outline: none;
-    font-family: inherit;
-}
-.google-btn:hover:not(:disabled) {
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-    border-color: rgba(255,255,255,0.2);
-}
-.google-btn:active:not(:disabled) { transform: scale(0.98); }
-.google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.login-footer {
-    margin-top: 2rem;
-    font-size: 0.78rem;
-    color: rgba(255,255,255,0.25);
-    font-weight: 600;
-}
+/* NOTE: The login page was migrated to Tailwind utilities (src/app/login/page.tsx).
+   Its bespoke classes were removed from here; the @keyframes it animates with
+   (floatShape, cardFadeUp, iconPulse, shake) remain defined below. */
 
 /* ============================================================
    ADMIN PANEL STYLES

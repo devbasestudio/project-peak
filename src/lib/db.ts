@@ -8,13 +8,40 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
     // 1. SELECT * FROM users / SELECT username... FROM users WHERE id = ?
     if (normalizedSql.includes('from users') && normalizedSql.includes('where id =')) {
       const userId = params[0];
-      const { data: profile, error } = await supabase
+      let { data: profile, error } = await supabase
         .from('profiles')
         .select('username, role, email, onboarding_complete')
         .eq('id', userId)
         .maybeSingle();
 
       if (error) throw error;
+
+      // SAFETY NET: If profile doesn't exist, create it on-the-fly using Auth Metadata to prevent redirect loops!
+      if (!profile) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.id === userId) {
+          const username = user.user_metadata?.username || user.user_metadata?.full_name || 'User';
+          const email = user.email || '';
+          const role = email === 'admin@projectpeak.com' ? 'admin' : 'user';
+
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              username,
+              email,
+              role,
+              onboarding_complete: false
+            })
+            .select('username, role, email, onboarding_complete')
+            .maybeSingle();
+
+          if (!insertError && newProfile) {
+            profile = newProfile;
+          }
+        }
+      }
+
       return (profile ? [profile] : []) as any;
     }
 

@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+import { SocialProofAvatars } from "@/components/ui/social-proof-avatars";
+import { Marquee } from "@/components/ui/marquee";
+import { ExpandableCard } from "@/components/ui/expandable-card";
 
 interface ProgramDetail {
   title: string;
@@ -15,6 +24,13 @@ interface ProgramDetail {
 }
 
 export default function Home() {
+  const socialAvatars = [
+    { src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80", alt: "Client 1" },
+    { src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80", alt: "Client 2" },
+    { src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80", alt: "Client 3" },
+    { src: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80", alt: "Client 4" },
+  ];
+
   // Navigation states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -122,47 +138,152 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Stats counter animation when visible
+  // GSAP Animations — entrance + scroll-driven reveals
   useEffect(() => {
-    let membersCount = 0;
-    let rateCount = 0;
-    let programsCount = 0;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const membersTimer = setInterval(() => {
-      membersCount += 5;
-      if (membersCount >= 150) {
+    const ctx = gsap.context(() => {
+      if (reduceMotion) {
+        // Respect accessibility — show everything, just fill in the counters.
         setStatMembers(150);
-        clearInterval(membersTimer);
-      } else {
-        setStatMembers(membersCount);
-      }
-    }, 30);
-
-    const rateTimer = setInterval(() => {
-      rateCount += 3;
-      if (rateCount >= 95) {
         setStatSuccessRate(95);
-        clearInterval(rateTimer);
-      } else {
-        setStatSuccessRate(rateCount);
-      }
-    }, 30);
-
-    const programsTimer = setInterval(() => {
-      programsCount += 1;
-      if (programsCount >= 12) {
         setStatPrograms(12);
-        clearInterval(programsTimer);
-      } else {
-        setStatPrograms(programsCount);
+        return;
       }
-    }, 80);
 
-    return () => {
-      clearInterval(membersTimer);
-      clearInterval(rateTimer);
-      clearInterval(programsTimer);
-    };
+      // ---- HERO ENTRANCE TIMELINE ----
+      gsap.set(".navbar", { y: -80, opacity: 0 });
+      gsap.set(".hero-tagline", { y: 25, opacity: 0 });
+      gsap.set(".hero-headline", { y: 40, opacity: 0 });
+      gsap.set(".hero-body", { y: 25, opacity: 0 });
+      gsap.set(".btn-group", { y: 20, opacity: 0 });
+      gsap.set(".hero-social-proof", { y: 20, opacity: 0 });
+      gsap.set(".scroll-indicator", { opacity: 0 });
+
+      const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+      tl.to(".navbar", { y: 0, opacity: 1, duration: 1.0 })
+        .to(".hero-tagline", { y: 0, opacity: 1, duration: 0.6 }, "-=0.6")
+        .to(".hero-headline", { y: 0, opacity: 1, duration: 0.9 }, "-=0.4")
+        .to(".hero-body", { y: 0, opacity: 1, duration: 0.6 }, "-=0.5")
+        .to(".btn-group", { y: 0, opacity: 1, duration: 0.6 }, "-=0.4")
+        .to(".hero-social-proof", { y: 0, opacity: 1, duration: 0.6 }, "-=0.4")
+        .to(".scroll-indicator", { opacity: 1, duration: 0.6 }, "-=0.2");
+
+      // ---- HERO PARALLAX (background drifts slower than scroll) ----
+      gsap.to(".hero-bg", {
+        yPercent: 22,
+        scale: 1.18,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+      gsap.to(".hero-content", {
+        yPercent: 18,
+        opacity: 0,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // ---- GENERIC SECTION-HEADER REVEALS ----
+      gsap.utils.toArray<HTMLElement>(".section-header").forEach((el) => {
+        gsap.from(el, {
+          y: 50,
+          opacity: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 82%" },
+        });
+      });
+
+      // ---- COACHING SECTION ----
+      gsap.from(".coaching-info > *", {
+        y: 40,
+        opacity: 0,
+        duration: 0.7,
+        stagger: 0.08,
+        ease: "power3.out",
+        scrollTrigger: { trigger: ".section-coaching", start: "top 70%" },
+      });
+      gsap.from(".coaching-card-stack .c-card", {
+        y: 60,
+        opacity: 0,
+        scale: 0.85,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "back.out(1.6)",
+        // Clear inline styles afterwards so the CSS rotate + hover effects still work.
+        clearProps: "transform,opacity",
+        scrollTrigger: { trigger: ".section-coaching", start: "top 65%" },
+      });
+
+      // ---- PROGRAM CARDS (staggered rise) ----
+      gsap.from(".programs-grid > *", {
+        y: 70,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.18,
+        ease: "power3.out",
+        clearProps: "transform,opacity",
+        scrollTrigger: { trigger: ".programs-grid", start: "top 78%" },
+      });
+
+      // ---- ABOUT / TRAINER ----
+      gsap.from(".trainer-photo-wrap", {
+        x: -60, opacity: 0, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: ".about-grid", start: "top 75%" },
+      });
+      gsap.from(".trainer-info > *", {
+        x: 50, opacity: 0, duration: 0.7, stagger: 0.1, ease: "power3.out",
+        scrollTrigger: { trigger: ".about-grid", start: "top 70%" },
+      });
+      gsap.from(".credential-item", {
+        y: 30, opacity: 0, duration: 0.6, stagger: 0.1, ease: "power2.out",
+        scrollTrigger: { trigger: ".credentials-grid", start: "top 85%" },
+      });
+
+      // ---- COMMUNITY: mountain image + CTA ----
+      gsap.from(".mountain-image-wrapper", {
+        scale: 0.92, opacity: 0, duration: 1, ease: "power3.out",
+        scrollTrigger: { trigger: ".mountain-image-wrapper", start: "top 80%" },
+      });
+      gsap.from(".btn-community", {
+        y: 30, opacity: 0, duration: 0.7, ease: "back.out(1.7)",
+        scrollTrigger: { trigger: ".btn-community", start: "top 90%" },
+      });
+
+      // ---- STATS COUNTERS (count up when scrolled into view) ----
+      const counters = {
+        members: { value: 0, target: 150, setter: setStatMembers },
+        rate: { value: 0, target: 95, setter: setStatSuccessRate },
+        programs: { value: 0, target: 12, setter: setStatPrograms },
+      };
+      ScrollTrigger.create({
+        trigger: ".community-stats",
+        start: "top 80%",
+        once: true,
+        onEnter: () => {
+          Object.values(counters).forEach((c) => {
+            gsap.to(c, {
+              value: c.target,
+              duration: 2,
+              ease: "power2.out",
+              onUpdate: () => c.setter(Math.round(c.value)),
+            });
+          });
+        },
+      });
+    });
+
+    return () => ctx.revert();
   }, []);
 
   const openProgramModal = (key: "recomp" | "project20" | "mass") => {
@@ -285,8 +406,8 @@ export default function Home() {
         <div className="hero-bg"></div>
         <div className="hero-overlay"></div>
 
-        <div className="hero-content" style={{ opacity: 1, transform: "translateY(0)" }}>
-          <p className="hero-tagline">မဖြစ်နိုင်တာမရှိတဲ့ ပန်းတိုင်ဆီသို့။</p>
+        <div className="hero-content">
+          <p className="hero-tagline"><i className="ph-fill ph-sparkle"></i> မဖြစ်နိုင်တာမရှိတဲ့ ပန်းတိုင်ဆီသို့။</p>
           <h1 className="bold hero-headline">
             Conquer The<br /><span>Mountain.</span>
           </h1>
@@ -305,6 +426,13 @@ export default function Home() {
               <i className="ph ph-sign-in"></i> Login
             </a>
           </div>
+          <div className="hero-social-proof" style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-start" }}>
+            <SocialProofAvatars avatars={socialAvatars} extraCount={145} stars={true}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", marginLeft: "0.5rem" }}>
+                Joined by 150+ members
+              </span>
+            </SocialProofAvatars>
+          </div>
         </div>
 
         {/* Scroll indicator */}
@@ -312,6 +440,19 @@ export default function Home() {
           <i className="ph ph-caret-double-down"></i>
         </div>
       </section>
+
+      {/* ========== MARQUEE FEATURES BAND ========== */}
+      <Marquee direction="left" duration={30} className="home-marquee">
+        <span className="marquee-item"><i className="ph ph-fire"></i> FAT LOSS</span>
+        <span className="marquee-item"><i className="ph ph-barbell"></i> MUSCLE GAIN</span>
+        <span className="marquee-item"><i className="ph ph-lightning"></i> STRENGTH</span>
+        <span className="marquee-item"><i className="ph ph-bowl-food"></i> NUTRITION</span>
+        <span className="marquee-item"><i className="ph ph-list-checks"></i> HABITS</span>
+        <span className="marquee-item"><i className="ph ph-trend-up"></i> PROGRESS</span>
+        <span className="marquee-item"><i className="ph ph-users"></i> COMMUNITY</span>
+        <span className="marquee-item"><i className="ph ph-brain"></i> MINDSET</span>
+        <span className="marquee-item"><i className="ph ph-shield-check"></i> DISCIPLINE</span>
+      </Marquee>
 
       {/* ========== SECTION 2: ONE-ON-ONE COACHING ========== */}
       <section className="section-coaching" id="coaching">
@@ -391,85 +532,171 @@ export default function Home() {
             <p className="section-subtitle">သင့်ရဲ့ ခန္ဓာကိုယ်အမျိုးအစားနဲ့ ပန်းတိုင်ပေါ်မူတည်ပြီး သင့်တော်ဆုံး Program ကို ရွေးချယ်လိုက်ပါ။</p>
           </div>
 
-          <div className="programs-grid">
+          <div className="programs-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", marginTop: "2rem" }}>
             {/* Program 1: Skinnyfat Recomp */}
-            <div className="program-card revealed" onClick={() => openProgramModal("recomp")}>
-              <div className="program-card-visual">
-                <img src="/user/Skinnyfat.jpg" alt="Skinnyfat Recomp Transformation" className="program-cover-img" />
-                <div className="program-badge-float"><i className="ph ph-calendar-check"></i> 12 Weeks</div>
-                <div className="program-cover-shine"></div>
+            <ExpandableCard
+              title="Skinnyfat Recomp"
+              description="Body Recomposition"
+              src="/user/Skinnyfat.jpg"
+            >
+              <div>
+                <h3 style={{ color: "var(--accent-color)", fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>
+                  12 ပတ် Body Recomposition Protocol
+                </h3>
+                <p style={{ fontSize: "1.1rem", lineHeight: "1.8", color: "var(--text-muted)", marginBottom: "1.5rem" }}>
+                  အဆီကျပြီး ကြွက်သားတက်ချင်တဲ့သူတွေအတွက် ဖန်တီးထားတဲ့ 12 ပတ် Body Recomposition Program။ Soft body ကနေ Defined physique ဆီ ပြောင်းလဲပေးမယ်။ Fat Loss နဲ့ Muscle Gain ကို တပြိုင်နက် ရရှိနိုင်ပါတယ်။
+                </p>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-barbell" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Workout Program</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>12 ပတ်စာ Progressive Overload Plan</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-bowl-food" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Diet Plan</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Macro-based Nutrition Protocol</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-list-checks" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Habit Tracker</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>နေ့စဉ် Habit Building System</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-users" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Community</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>စိတ်တူကိုယ်တူ Support Group</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem", background: "rgba(14, 165, 233, 0.08)", borderRadius: "16px", marginBottom: "1rem", border: "1px solid rgba(14, 165, 233, 0.2)" }}>
+                  <div>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>စျေးနှုန်း</span>
+                    <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--text-main)" }}>50,000 MMK</div>
+                  </div>
+                  <button 
+                    className="btn btn-cta"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openProgramModal("recomp");
+                    }}
+                  >
+                    <i className="ph ph-lightning"></i> ဒီ Program ကို ယူမယ်
+                  </button>
+                </div>
               </div>
-              <div className="program-card-body">
-                <div className="program-header">
-                  <span className="program-tag tag-blue">Body Recomposition</span>
-                  <h3>Skinnyfat Recomp</h3>
-                  <p className="program-tagline">Soft → Defined</p>
-                </div>
-                <div className="program-includes">
-                  <span><i className="ph ph-barbell"></i> Program</span>
-                  <span><i className="ph ph-bowl-food"></i> Diet</span>
-                  <span><i className="ph ph-list-checks"></i> Habits</span>
-                  <span><i className="ph ph-users"></i> Community</span>
-                </div>
-                <div className="program-card-cta">
-                  <span>အသေးစိတ်ကြည့်မယ်</span>
-                  <i className="ph ph-arrow-right"></i>
-                </div>
-              </div>
-            </div>
+            </ExpandableCard>
 
             {/* Program 2: Project-20 */}
-            <div className="program-card featured revealed" onClick={() => openProgramModal("project20")}>
-              <div className="featured-ribbon"><i className="ph-fill ph-fire"></i> Popular</div>
-              <div className="program-card-visual">
-                <img src="/user/project 20.jpg" alt="Project 20 Fat Loss Transformation" className="program-cover-img" />
-                <div className="program-badge-float"><i className="ph ph-calendar-check"></i> 12 Weeks</div>
-                <div className="program-cover-shine"></div>
+            <ExpandableCard
+              title="Project-20"
+              description="Fat Loss"
+              src="/user/project 20.jpg"
+            >
+              <div>
+                <h3 style={{ color: "var(--accent-color)", fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>
+                  12 ပတ် Fat Loss Protocol
+                </h3>
+                <p style={{ fontSize: "1.1rem", lineHeight: "1.8", color: "var(--text-muted)", marginBottom: "1.5rem" }}>
+                  ကိုယ်အလေးချိန် 20 ပေါင်ကနေ အနည်းဆုံး 15 ပေါင်အထိ ကျချပေးမယ့် 12 ပတ် Fat Loss Program။ Cardio + Weight Training ပေါင်းစပ်ပြီး အစားအသောက် ထိန်းချုပ်ခြင်းနဲ့ ရလဒ်ကောင်းရအောင် ကူညီပေးမယ်။
+                </p>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-barbell" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Workout Program</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Cardio + Strength Hybrid Training</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-bowl-food" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Diet Plan</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Macro-based Calorie Deficit Plan</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-list-checks" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Habit Tracker</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Daily Habits & Progress Logging</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-users" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Community</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>စိတ်တူကိုယ်တူ Support Group</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem", background: "rgba(14, 165, 233, 0.08)", borderRadius: "16px", marginBottom: "1rem", border: "1px solid rgba(14, 165, 233, 0.2)" }}>
+                  <div>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>စျေးနှုန်း</span>
+                    <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--text-main)" }}>50,000 MMK</div>
+                  </div>
+                  <button 
+                    className="btn btn-cta"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openProgramModal("project20");
+                    }}
+                  >
+                    <i className="ph ph-lightning"></i> ဒီ Program ကို ယူမယ်
+                  </button>
+                </div>
               </div>
-              <div className="program-card-body">
-                <div className="program-header">
-                  <span className="program-tag tag-orange">Fat Loss</span>
-                  <h3>Project-20</h3>
-                  <p className="program-tagline">20 lbs ချမယ် → Lean Body</p>
-                </div>
-                <div className="program-includes">
-                  <span><i className="ph ph-barbell"></i> Program</span>
-                  <span><i className="ph ph-bowl-food"></i> Diet</span>
-                  <span><i className="ph ph-list-checks"></i> Habits</span>
-                  <span><i className="ph ph-users"></i> Community</span>
-                </div>
-                <div className="program-card-cta">
-                  <span>အသေးစိတ်ကြည့်မယ်</span>
-                  <i className="ph ph-arrow-right"></i>
-                </div>
-              </div>
-            </div>
+            </ExpandableCard>
 
             {/* Program 3: Mass Method */}
-            <div className="program-card revealed" onClick={() => openProgramModal("mass")}>
-              <div className="program-card-visual">
-                <img src="/user/mass method.jpg" alt="Mass Method Muscle Building Transformation" className="program-cover-img" />
-                <div className="program-badge-float"><i className="ph ph-calendar-check"></i> 12 Weeks</div>
-                <div className="program-cover-shine"></div>
+            <ExpandableCard
+              title="Mass Method"
+              description="Muscle Building"
+              src="/user/mass method.jpg"
+            >
+              <div>
+                <h3 style={{ color: "var(--accent-color)", fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>
+                  12 ပတ် Muscle Building Protocol
+                </h3>
+                <p style={{ fontSize: "1.1rem", lineHeight: "1.8", color: "var(--text-muted)", marginBottom: "1.5rem" }}>
+                  ကြွက်သားတက်ချင်တဲ့ Hardgainer တွေအတွက် 12 ပတ် Hypertrophy Program။ Caloric Surplus Diet Plan နဲ့ Progressive Overload Training ပေါင်းစပ်ထားပြီး Skinny ကနေ Muscular physique ဆီ ပြောင်းလဲပေးမယ်။
+                </p>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-barbell" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Workout Program</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Hypertrophy-focused Training</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-bowl-food" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Diet Plan</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Caloric Surplus Meal Plan</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-list-checks" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Habit Tracker</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Rest & Recovery Tracking</span>
+                  </div>
+                  <div style={{ background: "var(--primary-color)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                    <i className="ph ph-users" style={{ fontSize: "1.5rem", color: "var(--accent-color)" }}></i>
+                    <strong style={{ display: "block", marginTop: "0.5rem", color: "var(--text-main)" }}>Community</strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>စိတ်တူကိုယ်တူ Support Group</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem", background: "rgba(14, 165, 233, 0.08)", borderRadius: "16px", marginBottom: "1rem", border: "1px solid rgba(14, 165, 233, 0.2)" }}>
+                  <div>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>စျေးနှုန်း</span>
+                    <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--text-main)" }}>50,000 MMK</div>
+                  </div>
+                  <button 
+                    className="btn btn-cta"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openProgramModal("mass");
+                    }}
+                  >
+                    <i className="ph ph-lightning"></i> ဒီ Program ကို ယူမယ်
+                  </button>
+                </div>
               </div>
-              <div className="program-card-body">
-                <div className="program-header">
-                  <span className="program-tag tag-green">Muscle Building</span>
-                  <h3>Mass Method</h3>
-                  <p className="program-tagline">Skinny → Muscular</p>
-                </div>
-                <div className="program-includes">
-                  <span><i className="ph ph-barbell"></i> Program</span>
-                  <span><i className="ph ph-bowl-food"></i> Diet</span>
-                  <span><i className="ph ph-list-checks"></i> Habits</span>
-                  <span><i className="ph ph-users"></i> Community</span>
-                </div>
-                <div className="program-card-cta">
-                  <span>အသေးစိတ်ကြည့်မယ်</span>
-                  <i className="ph ph-arrow-right"></i>
-                </div>
-              </div>
-            </div>
+            </ExpandableCard>
           </div>
         </div>
       </section>

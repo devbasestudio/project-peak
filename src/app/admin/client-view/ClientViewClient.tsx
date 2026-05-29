@@ -109,14 +109,14 @@ export default function ClientViewClient({
   };
 
   return (
-    <>
-      <nav className="navbar" style={{ position: 'relative', marginBottom: '2rem' }}>
-        <div className="nav-brand">
-          <i className="ph ph-barbell kanji"></i>
-          <span>Project Peak (Trainer Panel)</span>
+    <div className="admin-page">
+      <nav className="admin-nav">
+        <div className="admin-nav-brand">
+          <i className="ph ph-barbell"></i>
+          <span>Project Peak <span style={{ color: '#ff6b35' }}>空</span> Trainer</span>
         </div>
-        <div className="nav-links">
-          <Link href="/admin/dashboard" className="active">
+        <div className="admin-nav-links">
+          <Link href="/admin/dashboard" className="admin-nav-link active">
             <i className="ph ph-users"></i> Clients
           </Link>
           <button
@@ -124,36 +124,36 @@ export default function ClientViewClient({
               await fetch('/api/auth/logout', { method: 'POST' });
               window.location.href = '/login';
             }}
-            style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
+            className="admin-nav-link logout"
           >
             <i className="ph ph-sign-out"></i> Logout
           </button>
         </div>
       </nav>
 
-      <div className="container" style={{ paddingBottom: '4rem' }}>
-        <Link href="/admin/dashboard" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1.5rem' }}>
+      <div className="admin-container">
+        <Link href="/admin/dashboard" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1.5rem' }}>
           <i className="ph ph-arrow-left"></i> နောက်သို့ (Back)
         </Link>
 
-        <h2 style={{ marginBottom: '2rem' }}>{client.username}&apos;s Profile</h2>
+        <h2 className="admin-section-title">{client.username}&apos;s Profile</h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
           
-          {/* Program Builder Section */}
-          <div className="glass-card" style={{ background: '#fff', border: '1px solid var(--glass-border)', padding: '2rem', borderRadius: '16px', boxShadow: 'var(--soft-shadow)', height: 'fit-content' }}>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1.5rem' }}>
-              <i className="ph ph-sliders" style={{ color: '#0ea5e9' }}></i> Program Builder
+          {/* Program Builder */}
+          <div className="admin-card" style={{ height: 'fit-content' }}>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0.75rem', marginBottom: '1.5rem' }}>
+              <i className="ph ph-sliders" style={{ color: '#ff6b35' }}></i> Program Builder
             </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Target Calories & Macros</p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Target Calories & Macros</p>
             
             {programSuccess && (
-              <div style={{ background: '#dcfce7', color: '#15803d', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 600 }}>
+              <div className="alert alert-success" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
                 Program updated successfully!
               </div>
             )}
             {programError && (
-              <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 600 }}>
+              <div className="alert alert-danger" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
                 {programError}
               </div>
             )}
@@ -164,7 +164,7 @@ export default function ClientViewClient({
                 <select
                   value={programType}
                   onChange={(e) => setProgramType(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 >
                   <option value="skinnyfat_recomp">Skinnyfat Recomp</option>
                   <option value="project_20">Project-20</option>
@@ -177,7 +177,7 @@ export default function ClientViewClient({
                   type="number"
                   value={durationWeeks}
                   onChange={(e) => setDurationWeeks(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -186,7 +186,7 @@ export default function ClientViewClient({
                   type="number"
                   value={targetCalories}
                   onChange={(e) => setTargetCalories(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -195,7 +195,7 @@ export default function ClientViewClient({
                   type="number"
                   value={macrosP}
                   onChange={(e) => setMacrosP(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -204,7 +204,7 @@ export default function ClientViewClient({
                   type="number"
                   value={macrosC}
                   onChange={(e) => setMacrosC(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -213,14 +213,14 @@ export default function ClientViewClient({
                   type="number"
                   value={macrosF}
                   onChange={(e) => setMacrosF(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 />
               </div>
               <button
                 type="submit"
                 disabled={updatingProgram}
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '0.9rem', borderRadius: '8px', fontWeight: 700, border: 'none', cursor: 'pointer', background: 'var(--btn-primary)', color: '#fff', marginTop: '0.5rem' }}
+                className="admin-btn admin-btn-primary"
+                style={{ width: '100%', padding: '0.9rem', borderRadius: '8px', fontWeight: 700, marginTop: '0.5rem', fontSize: '1rem' }}
               >
                 {updatingProgram ? 'Updating...' : 'Update Program'}
               </button>
@@ -229,38 +229,38 @@ export default function ClientViewClient({
 
           {/* Client Dashboard Access and Reports History */}
           <div>
-            <div className="glass-card mb-3" style={{ background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 132, 199, 0.05))', border: '1px solid var(--glass-border)', borderColor: 'var(--accent-color)', padding: '2rem', borderRadius: '16px', boxShadow: 'var(--soft-shadow)', marginBottom: '2rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
-                <i className="ph ph-user-gear" style={{ color: 'var(--accent-color)' }}></i> Manage Client&apos;s Dashboard
+            <div className="admin-card" style={{ marginBottom: '2rem', borderColor: 'rgba(255,107,53,0.2)' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+                <i className="ph ph-user-gear" style={{ color: '#ff6b35' }}></i> Manage Client&apos;s Dashboard
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                Client မြင်ရသည့်အတိုင်း အချက်အလက်များ ဝင်ရောက်ကြည့်ရှုပြင်ဆင်ရန် အောက်ပါလင့်ခ်များကို နှိပ်ပါ။
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Client မြင်ရသည့်အတိုင်း အချက်အလက်များ ဝင်ရောက်ကြည့်ရှုပြင်ဆင်ရန်
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <Link href={`/user/dashboard?client_id=${clientId}`} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'var(--text-main)', background: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                <Link href={`/user/dashboard?client_id=${clientId}`} className="admin-btn admin-btn-secondary" style={{ padding: '0.75rem', justifyContent: 'center' }}>
                   <i className="ph ph-squares-four"></i> Dashboard
                 </Link>
-                <Link href={`/user/daily-log?client_id=${clientId}`} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'var(--text-main)', background: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                <Link href={`/user/daily-log?client_id=${clientId}`} className="admin-btn admin-btn-secondary" style={{ padding: '0.75rem', justifyContent: 'center' }}>
                   <i className="ph ph-calendar-check"></i> Daily Log
                 </Link>
-                <Link href={`/user/workout?client_id=${clientId}`} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'var(--text-main)', background: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                <Link href={`/user/workout?client_id=${clientId}`} className="admin-btn admin-btn-secondary" style={{ padding: '0.75rem', justifyContent: 'center' }}>
                   <i className="ph ph-barbell"></i> Workout
                 </Link>
-                <Link href={`/user/diet?client_id=${clientId}`} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'var(--text-main)', background: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                <Link href={`/user/diet?client_id=${clientId}`} className="admin-btn admin-btn-secondary" style={{ padding: '0.75rem', justifyContent: 'center' }}>
                   <i className="ph ph-fork-knife"></i> Diet Plan
                 </Link>
-                <Link href={`/user/check-in?client_id=${clientId}`} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textDecoration: 'none', color: 'var(--text-main)', background: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', gridColumn: 'span 2' }}>
+                <Link href={`/user/check-in?client_id=${clientId}`} className="admin-btn admin-btn-secondary" style={{ padding: '0.75rem', justifyContent: 'center', gridColumn: 'span 2' }}>
                   <i className="ph ph-clipboard-text"></i> Weekly Check-in
                 </Link>
               </div>
             </div>
 
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 className="admin-section-title" style={{ fontSize: '1.2rem' }}>
               <i className="ph ph-clipboard-text" style={{ color: '#a855f7' }}></i> Weekly Check-ins
             </h3>
 
             {checkins.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)' }}>No check-ins yet.</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No check-ins yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {checkins.map((chk) => {
@@ -268,12 +268,10 @@ export default function ClientViewClient({
                   return (
                     <div
                       key={chk.id}
+                      className="admin-card"
                       style={{
-                        background: '#fff',
-                        border: isHighlighted ? '2px solid #a855f7' : '1px solid var(--glass-border)',
-                        padding: '2rem',
-                        borderRadius: '16px',
-                        boxShadow: isHighlighted ? '0 10px 25px -5px rgba(168, 85, 247, 0.15)' : 'var(--soft-shadow)',
+                        borderColor: isHighlighted ? 'rgba(168,85,247,0.5)' : undefined,
+                        boxShadow: isHighlighted ? '0 10px 25px -5px rgba(168, 85, 247, 0.15)' : undefined,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '1.5rem'
@@ -413,6 +411,6 @@ export default function ClientViewClient({
 
         </div>
       </div>
-    </>
+    </div>
   );
 }

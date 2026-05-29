@@ -113,37 +113,8 @@ export default function DailyLogClient({
   };
 
   return (
-    <>
-      <nav className="navbar" style={{ position: 'relative', marginBottom: '2rem' }}>
-        <div className="nav-brand">
-          <i className="ph ph-barbell kanji"></i>
-          <span>Project Peak <span className="kanji">空</span></span>
-        </div>
-        <div className="nav-links">
-          {isAdminViewing && (
-            <Link href={`/admin/client-view?id=${targetUserId}`} style={{ color: '#ef4444' }}>
-              <i className="ph ph-arrow-left"></i> Back to Admin View
-            </Link>
-          )}
-          <Link href={`/user/dashboard${clientQuery}`}>
-            <i className="ph ph-squares-four"></i> Dashboard
-          </Link>
-          <Link href={`/user/daily-log${clientQuery}`} className="active">
-            <i className="ph ph-calendar-check"></i> Daily Log
-          </Link>
-          <button
-            onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' });
-              window.location.href = '/login';
-            }}
-            style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
-          >
-            <i className="ph ph-sign-out"></i> Logout
-          </button>
-        </div>
-      </nav>
-
-      <div className="container" style={{ paddingBottom: '4rem' }}>
+    <div className="app-page" style={{ paddingBottom: '7rem' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '1.5rem' }}>
         <h2><i className="ph ph-calendar-check" style={{ color: '#0ea5e9' }}></i> 12 Weeks Tracker</h2>
         
         {/* Week Navigation */}
@@ -395,6 +366,29 @@ export default function DailyLogClient({
         </div>
 
       </div>
-    </>
+
+      {/* Bottom Navigation */}
+      <div className="bottom-nav">
+        <div className="bottom-nav-inner" style={{ maxWidth: '680px' }}>
+          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-house"></i>
+            <span>Home</span>
+          </Link>
+          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item active">
+            <i className="ph ph-chart-line-up"></i>
+            <span>Progress</span>
+          </Link>
+          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-book-open"></i>
+            <span>Learn</span>
+          </Link>
+          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-mountains"></i>
+            <span>Climb</span>
+          </Link>
+        </div>
+      </div>
+
+    </div>
   );
 }

@@ -132,7 +132,7 @@ export default function SetupScheduleClient({
   };
 
   return (
-    <div className="auth-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%)', padding: '2rem' }}>
+    <div className="login-page" style={{ flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* Top logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>

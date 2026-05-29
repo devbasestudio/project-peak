@@ -275,13 +275,11 @@ export default function DashboardClient({
   };
 
   return (
-    <div style={{ background: '#fbfbf8', minHeight: '100vh', paddingBottom: '6rem' }}>
-      
-      {/* Mobile Frame Container */}
-      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+    <div className="app-page">
+      <div className="app-container">
         
         {isAdminViewing && (
-          <div style={{ background: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '1rem', borderRadius: '15px', fontSize: '0.9rem', width: '100%' }}>
+          <div className="alert alert-danger">
             <strong><i className="ph ph-warning-circle"></i> ADMIN MODE:</strong> Viewing {username}&apos;s dashboard.
             <Link href={`/admin/client-view?id=${targetUserId}`} style={{ color: '#ef4444', textDecoration: 'underline', display: 'block', marginTop: '0.5rem', fontWeight: 'bold' }}>
               Back to Client List
@@ -289,349 +287,191 @@ export default function DashboardClient({
           </div>
         )}
 
-        {/* 1. Motivation Quote Section */}
+        {/* 1. Motivation Quote */}
         <div style={{ position: 'relative', marginTop: '0.5rem' }}>
-          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1.25rem', fontWeight: 600, color: '#8a7b61', lineHeight: '1.4', margin: 0, paddingRight: '2rem' }}>
-            “ {quote}
+          <p className="quote-text" style={{ paddingRight: '2rem' }}>
+            \u201c {quote}
           </p>
           <button
-            onClick={() => {
-              setNewQuoteInput(quote);
-              setShowEditQuote(!showEditQuote);
-            }}
-            style={{ position: 'absolute', top: '2px', right: 0, background: 'none', border: 'none', color: '#b2bda8', cursor: 'pointer' }}
+            onClick={() => { setNewQuoteInput(quote); setShowEditQuote(!showEditQuote); }}
+            className="quote-edit-btn"
+            style={{ position: 'absolute', top: '2px', right: 0 }}
           >
             <i className="ph ph-pencil-simple" style={{ fontSize: '1.1rem' }}></i>
           </button>
-
           {showEditQuote && (
             <form onSubmit={handleUpdateQuote} style={{ marginTop: '10px', display: 'flex', gap: '0.5rem', background: '#fff', padding: '0.5rem', borderRadius: '10px', border: '1px solid #e6eae8' }}>
-              <input
-                type="text"
-                value={newQuoteInput}
-                onChange={(e) => setNewQuoteInput(e.target.value)}
-                style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.9rem' }}
-                placeholder="Edit your motivation quote..."
-                required
-              />
-              <button type="submit" disabled={savingQuote} style={{ background: '#5f827d', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
+              <input type="text" value={newQuoteInput} onChange={(e) => setNewQuoteInput(e.target.value)} className="input-app" style={{ flex: 1, padding: '0.4rem 0.6rem' }} placeholder="Edit your motivation quote..." required />
+              <button type="submit" disabled={savingQuote} className="btn-app btn-teal" style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
                 {savingQuote ? 'Saving...' : 'Save'}
               </button>
             </form>
           )}
         </div>
 
-        {/* 2. Profile Header Section */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            {/* Circle Avatar with Body Fat Badge */}
-            <div style={{ position: 'relative' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#ceddd9', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <i className="ph ph-user" style={{ fontSize: '1.8rem', color: '#5f827d' }}></i>
+        {/* 2. Profile Header */}
+        <div className="profile-header">
+          <div className="profile-info">
+            <div className="profile-avatar">
+              <div className="profile-avatar-circle">
+                <i className="ph ph-user"></i>
               </div>
-              <div style={{ position: 'absolute', bottom: '-2px', right: '-4px', background: '#d97706', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.35rem', borderRadius: '50px', border: '2px solid #fbfbf8' }}>
+              <div className="badge-bf" style={{ position: 'absolute', bottom: '-2px', right: '-4px' }}>
                 {profile?.body_fat_percent ? `${profile.body_fat_percent}%` : '20%'}
               </div>
             </div>
-
-            {/* Profile Info */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#83928f', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                PROJECT PEAK · 空
-              </div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1c2b29', margin: '0.1rem 0 0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div className="profile-meta">
+              <div className="profile-brand">PROJECT PEAK · 空</div>
+              <h2 className="profile-name">
                 {username}
-                <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#83928f' }}>
-                  {profile?.age ? `, ${profile.age}` : ''}
-                </span>
+                <span className="profile-name-age">{profile?.age ? `, ${profile.age}` : ''}</span>
               </h2>
-              <div style={{ fontSize: '0.8rem', color: '#83928f', fontWeight: 600 }}>
-                {timelineStart} <span style={{ color: '#b2bda8', margin: '0 0.2rem' }}>→</span> <span style={{ color: '#1c2b29', fontWeight: 700 }}>Week {currentWeekNum}/{programDurationWeeks}</span> <span style={{ color: '#b2bda8', margin: '0 0.2rem' }}>→</span> {timelineEnd}
+              <div className="profile-timeline">
+                {timelineStart} <span className="profile-timeline-arrow">→</span> <span className="profile-timeline-current">Week {currentWeekNum}/{programDurationWeeks}</span> <span className="profile-timeline-arrow">→</span> {timelineEnd}
               </div>
             </div>
           </div>
-
-          {/* Streak Counter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#fef3c7', padding: '0.4rem 0.7rem', borderRadius: '50px', border: '1px solid #fde68a' }}>
-            <i className="ph ph-flame" style={{ fontSize: '1.25rem', color: '#d97706' }}></i>
-            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#b45309' }}>{streak}</span>
+          <div className="badge badge-streak" style={{ padding: '0.4rem 0.7rem' }}>
+            <i className="ph ph-flame" style={{ fontSize: '1.25rem' }}></i>
+            <span style={{ fontSize: '1.05rem', fontWeight: 800 }}>{streak}</span>
           </div>
         </div>
 
-        {/* 3. Body Fat Progress Bar */}
-        <div style={{ background: '#f3f5f0', borderRadius: '18px', padding: '0.8rem 1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', border: '1px solid #e6eae8' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+        {/* 3. Body Fat Progress */}
+        <div className="bf-bar">
+          <div className="bf-values">
             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#83928f' }}>{startingBF}%</span>
             <span style={{ fontSize: '0.75rem', color: '#b2bda8' }}>→</span>
             <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#5f827d' }}>~{currentBF}%</span>
             <span style={{ fontSize: '0.75rem', color: '#b2bda8' }}>→</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#d97706' }}>{targetBF}%</span>
           </div>
-          
-          <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '50px', overflow: 'hidden' }}>
-            <div style={{ width: `${bfProgressPercent}%`, height: '100%', background: '#5f827d', borderRadius: '50px', transition: 'width 0.5s ease' }}></div>
+          <div className="progress-bar" style={{ flex: 1 }}>
+            <div className="progress-fill progress-teal" style={{ width: `${bfProgressPercent}%` }}></div>
           </div>
         </div>
 
-        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#83928f', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '0.5rem', marginBottom: '-0.4rem' }}>
-          LOG RIGHT HERE · NO TAPPING IN
-        </div>
+        <div className="section-label">LOG RIGHT HERE · NO TAPPING IN</div>
 
         {/* 4. Weight Logging Card */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)', position: 'relative' }}>
-          {saveSuccess && (
-            <div style={{ position: 'absolute', top: '10px', right: '15px', color: '#22c55e', fontSize: '0.75rem', fontWeight: 700, background: '#f0fdf4', padding: '0.2rem 0.6rem', borderRadius: '5px', border: '1px solid #bbf7d0', animation: 'fadeIn 0.2s' }}>
-              ✓ Saved Progress
-            </div>
-          )}
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#1c2b29' }}>
-              <i className="ph ph-scale" style={{ color: '#5f827d', fontSize: '1.3rem' }}></i>
+        <div className="card" style={{ position: 'relative' }}>
+          {saveSuccess && <div className="badge-save" style={{ position: 'absolute', top: '10px', right: '15px' }}>✓ Saved Progress</div>}
+          <div className="card-header">
+            <div className="card-title">
+              <i className="ph ph-scale" style={{ color: '#5f827d' }}></i>
               <span>Weight</span>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#83928f', fontWeight: 600 }}>
-              yesterday {yesterdayWeight !== null ? `${yesterdayWeight} kg` : '--'}
-            </div>
+            <div className="card-subtitle">yesterday {yesterdayWeight !== null ? `${yesterdayWeight} kg` : '--'}</div>
           </div>
-
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-            {/* Minus button */}
-            <button
-              onClick={() => adjustWeight(-0.1)}
-              style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f5f7f5', border: '1px solid #cbd5e1', color: '#1c2b29', fontSize: '1.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
-            >
-              -
-            </button>
-
-            {/* Weight display */}
+            <button onClick={() => adjustWeight(-0.1)} className="btn-circle">-</button>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#1c2b29', letterSpacing: '-0.5px' }}>
-                {weightValue.toFixed(1)}
-              </span>
-              <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#83928f' }}>kg</span>
+              <span className="card-value-lg">{weightValue.toFixed(1)}</span>
+              <span className="card-value-unit">kg</span>
             </div>
-
-            {/* Plus button */}
-            <button
-              onClick={() => adjustWeight(0.1)}
-              style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f5f7f5', border: '1px solid #cbd5e1', color: '#1c2b29', fontSize: '1.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
-            >
-              +
-            </button>
-
-            {/* Log / Save button */}
-            <button
-              onClick={() => saveDailyStats(weightValue)}
-              disabled={savingLog}
-              style={{ background: '#5f827d', color: '#fff', border: 'none', padding: '0.75rem 1.4rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minWidth: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
+            <button onClick={() => adjustWeight(0.1)} className="btn-circle">+</button>
+            <button onClick={() => saveDailyStats(weightValue)} disabled={savingLog} className="btn-app btn-teal" style={{ width: 'auto', padding: '0.75rem 1.4rem', minWidth: '70px' }}>
               {savingLog ? '...' : 'Log'}
             </button>
           </div>
         </div>
 
-        {/* 5. Today's Workout Widget */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#1c2b29', marginBottom: '0.3rem' }}>
-            <i className="ph ph-barbell" style={{ color: '#f97316', fontSize: '1.3rem' }}></i>
+        {/* 5. Today's Workout */}
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: '0.3rem' }}>
+            <i className="ph ph-barbell" style={{ color: '#f97316' }}></i>
             <span>Today: {schedule?.split_name || 'Rest Day'}</span>
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#83928f', fontWeight: 600, marginBottom: '1.2rem' }}>
-            {schedule?.is_rest === 1 
-              ? 'Enjoy your recovery time' 
-              : 'You scheduled this · 7:00am · ~45 min'}
+          <div className="card-subtitle" style={{ marginBottom: '1.2rem' }}>
+            {schedule?.is_rest === 1 ? 'Enjoy your recovery time' : 'You scheduled this · 7:00am · ~45 min'}
           </div>
-
-          <Link
-            href={`/user/workout${clientQuery}`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#1c2b29', color: '#fff', textDecoration: 'none', padding: '1rem', borderRadius: '14px', fontSize: '1.05rem', fontWeight: 700, textAlign: 'center', transition: 'background 0.2s' }}
-          >
+          <Link href={`/user/workout${clientQuery}`} className="btn-app btn-dark">
             {schedule?.is_rest === 1 ? 'Go to Recovery Details' : '▶ Start workout'}
           </Link>
         </div>
 
-        {/* 6. Nutrition Widget (Calorie summary) */}
+        {/* 6. Nutrition Widget */}
         <Link href={`/user/diet${clientQuery}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)', cursor: 'pointer', transition: 'transform 0.2s' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#1c2b29' }}>
-                <i className="ph ph-apple-logo" style={{ color: '#22c55e', fontSize: '1.3rem' }}></i>
+          <div className="card card-interactive">
+            <div className="card-header" style={{ marginBottom: '0.8rem' }}>
+              <div className="card-title">
+                <i className="ph ph-apple-logo" style={{ color: '#22c55e' }}></i>
                 <span>Nutrition</span>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#83928f', fontWeight: 700 }}>
-                {eatenMealsCount} of {totalMealsCount} meals
-              </div>
+              <div className="card-subtitle" style={{ fontWeight: 700 }}>{eatenMealsCount} of {totalMealsCount} meals</div>
             </div>
-
-            {/* Consumed / Target Calories info */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.6rem' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.15rem' }}>
                 <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1c2b29' }}>{consumedCalories}</span>
                 <span style={{ fontSize: '0.9rem', color: '#83928f', fontWeight: 600 }}>/ {targetCalories} kcal</span>
               </div>
-              
-              {/* Macros summary */}
-              <div style={{ fontSize: '0.8rem', color: '#83928f', fontWeight: 700 }}>
-                {consumedProtein}p · {consumedCarbs}c · {consumedFat}f
-              </div>
+              <div style={{ fontSize: '0.8rem', color: '#83928f', fontWeight: 700 }}>{consumedProtein}p · {consumedCarbs}c · {consumedFat}f</div>
             </div>
-
-            {/* Calories Progress Bar */}
-            <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '50px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, Math.round((consumedCalories / targetCalories) * 100))}%`, height: '100%', background: '#22c55e', borderRadius: '50px', transition: 'width 0.5s ease' }}></div>
+            <div className="progress-bar">
+              <div className="progress-fill progress-green" style={{ width: `${Math.min(100, Math.round((consumedCalories / targetCalories) * 100))}%` }}></div>
             </div>
-            
-            {/* Calories remaining helper */}
-            <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#83928f', textAlign: 'left', fontStyle: 'italic', fontWeight: 600 }}>
-              {targetCalories - consumedCalories > 0 
-                ? `${targetCalories - consumedCalories} kcal remaining to hit goal` 
-                : 'Calories goal achieved!'}
+            <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#83928f', fontStyle: 'italic', fontWeight: 600 }}>
+              {targetCalories - consumedCalories > 0 ? `${targetCalories - consumedCalories} kcal remaining to hit goal` : 'Calories goal achieved!'}
             </div>
           </div>
         </Link>
 
-        {/* 7. Habits Widget */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#1c2b29' }}>
-              <i className="ph ph-check-circle" style={{ color: '#5f827d', fontSize: '1.3rem' }}></i>
+        {/* 7. Habits */}
+        <div className="card">
+          <div className="card-header" style={{ marginBottom: '1.2rem' }}>
+            <div className="card-title">
+              <i className="ph ph-check-circle" style={{ color: '#5f827d' }}></i>
               <span>Habits</span>
             </div>
-            <div style={{ fontSize: '0.82rem', color: '#83928f', fontWeight: 700 }}>
-              {activeHabitsCount} of 4
-            </div>
+            <div className="card-subtitle" style={{ fontWeight: 700 }}>{activeHabitsCount} of 4</div>
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-            {/* Sunlight */}
-            <button
-              onClick={() => toggleHabit('sunlight')}
-              style={{
-                background: sunlight ? '#edf4f2' : '#ffffff',
-                border: sunlight ? '2px solid #5f827d' : '1px solid #e6eae8',
-                borderRadius: '14px',
-                padding: '0.8rem 0.3rem',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
+          <div className="habits-grid">
+            <button onClick={() => toggleHabit('sunlight')} className={`habit-btn ${sunlight ? 'active' : ''}`}>
               <i className={sunlight ? "ph ph-check-circle" : "ph ph-sun"} style={{ fontSize: '1.3rem', color: sunlight ? '#5f827d' : '#83928f' }}></i>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: sunlight ? '#1c2b29' : '#83928f' }}>Sunlight</span>
+              <span className="habit-label">Sunlight</span>
             </button>
-
-            {/* Water */}
-            <button
-              onClick={() => toggleHabit('water')}
-              style={{
-                background: water ? '#edf4f2' : '#ffffff',
-                border: water ? '2px solid #5f827d' : '1px solid #e6eae8',
-                borderRadius: '14px',
-                padding: '0.8rem 0.3rem',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
+            <button onClick={() => toggleHabit('water')} className={`habit-btn ${water ? 'active' : ''}`}>
               <i className="ph ph-drop" style={{ fontSize: '1.3rem', color: water ? '#0ea5e9' : '#83928f' }}></i>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: water ? '#1c2b29' : '#83928f' }}>Water</span>
+              <span className="habit-label">Water</span>
             </button>
-
-            {/* No phone */}
-            <button
-              onClick={() => toggleHabit('noPhone')}
-              style={{
-                background: noPhone ? '#edf4f2' : '#ffffff',
-                border: noPhone ? '2px solid #5f827d' : '1px solid #e6eae8',
-                borderRadius: '14px',
-                padding: '0.8rem 0.3rem',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
+            <button onClick={() => toggleHabit('noPhone')} className={`habit-btn ${noPhone ? 'active' : ''}`}>
               <i className="ph ph-phone-slash" style={{ fontSize: '1.3rem', color: noPhone ? '#ef4444' : '#83928f' }}></i>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: noPhone ? '#1c2b29' : '#83928f' }}>No phone</span>
+              <span className="habit-label">No phone</span>
             </button>
-
-            {/* Supps */}
-            <button
-              onClick={() => toggleHabit('supps')}
-              style={{
-                background: supps ? '#edf4f2' : '#ffffff',
-                border: supps ? '2px solid #5f827d' : '1px solid #e6eae8',
-                borderRadius: '14px',
-                padding: '0.8rem 0.3rem',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
+            <button onClick={() => toggleHabit('supps')} className={`habit-btn ${supps ? 'active' : ''}`}>
               <i className="ph ph-pill" style={{ fontSize: '1.3rem', color: supps ? '#8b5cf6' : '#83928f' }}></i>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: supps ? '#1c2b29' : '#83928f' }}>Supps</span>
+              <span className="habit-label">Supps</span>
             </button>
           </div>
         </div>
 
-        {/* 8. Two Columns Steps & Calories Widget */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          {/* Steps Card */}
-          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.2rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        {/* 8. Steps & Calories Grid */}
+        <div className="grid-2">
+          <div className="card card-sm" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#83928f' }}>
               <i className="ph ph-footprints" style={{ fontSize: '1.1rem', color: '#5f827d' }}></i>
               <span>Steps</span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#1c2b29', margin: '0.1rem 0' }}>
-              {stepsValue.toLocaleString()}
-            </div>
-            
-            {/* Step Increment buttons */}
+            <div className="card-value" style={{ margin: '0.1rem 0' }}>{stepsValue.toLocaleString()}</div>
             <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.2rem' }}>
-              <button
-                onClick={() => adjustSteps(-1000)}
-                style={{ flex: 1, padding: '0.3rem 0', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#1c2b29', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                -1k
-              </button>
-              <button
-                onClick={() => adjustSteps(1000)}
-                style={{ flex: 1, padding: '0.3rem 0', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#1c2b29', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                +1k
-              </button>
+              <button onClick={() => adjustSteps(-1000)} className="btn-circle" style={{ width: 'auto', height: 'auto', flex: 1, padding: '0.3rem 0', borderRadius: '8px', fontSize: '0.75rem' }}>-1k</button>
+              <button onClick={() => adjustSteps(1000)} className="btn-circle" style={{ width: 'auto', height: 'auto', flex: 1, padding: '0.3rem 0', borderRadius: '8px', fontSize: '0.75rem' }}>+1k</button>
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#b2bda8', fontWeight: 600 }}>auto-synced</div>
+            <div className="label-muted" style={{ fontSize: '0.7rem', color: '#b2bda8' }}>auto-synced</div>
           </div>
-
-          {/* Calories Target Card */}
-          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.2rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div className="card card-sm" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#83928f' }}>
               <i className="ph ph-flame" style={{ fontSize: '1.1rem', color: '#d97706' }}></i>
               <span>Calories</span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#1c2b29', margin: '0.1rem 0' }}>
-              {targetCalories.toLocaleString()}
-            </div>
+            <div className="card-value" style={{ margin: '0.1rem 0' }}>{targetCalories.toLocaleString()}</div>
             <div style={{ fontSize: '0.8rem', color: '#d97706', fontWeight: 700 }}>eat the plan</div>
           </div>
         </div>
 
-        {/* 9. Historical Weight Chart Widget */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e6eae8', boxShadow: '0 4px 12px rgba(0,0,0,0.015)' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#1c2b29', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        {/* 9. Weight Chart */}
+        <div className="card">
+          <h3 className="card-title" style={{ marginBottom: '1rem', fontSize: '1rem' }}>
             <i className="ph ph-trend-up" style={{ color: '#5f827d' }}></i> Weight Progress (14 Days)
           </h3>
           <div style={{ height: '180px', position: 'relative' }}>
@@ -641,31 +481,24 @@ export default function DashboardClient({
 
       </div>
 
-      {/* 10. Sticky Bottom Navigation Bar */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', borderTop: '1px solid #e6eae8', padding: '0.6rem 0', zIndex: 1000 }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-          {/* Home Tab */}
-          <Link href={`/user/dashboard${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#1c2b29' }}>
-            <i className="ph ph-house" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800 }}>Home</span>
+      {/* 10. Bottom Navigation */}
+      <div className="bottom-nav">
+        <div className="bottom-nav-inner">
+          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item active">
+            <i className="ph ph-house"></i>
+            <span>Home</span>
           </Link>
-
-          {/* Progress Tab */}
-          <Link href={`/user/daily-log${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#83928f' }}>
-            <i className="ph ph-chart-line-up" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>Progress</span>
+          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-chart-line-up"></i>
+            <span>Progress</span>
           </Link>
-
-          {/* Learn (Diet) Tab */}
-          <Link href={`/user/diet${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#83928f' }}>
-            <i className="ph ph-book-open" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>Learn</span>
+          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-book-open"></i>
+            <span>Learn</span>
           </Link>
-
-          {/* Climb (Workout) Tab */}
-          <Link href={`/user/workout${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#83928f' }}>
-            <i className="ph ph-mountains" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>Climb</span>
+          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-mountains"></i>
+            <span>Climb</span>
           </Link>
         </div>
       </div>

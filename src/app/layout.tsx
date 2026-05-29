@@ -14,8 +14,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Load Phosphor Icons CDN for old CSS classes compatibility if needed, though we can use @phosphor-icons/react */}
-        <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/style.css" />
+        {/* Phosphor Icons — load each weight the markup actually uses (regular, fill, bold).
+            The combined `src/style.css` does not exist on the CDN (404), which previously left every icon blank. */}
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css" />
       </head>
       <body>{children}</body>
     </html>

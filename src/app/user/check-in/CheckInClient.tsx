@@ -115,47 +115,20 @@ export default function CheckInClient({
   };
 
   return (
-    <>
-      <nav className="navbar" style={{ position: 'relative', marginBottom: '2rem' }}>
-        <div className="nav-brand">
-          <i className="ph ph-barbell kanji"></i>
-          <span>Project Peak <span className="kanji">空</span></span>
-        </div>
-        <div className="nav-links">
-          {isAdminViewing && (
-            <Link href={`/admin/client-view?id=${targetUserId}`} style={{ color: '#ef4444' }}>
-              <i className="ph ph-arrow-left"></i> Back to Admin View
-            </Link>
-          )}
-          <Link href={`/user/dashboard${clientQuery}`}>
-            <i className="ph ph-squares-four"></i> Dashboard
-          </Link>
-          <Link href={`/user/check-in${clientQuery}`} className="active">
-            <i className="ph ph-clipboard-text"></i> Weekly Check-in
-          </Link>
-          <button
-            onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' });
-              window.location.href = '/login';
-            }}
-            style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
-          >
-            <i className="ph ph-sign-out"></i> Logout
-          </button>
-        </div>
-      </nav>
-
-      <div className="container" style={{ paddingBottom: '4rem', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="app-page" style={{ paddingBottom: '7rem' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '1.5rem' }}>
         {isAdminViewing && (
-          <div style={{ background: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '1rem', borderRadius: '10px', marginBottom: '2rem' }}>
-            <strong><i className="ph ph-warning-circle"></i> ADMIN MODE:</strong> You are currently managing this client&apos;s dashboard. Any changes you make here will affect their account.
+          <div className="alert alert-danger" style={{ marginBottom: '2rem' }}>
+            <strong><i className="ph ph-warning-circle"></i> ADMIN MODE:</strong> You are managing this client&apos;s check-in.
           </div>
         )}
 
-        <h2><i className="ph ph-clipboard-text"></i> Weekly Check-in (Week {currentWeek})</h2>
+        <h2 className="card-title" style={{ fontSize: '1.3rem', marginBottom: '1rem' }}>
+          <i className="ph ph-clipboard-text" style={{ color: '#a855f7' }}></i> Weekly Check-in (Week {currentWeek})
+        </h2>
 
         {successMsg && (
-          <div style={{ background: 'rgba(34, 197, 94, 0.2)', border: '1px solid #22c55e', padding: '1rem', borderRadius: '10px', marginTop: '1rem', marginBottom: '1.5rem', color: '#4ade80' }}>
+          <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
             <i className="ph ph-check-circle"></i> {successMsg}
           </div>
         )}
@@ -443,12 +416,34 @@ export default function CheckInClient({
         </form>
       </div>
 
+      {/* Bottom Navigation */}
+      <div className="bottom-nav">
+        <div className="bottom-nav-inner" style={{ maxWidth: '680px' }}>
+          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-house"></i>
+            <span>Home</span>
+          </Link>
+          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-chart-line-up"></i>
+            <span>Progress</span>
+          </Link>
+          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-book-open"></i>
+            <span>Learn</span>
+          </Link>
+          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-mountains"></i>
+            <span>Climb</span>
+          </Link>
+        </div>
+      </div>
+
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
       `}} />
-    </>
+    </div>
   );
 }

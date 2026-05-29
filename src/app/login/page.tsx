@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 
 export default function LoginPage() {
@@ -30,27 +31,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '400px', textAlign: 'center', padding: '2.5rem', borderRadius: '24px', background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)' }}>
-        
+    <div className="login-page">
+      {/* Animated background shapes */}
+      <div className="login-bg-shapes">
+        <div className="login-shape login-shape-1"></div>
+        <div className="login-shape login-shape-2"></div>
+        <div className="login-shape login-shape-3"></div>
+      </div>
+
+      <div className="login-card">
         {/* Brand Icon */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255, 107, 53, 0.1)', color: '#ff6b35', marginBottom: '1.5rem' }}>
-          <i className="ph ph-barbell" style={{ fontSize: '2rem' }}></i>
+        <div className="login-brand-icon">
+          <i className="ph ph-mountains"></i>
         </div>
-        
+
         {/* Title */}
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1c2b29', margin: '0 0 0.5rem 0' }}>
-          Project Peak <span style={{ color: '#ff6b35' }}>空</span>
+        <h2 className="login-title">
+          Project Peak <span className="kanji">空</span>
         </h2>
-        <p style={{ color: '#83928f', fontSize: '0.95rem', margin: '0 0 2rem 0', lineHeight: '1.5', fontWeight: 500 }}>
-          တောင်ထိပ်သို့ အရောက်လှမ်းရန် အဆင့်သင့်ဖြစ်ပြီလား? Google အကောင့်ဖြင့် ချက်ချင်းဝင်ရောက်ပါ။
+        <p className="login-subtitle">
+          တောင်ထိပ်သို့ အရောက်လှမ်းရန် အဆင့်သင့်ဖြစ်ပြီလား?<br />
+          Google အကောင့်ဖြင့် ချက်ချင်းဝင်ရောက်ပါ။
         </p>
 
-        {/* Error message if any */}
+        {/* Error message */}
         {error && (
-          <p style={{ color: '#ef4444', textAlign: 'center', marginBottom: '1.5rem', background: '#fef2f2', padding: '0.8rem', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #fee2e2', fontWeight: 600 }}>
-            {error}
-          </p>
+          <p className="login-error">{error}</p>
         )}
 
         {/* Google OAuth Button */}
@@ -58,36 +64,7 @@ export default function LoginPage() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={googleSubmitting}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.8rem',
-            padding: '1rem 1.5rem',
-            borderRadius: '50px',
-            border: '1px solid rgba(226, 232, 240, 0.8)',
-            background: '#ffffff',
-            color: '#1c2b29',
-            cursor: googleSubmitting ? 'not-allowed' : 'pointer',
-            fontWeight: 700,
-            fontSize: '1rem',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-            outline: 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (!googleSubmitting) {
-              e.currentTarget.style.background = '#f8fafc';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!googleSubmitting) {
-              e.currentTarget.style.background = '#ffffff';
-              e.currentTarget.style.transform = 'none';
-            }
-          }}
+          className="google-btn"
         >
           {googleSubmitting ? (
             <i className="ph ph-spinner ph-spin" style={{ fontSize: '1.2rem' }}></i>
@@ -101,6 +78,11 @@ export default function LoginPage() {
           )}
           {googleSubmitting ? 'ဆိုင်းအင်ဝင်နေပါသည်...' : 'Google အကောင့်ဖြင့် ဝင်မည်'}
         </button>
+
+        {/* Footer */}
+        <div className="login-footer">
+          Powered by Project Peak 空
+        </div>
       </div>
     </div>
   );

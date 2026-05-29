@@ -335,13 +335,13 @@ export default function WorkoutClient({
   const prevLogs = currentEx ? getPrevLogs(currentEx.exercise_name) : null;
 
   return (
-    <div style={{ background: '#fcfcf9', minHeight: '100vh', paddingBottom: '7rem', color: '#1c2b29' }}>
+    <div className="app-page">
       
       {/* Mobile Wrapper */}
-      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+      <div className="app-container">
         
         {isAdminViewing && (
-          <div style={{ background: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '1rem', borderRadius: '15px', fontSize: '0.9rem' }}>
+          <div className="alert alert-danger">
             <strong><i className="ph ph-warning-circle"></i> ADMIN MODE:</strong> You are managing this client&apos;s active workout.
           </div>
         )}
@@ -358,27 +358,27 @@ export default function WorkoutClient({
           </div>
           
           {/* Active Workout Timer */}
-          <div style={{ background: '#ff6b35', color: '#fff', padding: '0.5rem 0.8rem', borderRadius: '50px', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 10px rgba(255,107,53,0.2)' }}>
+          <div className="workout-timer">
             <i className="ph ph-timer" style={{ fontSize: '1.1rem' }}></i>
             <span>{formatTime(elapsedSeconds)}</span>
           </div>
         </div>
 
         {/* Top Progress bar indicators */}
-        <div style={{ display: 'flex', gap: '0.3rem', height: '6px', width: '100%' }}>
+        <div className="workout-progress-bar">
           {workoutExercises.map((_, idx) => {
             let bg = '#e6eae8';
             if (idx < activeIndex) bg = '#ff6b35';
             else if (idx === activeIndex && !isFinalStep) bg = '#ffd1c1';
             return (
-              <div key={idx} style={{ flex: 1, height: '100%', background: bg, borderRadius: '10px', transition: 'background 0.3s' }}></div>
+              <div key={idx} className="workout-progress-segment" style={{ background: bg }}></div>
             );
           })}
-          <div style={{ flex: 1, height: '100%', background: isFinalStep ? '#ff6b35' : '#e6eae8', borderRadius: '10px' }}></div>
+          <div className="workout-progress-segment" style={{ background: isFinalStep ? '#ff6b35' : '#e6eae8' }}></div>
         </div>
 
         {successMsg && (
-          <div style={{ background: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', padding: '1rem', borderRadius: '16px', fontWeight: 700, textAlign: 'center' }}>
+          <div className="alert alert-success" style={{ fontWeight: 700, textAlign: 'center' }}>
             <i className="ph ph-check-circle" style={{ marginRight: '0.5rem' }}></i>
             {successMsg}
           </div>
@@ -389,7 +389,7 @@ export default function WorkoutClient({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
             
             {/* Active Exercise Card */}
-            <div style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #e6eae8', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.015)' }}>
+            <div className="card exercise-card" style={{ borderRadius: '24px' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1c2b29', margin: 0, lineHeight: '1.3' }}>
@@ -892,24 +892,24 @@ export default function WorkoutClient({
         </div>
       )}
 
-      {/* Sticky Bottom Tab Bar */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', borderTop: '1px solid #e6eae8', padding: '0.6rem 0', zIndex: 1000 }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-          <Link href={`/user/dashboard${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#83928f' }}>
-            <i className="ph ph-house" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>Home</span>
+      {/* Bottom Navigation */}
+      <div className="bottom-nav">
+        <div className="bottom-nav-inner">
+          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-house"></i>
+            <span>Home</span>
           </Link>
-          <Link href={`/user/daily-log${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#83928f' }}>
-            <i className="ph ph-chart-line-up" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>Progress</span>
+          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-chart-line-up"></i>
+            <span>Progress</span>
           </Link>
-          <Link href={`/user/diet${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#83928f' }}>
-            <i className="ph ph-book-open" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>Learn</span>
+          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item">
+            <i className="ph ph-book-open"></i>
+            <span>Learn</span>
           </Link>
-          <Link href={`/user/workout${clientQuery}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', color: '#ff6b35' }}>
-            <i className="ph ph-mountains" style={{ fontSize: '1.4rem' }}></i>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800 }}>Climb</span>
+          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item active">
+            <i className="ph ph-mountains"></i>
+            <span>Climb</span>
           </Link>
         </div>
       </div>

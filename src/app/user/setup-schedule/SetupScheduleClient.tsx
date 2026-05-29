@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface SetupScheduleClientProps {
   userId: string;
@@ -14,7 +13,6 @@ export default function SetupScheduleClient({
   programType,
   initialSchedule,
 }: SetupScheduleClientProps) {
-  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -86,45 +84,33 @@ export default function SetupScheduleClient({
   });
 
   const handleSplitChange = (dayVal: number, splitName: string) => {
-    setWeeklySplits((prev) => ({
-      ...prev,
-      [dayVal]: splitName,
-    }));
+    setWeeklySplits((prev) => ({ ...prev, [dayVal]: splitName }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     setErrorMsg('');
 
-    // Prepare body payload
     const scheduleData = daysOfWeek.map((d) => {
       const splitName = weeklySplits[d.value];
       const isRest = splitName === 'Rest';
-      return {
-        dayOfWeek: d.value,
-        splitName: isRest ? null : splitName,
-        isRest,
-      };
+      return { dayOfWeek: d.value, splitName: isRest ? null : splitName, isRest };
     });
 
     try {
       const res = await fetch('/api/user/save-schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          schedule: scheduleData,
-        }),
+        body: JSON.stringify({ userId, schedule: scheduleData }),
       });
 
       if (res.ok) {
-        // Redirect to dashboard
         window.location.href = '/user/dashboard';
       } else {
         const data = await res.json();
         setErrorMsg(data.error || 'အချက်အလက် သိမ်းဆည်းရန် ပျက်ကွက်ခဲ့သည်။');
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('ကွန်ရက် အမှားအယွင်း ဖြစ်ပေါ်ခဲ့သည်။');
     } finally {
       setSaving(false);
@@ -132,97 +118,76 @@ export default function SetupScheduleClient({
   };
 
   return (
-    <div className="login-page" style={{ flexDirection: 'column', gap: '1.5rem' }}>
-      
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 overflow-hidden bg-[linear-gradient(135deg,#1c2b29_0%,#2a3f3c_50%,#1c2b29_100%)] p-8">
+
       {/* Top logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
-        <i className="ph ph-barbell kanji" style={{ fontSize: '2rem' }}></i>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-main)' }}>Project Peak <span className="kanji">空</span></h1>
+      <div className="mb-8 flex items-center gap-2">
+        <i className="ph ph-barbell text-[2rem] text-[var(--accent-color)]"></i>
+        <h1 className="text-[1.8rem] font-black text-white">Project Peak <span className="text-[var(--accent-color)]">空</span></h1>
       </div>
 
-      <div className="glass-card" style={{ width: '100%', maxWidth: '520px', padding: '2.5rem', borderRadius: '24px', background: '#fff', border: '1px solid var(--glass-border)', boxShadow: 'var(--soft-shadow)' }}>
-        
+      <div className="w-full max-w-[520px] rounded-[24px] border border-[var(--glass-border)] bg-white p-10 shadow-[var(--soft-shadow)]">
+
         {/* Step Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <span style={{ height: '2px', width: '30px', background: '#d97706', display: 'inline-block' }}></span>
-          <span style={{ color: '#d97706', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>SCHEDULE · 02</span>
+        <div className="mb-4 flex items-center gap-2">
+          <span className="inline-block h-0.5 w-[30px] bg-[#d97706]"></span>
+          <span className="text-[0.8rem] font-extrabold uppercase tracking-wider text-[#d97706]">SCHEDULE · 02</span>
         </div>
 
-        <h2 style={{ textAlign: 'left', fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Plan your week</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-          Your Assigned Program: <strong style={{ color: 'var(--accent-color)' }}>{programName}</strong>
+        <h2 className="mb-2 text-left text-[2.2rem] font-extrabold text-[var(--text-main)]">Plan your week</h2>
+        <p className="mb-6 text-[0.95rem] leading-relaxed text-[var(--text-muted)]">
+          Your Assigned Program: <strong className="text-[var(--accent-color)]">{programName}</strong>
         </p>
 
         {/* Splits Badges List */}
-        <div style={{ marginBottom: '1.8rem' }}>
-          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.6rem' }}>
+        <div className="mb-[1.8rem]">
+          <label className="mb-2.5 block text-[0.82rem] font-bold uppercase tracking-[0.5px] text-[var(--text-muted)]">
             Available Splits
           </label>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap gap-2">
             {splits.map((s) => (
-              <span key={s} style={{ background: '#f1f5f9', color: '#475569', padding: '0.4rem 0.8rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                <i className="ph ph-activity" style={{ color: 'var(--accent-color)' }}></i> {s}
+              <span key={s} className="inline-flex items-center gap-1 rounded-full bg-[#f1f5f9] px-3 py-1.5 text-[0.85rem] font-bold text-[#475569]">
+                <i className="ph ph-activity text-[var(--accent-color)]"></i> {s}
               </span>
             ))}
-            <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.4rem 0.8rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700 }}>
+            <span className="rounded-full bg-[#fef3c7] px-3 py-1.5 text-[0.85rem] font-bold text-[#b45309]">
               Rest
             </span>
           </div>
         </div>
 
         {errorMsg && (
-          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.8rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
+          <div className="mb-6 rounded-lg bg-[#fee2e2] p-3 text-[0.9rem] font-semibold text-[#b91c1c]">
             {errorMsg}
           </div>
         )}
 
         {/* Daily Schedule Assignment */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2.5rem' }}>
+        <div className="mb-10 flex flex-col gap-3">
           {daysOfWeek.map((day) => {
             const currentSplit = weeklySplits[day.value];
             const isRest = currentSplit === 'Rest';
             return (
               <div
                 key={day.value}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: '#f8fafc',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '16px',
-                  padding: '0.8rem 1.2rem',
-                  transition: 'all 0.2s ease',
-                }}
+                className="flex items-center justify-between rounded-2xl border border-[#cbd5e1] bg-[#f8fafc] px-5 py-[0.8rem]"
               >
-                <span style={{ fontWeight: 800, color: isRest ? 'var(--text-muted)' : 'var(--text-main)', fontSize: '0.95rem' }}>
+                <span className={`text-[0.95rem] font-extrabold ${isRest ? 'text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>
                   {day.label}
                 </span>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <select
-                    value={currentSplit}
-                    onChange={(e) => handleSplitChange(day.value, e.target.value)}
-                    style={{
-                      padding: '0.45rem 1rem',
-                      borderRadius: '12px',
-                      border: '1px solid #cbd5e1',
-                      background: isRest ? '#fffbeb' : '#e0f2fe',
-                      color: isRest ? '#b45309' : '#0369a1',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="Rest">Rest</option>
-                    {splits.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  value={currentSplit}
+                  onChange={(e) => handleSplitChange(day.value, e.target.value)}
+                  className={`cursor-pointer rounded-xl border border-[#cbd5e1] px-4 py-[0.45rem] text-[0.88rem] font-extrabold outline-none ${
+                    isRest ? 'bg-[#fffbeb] text-[#b45309]' : 'bg-[#e0f2fe] text-[#0369a1]'
+                  }`}
+                >
+                  <option value="Rest">Rest</option>
+                  {splits.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
             );
           })}
@@ -232,22 +197,7 @@ export default function SetupScheduleClient({
         <button
           onClick={handleSave}
           disabled={saving}
-          style={{
-            background: '#0f172a',
-            color: '#fff',
-            padding: '1rem',
-            borderRadius: '50px',
-            fontWeight: 700,
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '1.1rem',
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
-          }}
+          className="flex w-full items-center justify-center rounded-full border-none bg-[#0f172a] p-4 text-[1.1rem] font-bold text-white shadow-[0_4px_12px_rgba(15,23,42,0.15)] transition-all hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? 'သိမ်းဆည်းနေပါသည်...' : 'Lock my week'}
         </button>

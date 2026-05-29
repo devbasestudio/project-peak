@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 interface SetupProfileClientProps {
   userId: string;
@@ -12,7 +11,6 @@ interface SetupProfileClientProps {
 
 export default function SetupProfileClient({
   userId,
-  username,
   initialProfile,
 }: SetupProfileClientProps) {
   const router = useRouter();
@@ -40,14 +38,7 @@ export default function SetupProfileClient({
       const res = await fetch('/api/user/save-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          weight,
-          height,
-          age,
-          bodyFat,
-          desiredBodyText,
-        }),
+        body: JSON.stringify({ userId, weight, height, age, bodyFat, desiredBodyText }),
       });
 
       if (res.ok) {
@@ -56,100 +47,74 @@ export default function SetupProfileClient({
         const data = await res.json();
         setErrorMsg(data.error || 'အချက်အလက် သိမ်းဆည်းရန် ပျက်ကွက်ခဲ့သည်။');
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('ကွန်ရက် အမှားအယွင်း ဖြစ်ပေါ်ခဲ့သည်။');
     } finally {
       setSaving(false);
     }
   };
 
+  const numInput =
+    'w-full rounded-[10px] border border-[#cbd5e1] bg-[#f8fafc] p-[0.8rem] text-center font-bold text-[var(--text-main)] outline-none focus:border-[#0ea5e9]';
+
   return (
-    <div className="login-page" style={{ flexDirection: 'column', gap: '1.5rem' }}>
-      
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 overflow-hidden bg-[linear-gradient(135deg,#1c2b29_0%,#2a3f3c_50%,#1c2b29_100%)] p-8">
+
       {/* Top logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
-        <i className="ph ph-barbell kanji" style={{ fontSize: '2rem' }}></i>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-main)' }}>Project Peak <span className="kanji">空</span></h1>
+      <div className="mb-8 flex items-center gap-2">
+        <i className="ph ph-barbell text-[2rem] text-[var(--accent-color)]"></i>
+        <h1 className="text-[1.8rem] font-black text-white">Project Peak <span className="text-[var(--accent-color)]">空</span></h1>
       </div>
 
-      <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '2.5rem', borderRadius: '24px', background: '#fff', border: '1px solid var(--glass-border)', boxShadow: 'var(--soft-shadow)' }}>
-        
+      <div className="w-full max-w-[480px] rounded-[24px] border border-[var(--glass-border)] bg-white p-10 shadow-[var(--soft-shadow)]">
+
         {/* Step Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <span style={{ height: '2px', width: '30px', background: '#d97706', display: 'inline-block' }}></span>
-          <span style={{ color: '#d97706', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>BASELINE · 01</span>
+        <div className="mb-4 flex items-center gap-2">
+          <span className="inline-block h-0.5 w-[30px] bg-[#d97706]"></span>
+          <span className="text-[0.8rem] font-extrabold uppercase tracking-wider text-[#d97706]">BASELINE · 01</span>
         </div>
 
-        <h2 style={{ textAlign: 'left', fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Your starting point</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '2rem', lineHeight: 1.5 }}>Enter once. We measure every win against today.</p>
+        <h2 className="mb-2 text-left text-[2.2rem] font-extrabold text-[var(--text-main)]">Your starting point</h2>
+        <p className="mb-8 text-[0.95rem] leading-relaxed text-[var(--text-muted)]">Enter once. We measure every win against today.</p>
 
         {errorMsg && (
-          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.8rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
+          <div className="mb-6 rounded-lg bg-[#fee2e2] p-3 text-[0.9rem] font-semibold text-[#b91c1c]">
             {errorMsg}
           </div>
         )}
 
         <form onSubmit={handleContinue}>
-          
+
           {/* Inputs Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-            
-            <div className="form-group" style={{ margin: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>Weight</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="number"
-                  placeholder="85"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  style={{ width: '100%', padding: '0.8rem', paddingRight: '2rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: 'var(--text-main)', textAlign: 'center', fontWeight: 'bold' }}
-                  required
-                  min="30"
-                  max="300"
-                />
-                <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>kg</span>
+          <div className="mb-8 grid grid-cols-3 gap-4">
+            <div>
+              <label className="mb-1.5 block text-[0.88rem] font-bold text-[var(--text-main)]">Weight</label>
+              <div className="relative">
+                <input type="number" placeholder="85" value={weight} onChange={(e) => setWeight(e.target.value)} className={`${numInput} pr-8`} required min="30" max="300" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[0.8rem] font-semibold text-[var(--text-muted)]">kg</span>
               </div>
             </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>Height</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="number"
-                  placeholder="174"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                  style={{ width: '100%', padding: '0.8rem', paddingRight: '2.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: 'var(--text-main)', textAlign: 'center', fontWeight: 'bold' }}
-                  required
-                  min="100"
-                  max="250"
-                />
-                <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>cm</span>
+            <div>
+              <label className="mb-1.5 block text-[0.88rem] font-bold text-[var(--text-main)]">Height</label>
+              <div className="relative">
+                <input type="number" placeholder="174" value={height} onChange={(e) => setHeight(e.target.value)} className={`${numInput} pr-9`} required min="100" max="250" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[0.8rem] font-semibold text-[var(--text-muted)]">cm</span>
               </div>
             </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>Age</label>
-              <input
-                type="number"
-                placeholder="25"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: 'var(--text-main)', textAlign: 'center', fontWeight: 'bold' }}
-                required
-                min="12"
-                max="100"
-              />
+            <div>
+              <label className="mb-1.5 block text-[0.88rem] font-bold text-[var(--text-main)]">Age</label>
+              <input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} className={numInput} required min="12" max="100" />
             </div>
-
           </div>
 
           {/* Body Fat Selection */}
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ display: 'block', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.8rem' }}>
+          <div className="mb-8">
+            <label className="mb-3 block text-[0.95rem] font-bold text-[var(--text-main)]">
               Body fat — pick what looks like you
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+            <div className="grid grid-cols-4 gap-2">
               {bodyFatOptions.map((val) => {
                 const isSelected = bodyFat === val;
                 return (
@@ -157,21 +122,12 @@ export default function SetupProfileClient({
                     type="button"
                     key={val}
                     onClick={() => setBodyFat(val)}
-                    style={{
-                      background: isSelected ? '#f0f9ff' : '#f8fafc',
-                      border: isSelected ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
-                      borderRadius: '12px',
-                      padding: '1rem 0.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
+                    className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl px-2 py-4 transition-all ${
+                      isSelected ? 'border-2 border-[#0ea5e9] bg-[#f0f9ff]' : 'border border-[#cbd5e1] bg-[#f8fafc]'
+                    }`}
                   >
-                    <i className="ph ph-user" style={{ fontSize: '1.2rem', color: isSelected ? '#0ea5e9' : 'var(--text-muted)' }}></i>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: isSelected ? '#0f172a' : 'var(--text-muted)' }}>{val}%</span>
+                    <i className={`ph ph-user text-[1.2rem] ${isSelected ? 'text-[#0ea5e9]' : 'text-[var(--text-muted)]'}`}></i>
+                    <span className={`text-[0.95rem] font-bold ${isSelected ? 'text-[#0f172a]' : 'text-[var(--text-muted)]'}`}>{val}%</span>
                   </button>
                 );
               })}
@@ -179,8 +135,8 @@ export default function SetupProfileClient({
           </div>
 
           {/* Desired Body Type / Goals */}
-          <div className="form-group" style={{ marginBottom: '2.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+          <div className="mb-10">
+            <label className="mb-2 block text-[0.95rem] font-bold text-[var(--text-main)]">
               ဖြစ်ချင်တဲ့ Body ပုံစံ / Fitness Goals (Desired Body Style)
             </label>
             <textarea
@@ -188,7 +144,7 @@ export default function SetupProfileClient({
               rows={3}
               value={desiredBodyText}
               onChange={(e) => setDesiredBodyText(e.target.value)}
-              style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
+              className="w-full resize-y rounded-[10px] border border-[#cbd5e1] bg-[#f8fafc] px-4 py-[0.8rem] text-[0.9rem] text-[var(--text-main)] outline-none focus:border-[#0ea5e9]"
             />
           </div>
 
@@ -196,29 +152,12 @@ export default function SetupProfileClient({
           <button
             type="submit"
             disabled={saving}
-            className="btn btn-primary btn-block"
-            style={{
-              background: '#0f172a', // dark color from mockup
-              color: '#fff',
-              padding: '1rem',
-              borderRadius: '50px',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '1.1rem',
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
-            }}
+            className="flex w-full items-center justify-center rounded-full border-none bg-[#0f172a] p-4 text-[1.1rem] font-bold text-white shadow-[0_4px_12px_rgba(15,23,42,0.15)] transition-all hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'သိမ်းဆည်းနေပါသည်...' : 'Continue'}
           </button>
 
         </form>
-
       </div>
     </div>
   );

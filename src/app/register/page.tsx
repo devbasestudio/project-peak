@@ -23,7 +23,7 @@ export default function RegisterPage() {
       // Validate inputs
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       let finalEmail = email.trim();
-      
+
       // If it is a phone number (e.g. starting with 09), we suggest an email format since Supabase email signup expects standard emails
       if (!emailRegex.test(finalEmail)) {
         if (/^\d+$/.test(finalEmail)) {
@@ -54,73 +54,79 @@ export default function RegisterPage() {
       } else {
         setError('Signup ပြုလုပ်ရာတွင် အမှားအယွင်းရှိခဲ့ပါသည်။');
       }
-    } catch (err) {
+    } catch {
       setError('ကွန်ရက် အမှားအယွင်း ဖြစ်ပေါ်နေပါသည်။ ကျေးဇူးပြု၍ ထပ်မံကြိုးစားကြည့်ပါ။');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const inputClass =
+    'w-full rounded-lg border border-[var(--glass-border)] bg-white/50 px-[1.2rem] py-[0.8rem] text-[var(--text-main)] outline-none transition-all focus:border-[var(--accent-color)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(14,165,233,0.1)]';
+
   return (
-    <div className="auth-container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '400px' }}>
-        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <i className="ph ph-user-plus"></i> Register
+    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#e0f2fe_0%,#f8fafc_100%)] p-8">
+      <div className="w-full max-w-[400px] rounded-[20px] border border-[var(--glass-border)] bg-white p-12 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.05),0_8px_10px_-6px_rgba(0,0,0,0.01)]">
+        <h2 className="mb-6 flex items-center gap-2 text-[2rem] font-bold text-[var(--text-main)]">
+          <i className="ph ph-user-plus text-[var(--accent-color)]"></i> Register
         </h2>
+
         {error && (
-          <p style={{ color: '#ef4444', textAlign: 'center', marginBottom: '1rem', background: '#fef2f2', padding: '0.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+          <p className="mb-4 rounded-lg bg-[#fef2f2] p-3 text-center text-sm font-medium text-[#ef4444]">
             {error}
           </p>
         )}
+
         <form onSubmit={handleRegister}>
-          <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Username (အမည်)</label>
+          <div className="mb-5">
+            <label className="mb-2 block font-semibold">Username (အမည်)</label>
             <input
               type="text"
               required
               placeholder="Alex"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              style={{ width: '100%', padding: '0.8rem 1.2rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.5)' }}
+              className={inputClass}
             />
           </div>
-          <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Email / Phone (အီးမေးလ် သို့မဟုတ် ဖုန်း)</label>
+
+          <div className="mb-5">
+            <label className="mb-2 block font-semibold">Email / Phone (အီးမေးလ် သို့မဟုတ် ဖုန်း)</label>
             <input
               type="text"
               required
               placeholder="example@gmail.com / 09xxxxxxxxx"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ width: '100%', padding: '0.8rem 1.2rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.5)' }}
+              className={inputClass}
             />
           </div>
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Password</label>
-            <div className="password-wrapper" style={{ position: 'relative' }}>
+
+          <div className="mb-6">
+            <label className="mb-2 block font-semibold">Password</label>
+            <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ width: '100%', padding: '0.8rem 3rem 0.8rem 1.2rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.5)' }}
+                className={`${inputClass} pr-12`}
               />
               <button
                 type="button"
-                className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                className="absolute right-4 top-1/2 flex -translate-y-1/2 cursor-pointer border-none bg-transparent text-xl text-[var(--text-muted)] transition-colors hover:text-[var(--accent-color)]"
               >
                 <i className={`ph ${showPassword ? 'ph-eye' : 'ph-eye-slash'}`}></i>
               </button>
             </div>
           </div>
+
           <button
             type="submit"
-            className="btn btn-cta"
             disabled={submitting}
-            style={{ width: '100%', background: 'var(--btn-primary)', color: '#fff', padding: '0.8rem 2rem', borderRadius: '50px', fontWeight: 700, cursor: 'pointer', border: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+            className="flex w-full items-center justify-center gap-2 rounded-full border-none bg-[linear-gradient(135deg,#0ea5e9,#38bdf8)] px-8 py-3 font-bold text-white shadow-[0_4px_15px_rgba(14,165,233,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -132,8 +138,9 @@ export default function RegisterPage() {
               </>
             )}
           </button>
-          <div className="text-center" style={{ marginTop: '1.5rem' }}>
-            <a href="/login" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.9rem' }}>
+
+          <div className="mt-6 text-center">
+            <a href="/login" className="text-sm text-[var(--text-muted)] no-underline transition-colors hover:text-[var(--accent-color)]">
               အကောင့်ရှိပြီးသားလား? Login ဝင်ရန်
             </a>
           </div>

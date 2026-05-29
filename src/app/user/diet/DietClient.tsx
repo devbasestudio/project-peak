@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
+import { BottomNav } from '@/components/ui/BottomNav';
 
 interface NutritionItem {
   id: number;
@@ -43,27 +43,17 @@ export default function DietClient({
   initialCompletedItemIds,
   todayStr,
 }: DietClientProps) {
-  // Store completed meal IDs in state
   const [completedIds, setCompletedIds] = useState<number[]>(initialCompletedItemIds);
   const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
 
-  // Group items by meal_type
   const mealGroups: Record<string, NutritionItem[]> = {
-    breakfast: [],
-    lunch: [],
-    snack: [],
-    dinner: [],
-    evening: []
+    breakfast: [], lunch: [], snack: [], dinner: [], evening: [],
   };
-
   nutritionItems.forEach((item) => {
-    const type = item.meal_type;
-    if (mealGroups[type]) {
-      mealGroups[type].push(item);
-    }
+    if (mealGroups[item.meal_type]) mealGroups[item.meal_type].push(item);
   });
 
-  const mealTypeInfo: Record<string, { label: string, icon: string, color: string }> = {
+  const mealTypeInfo: Record<string, { label: string; icon: string; color: string }> = {
     breakfast: { label: 'Breakfast (မနက်စာ)', icon: 'ph ph-egg', color: '#f59e0b' },
     lunch: { label: 'Lunch (နေ့လယ်စာ)', icon: 'ph ph-bowl-food', color: '#10b981' },
     snack: { label: 'Snack (မုန့်ပဲသရေစာ)', icon: 'ph ph-apple-logo', color: '#8b5cf6' },
@@ -71,49 +61,35 @@ export default function DietClient({
     evening: { label: 'Evening (ညဉ့်နက်စာ / Shake)', icon: 'ph ph-pill', color: '#6366f1' },
   };
 
-  // Toggle meal completion
   const handleToggleMeal = async (itemId: number) => {
     const isCompleted = completedIds.includes(itemId);
     const nextCompleted = isCompleted
-      ? completedIds.filter(id => id !== itemId)
+      ? completedIds.filter((id) => id !== itemId)
       : [...completedIds, itemId];
 
-    // Optimistically update
     setCompletedIds(nextCompleted);
-    setSavingIds(prev => ({ ...prev, [itemId]: true }));
+    setSavingIds((prev) => ({ ...prev, [itemId]: true }));
 
     try {
       const res = await fetch('/api/user/save-nutrition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          date: todayStr,
-          nutritionItemId: itemId,
-          completed: !isCompleted,
-        }),
+        body: JSON.stringify({ userId, date: todayStr, nutritionItemId: itemId, completed: !isCompleted }),
       });
-
       if (!res.ok) {
-        // Revert on error
         setCompletedIds(completedIds);
         alert('Failed to update meal log.');
       }
-    } catch (err) {
+    } catch {
       setCompletedIds(completedIds);
       alert('Network error logging meal.');
     } finally {
-      setSavingIds(prev => ({ ...prev, [itemId]: false }));
+      setSavingIds((prev) => ({ ...prev, [itemId]: false }));
     }
   };
 
-  // Calculate dynamic calories and macros consumed based on checked list
-  let consumedCalories = 0;
-  let consumedProtein = 0;
-  let consumedCarbs = 0;
-  let consumedFat = 0;
-
-  nutritionItems.forEach(item => {
+  let consumedCalories = 0, consumedProtein = 0, consumedCarbs = 0, consumedFat = 0;
+  nutritionItems.forEach((item) => {
     if (completedIds.includes(item.id)) {
       consumedCalories += item.calories;
       consumedProtein += parseFloat(item.protein_g);
@@ -122,7 +98,6 @@ export default function DietClient({
     }
   });
 
-  // Nutritionist advice in Burmese for standard items
   const getNutritionistProAdvice = (foodName: string): string => {
     const lower = foodName.toLowerCase();
     if (lower.includes('oatmeal') || lower.includes('oat')) {
@@ -153,46 +128,46 @@ export default function DietClient({
   };
 
   return (
-    <div className="app-page">
-      <div className="app-container">
-        
+    <div className="min-h-screen bg-[#f8f8f5] pb-24 text-[#1c2b29]">
+      <div className="mx-auto flex max-w-[480px] flex-col gap-5 p-6">
+
         {isAdminViewing && (
-          <div className="alert alert-danger">
+          <div className="rounded-[15px] border border-[#ef4444] bg-[#fee2e2] p-4 text-[0.9rem] font-semibold text-[#b91c1c]">
             <strong><i className="ph ph-warning-circle"></i> ADMIN MODE:</strong> Managing client&apos;s diet completion logs.
           </div>
         )}
 
-        <h2 className="card-title" style={{ fontSize: '1.3rem' }}>
-          <i className="ph ph-fork-knife" style={{ color: '#22c55e' }}></i> Meal Log (အစားအသောက် မှတ်တမ်း)
+        <h2 className="flex items-center gap-2 text-[1.3rem] font-extrabold text-[#1c2b29]">
+          <i className="ph ph-fork-knife text-[1.3rem] text-[#22c55e]"></i> Meal Log (အစားအသောက် မှတ်တမ်း)
         </h2>
-        <p style={{ color: '#83928f', fontSize: '0.9rem', marginTop: '-0.8rem' }}>
+        <p className="-mt-3 text-[0.9rem] text-[#83928f]">
           ယနေ့စားသုံးပြီးသော အစားအစာများကို ရွေးချယ်ပေးပါ
         </p>
 
         {/* Macro Summary Card */}
-        <div className="card">
-          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <span className="card-subtitle">Calories Consumed Today</span>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#22c55e', margin: '0.2rem 0' }}>
-              {consumedCalories} <span style={{ fontSize: '1rem', color: '#83928f', fontWeight: 500 }}>/ {targetCalories} kcal</span>
+        <div className="rounded-[20px] border border-[#e6eae8] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.015)]">
+          <div className="mb-4 text-center">
+            <span className="text-[0.82rem] font-semibold text-[#83928f]">Calories Consumed Today</span>
+            <div className="my-1 text-[2.5rem] font-black text-[#22c55e]">
+              {consumedCalories} <span className="text-base font-medium text-[#83928f]">/ {targetCalories} kcal</span>
             </div>
-            <div className="progress-bar progress-bar-lg" style={{ marginTop: '0.5rem' }}>
-              <div className="progress-fill progress-green" style={{ width: `${Math.min(100, Math.round((consumedCalories / targetCalories) * 100))}%` }}></div>
+            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#e2e8f0]">
+              <div className="h-full rounded-full bg-[#22c55e] transition-all duration-500" style={{ width: `${Math.min(100, Math.round((consumedCalories / targetCalories) * 100))}%` }}></div>
             </div>
           </div>
 
-          <div className="grid-3" style={{ textAlign: 'center', paddingTop: '0.8rem', borderTop: '1px solid #e6eae8', gap: '0.5rem' }}>
+          <div className="grid grid-cols-3 gap-2 border-t border-[#e6eae8] pt-3 text-center">
             <div>
-              <div className="label-muted">Protein</div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1c2b29' }}>{Math.round(consumedProtein)}g <span style={{ fontSize: '0.75rem', color: '#83928f', fontWeight: 500 }}>/ {macrosP}g</span></div>
+              <div className="text-[0.75rem] font-semibold text-[#83928f]">Protein</div>
+              <div className="text-[1.15rem] font-black text-[#1c2b29]">{Math.round(consumedProtein)}g <span className="text-[0.75rem] font-medium text-[#83928f]">/ {macrosP}g</span></div>
             </div>
             <div>
-              <div className="label-muted">Carbs</div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1c2b29' }}>{Math.round(consumedCarbs)}g <span style={{ fontSize: '0.75rem', color: '#83928f', fontWeight: 500 }}>/ {macrosC}g</span></div>
+              <div className="text-[0.75rem] font-semibold text-[#83928f]">Carbs</div>
+              <div className="text-[1.15rem] font-black text-[#1c2b29]">{Math.round(consumedCarbs)}g <span className="text-[0.75rem] font-medium text-[#83928f]">/ {macrosC}g</span></div>
             </div>
             <div>
-              <div className="label-muted">Fat</div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1c2b29' }}>{Math.round(consumedFat)}g <span style={{ fontSize: '0.75rem', color: '#83928f', fontWeight: 500 }}>/ {macrosF}g</span></div>
+              <div className="text-[0.75rem] font-semibold text-[#83928f]">Fat</div>
+              <div className="text-[1.15rem] font-black text-[#1c2b29]">{Math.round(consumedFat)}g <span className="text-[0.75rem] font-medium text-[#83928f]">/ {macrosF}g</span></div>
             </div>
           </div>
         </div>
@@ -204,56 +179,57 @@ export default function DietClient({
           const info = mealTypeInfo[mealType];
 
           return (
-            <div key={mealType} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ background: '#f5f7f5', padding: '0.8rem 1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e6eae8' }}>
-                <div className="card-title" style={{ fontSize: '0.95rem' }}>
-                  <i className={info.icon} style={{ color: info.color }}></i>
+            <div key={mealType} className="overflow-hidden rounded-[20px] border border-[#e6eae8] bg-white shadow-[0_4px_12px_rgba(0,0,0,0.015)]">
+              <div className="flex items-center justify-between border-b border-[#e6eae8] bg-[#f5f7f5] px-5 py-[0.8rem]">
+                <div className="flex items-center gap-2 text-[0.95rem] font-extrabold text-[#1c2b29]">
+                  <i className={`${info.icon} text-[1.3rem]`} style={{ color: info.color }}></i>
                   <span>{info.label}</span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="flex flex-col">
                 {items.map((item) => {
                   const isChecked = completedIds.includes(item.id);
                   const isSaving = savingIds[item.id];
-                  
+
                   return (
-                    <div key={item.id} style={{ padding: '1.2rem', borderBottom: '1px solid #f5f7f5', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
+                    <div key={item.id} className="flex flex-col gap-[0.6rem] border-b border-[#f5f7f5] p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
                           <button
                             onClick={() => handleToggleMeal(item.id)}
                             disabled={isSaving}
-                            className={`meal-checkbox ${isChecked ? 'checked' : ''}`}
-                            style={{ marginTop: '2px', borderRadius: '6px' }}
+                            className={`mt-0.5 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-2 transition-all ${
+                              isChecked ? 'border-[#22c55e] bg-[#22c55e]' : 'border-[#cbd5e1] bg-white'
+                            }`}
                           >
-                            {isChecked && <i className="ph ph-check" style={{ color: '#fff', fontSize: '1rem', fontWeight: 'bold' }}></i>}
+                            {isChecked && <i className="ph ph-check text-base font-bold text-white"></i>}
                           </button>
 
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span className="meal-name" style={{ textDecoration: isChecked ? 'line-through' : 'none' }}>
+                          <div className="flex flex-col">
+                            <span className={`text-[0.95rem] font-bold text-[#1c2b29] ${isChecked ? 'line-through' : ''}`}>
                               {item.food_name}
                             </span>
                             {item.food_name_mm && (
-                              <span className="meal-portion" style={{ fontStyle: 'italic', marginTop: '0.1rem' }}>{item.food_name_mm}</span>
+                              <span className="mt-[0.1rem] text-[0.8rem] italic text-[#83928f]">{item.food_name_mm}</span>
                             )}
                             {item.portion && (
-                              <span className="meal-portion" style={{ marginTop: '0.2rem', fontWeight: 600 }}>Portion: {item.portion}</span>
+                              <span className="mt-[0.2rem] text-[0.8rem] font-semibold text-[#83928f]">Portion: {item.portion}</span>
                             )}
                           </div>
                         </div>
 
-                        <div style={{ textAlign: 'right', minWidth: '70px' }}>
-                          <span style={{ fontSize: '1rem', fontWeight: 900, color: '#22c55e' }}>
-                            {item.calories} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#83928f' }}>kcal</span>
+                        <div className="min-w-[70px] text-right">
+                          <span className="text-base font-black text-[#22c55e]">
+                            {item.calories} <span className="text-[0.75rem] font-medium text-[#83928f]">kcal</span>
                           </span>
-                          <div className="meal-macros" style={{ marginTop: '0.2rem', justifyContent: 'flex-end' }}>
+                          <div className="mt-[0.2rem] flex justify-end gap-2 text-[0.75rem] font-bold text-[#83928f]">
                             {Math.round(parseFloat(item.protein_g))}p · {Math.round(parseFloat(item.carbs_g))}c · {Math.round(parseFloat(item.fat_g))}f
                           </div>
                         </div>
                       </div>
 
-                      <div style={{ background: '#fcfcfb', padding: '0.8rem', borderRadius: '12px', borderLeft: `3px solid ${info.color}`, fontSize: '0.8rem', color: '#64748b', lineHeight: '1.5' }}>
+                      <div className="rounded-xl border-l-[3px] bg-[#fcfcfb] p-[0.8rem] text-[0.8rem] leading-relaxed text-[#64748b]" style={{ borderLeftColor: info.color }}>
                         {getNutritionistProAdvice(item.food_name)}
                       </div>
                     </div>
@@ -266,28 +242,7 @@ export default function DietClient({
 
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="bottom-nav">
-        <div className="bottom-nav-inner">
-          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-house"></i>
-            <span>Home</span>
-          </Link>
-          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-chart-line-up"></i>
-            <span>Progress</span>
-          </Link>
-          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item active">
-            <i className="ph ph-book-open"></i>
-            <span>Learn</span>
-          </Link>
-          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-mountains"></i>
-            <span>Climb</span>
-          </Link>
-        </div>
-      </div>
-
+      <BottomNav active="learn" clientQuery={clientQuery} />
     </div>
   );
 }

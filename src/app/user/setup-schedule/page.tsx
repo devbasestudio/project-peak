@@ -1,13 +1,10 @@
-import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/session';
 import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import SetupScheduleClient from './SetupScheduleClient';
 
 export default async function SetupSchedulePage() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session')?.value;
-  const session = sessionCookie ? await decrypt(sessionCookie) : null;
+  const session = await decrypt();
 
   if (!session) {
     redirect('/login');

@@ -1,13 +1,10 @@
-import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/session';
 import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import AdminDashboardClient from './AdminDashboardClient';
 
 export default async function AdminDashboardPage() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session')?.value;
-  const session = sessionCookie ? await decrypt(sessionCookie) : null;
+  const session = await decrypt();
 
   if (!session || session.role !== 'admin') {
     redirect('/login');

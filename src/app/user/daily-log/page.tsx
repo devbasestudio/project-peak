@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/session';
 import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
@@ -8,9 +7,7 @@ export default async function DailyLogPage(props: {
   searchParams: Promise<{ w?: string; client_id?: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session')?.value;
-  const session = sessionCookie ? await decrypt(sessionCookie) : null;
+  const session = await decrypt();
 
   if (!session) {
     redirect('/login');

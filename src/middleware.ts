@@ -15,13 +15,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  let response = NextResponse.next({
+  // This response is mutated by Supabase's `setAll` whenever the auth token is
+  // refreshed. Its cookies MUST be carried over to any redirect we return,
+  // otherwise the browser keeps the stale/expired token and we bounce forever
+  // between /login and the protected page (the classic Supabase SSR loop).
+  let supabaseResponse = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  // Initialize Supabase Client in Middleware
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,82 +34,71 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          response = NextResponse.next({
+          supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           );
         },
       },
     }
   );
 
-  // Retrieve user authentication status
+  // Build a redirect response that preserves any refreshed auth cookies.
+  const redirectTo = (path: string) => {
+    const redirectResponse = NextResponse.redirect(new URL(path, request.url));
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
+  };
+
+  // IMPORTANT: do not run any logic between createServerClient and getUser().
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Resolve admin status once (used by several branches below).
+  const resolveIsAdmin = async () => {
+    if (!user) return false;
+    if (user.email === 'admin@projectpeak.com') return true;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    return profile?.role === 'admin';
+  };
+
   // Protect Admin dashboard
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return redirectTo('/login');
     }
-    
-    // Check role: Fallback to email admin@projectpeak.com or query profiles
-    let isAdmin = user.email === 'admin@projectpeak.com';
-    
-    if (!isAdmin) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      if (profile && profile.role === 'admin') {
-        isAdmin = true;
-      }
-    }
-
-    if (!isAdmin) {
-      // Redirect unauthorized users to user dashboard
-      return NextResponse.redirect(new URL('/user/dashboard', request.url));
+    if (!(await resolveIsAdmin())) {
+      return redirectTo('/user/dashboard');
     }
   }
 
   // Protect User pages
   if (pathname.startsWith('/user')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return redirectTo('/login');
     }
   }
 
   // Redirect authenticated users away from auth pages
   if (pathname === '/login' || pathname === '/register') {
     if (user) {
-      let isAdmin = user.email === 'admin@projectpeak.com';
-      if (!isAdmin) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        if (profile && profile.role === 'admin') {
-          isAdmin = true;
-        }
-      }
-      
-      if (isAdmin) {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-      } else {
-        return NextResponse.redirect(new URL('/user/dashboard', request.url));
-      }
+      return redirectTo((await resolveIsAdmin()) ? '/admin/dashboard' : '/user/dashboard');
     }
   }
 
-  return response;
+  return supabaseResponse;
 }
 
 export const config = {

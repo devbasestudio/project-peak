@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BottomNav } from '@/components/ui/BottomNav';
 
 interface DailyLogClientProps {
   targetUserId: string;
@@ -32,11 +33,10 @@ export default function DailyLogClient({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
-  // Form states for today's log
   const [bodyWeight, setBodyWeight] = useState(todayTracker.body_weight || '');
   const [steps, setSteps] = useState(todayTracker.steps || '');
   const [sleepScore, setSleepScore] = useState(todayTracker.sleep_score || '');
-  
+
   const [water3l, setWater3l] = useState(!!todayTracker.water_3l);
   const [omega3, setOmega3] = useState(!!todayTracker.omega_3);
   const [bedPhoneFilter, setBedPhoneFilter] = useState(!!todayTracker.bed_phone_filter);
@@ -47,7 +47,6 @@ export default function DailyLogClient({
   const [satisfiedWith, setSatisfiedWith] = useState(todayJournal.satisfied_with || '');
   const [difficultWith, setDifficultWith] = useState(todayJournal.difficult_with || '');
 
-  // Calculate averages for the week table
   const calcAvg = (key: string) => {
     let sum = 0;
     let count = 0;
@@ -67,9 +66,7 @@ export default function DailyLogClient({
   const calcCheckedAvg = (key: string) => {
     let checkedCount = 0;
     days.forEach((day) => {
-      if (trackerMap[day.date]?.[key]) {
-        checkedCount++;
-      }
+      if (trackerMap[day.date]?.[key]) checkedCount++;
     });
     return Math.round((checkedCount / 7) * 100) + '%';
   };
@@ -77,7 +74,6 @@ export default function DailyLogClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-
     try {
       const res = await fetch('/api/user/save-daily', {
         method: 'POST',
@@ -98,243 +94,162 @@ export default function DailyLogClient({
           difficultWith: difficultWith || null,
         }),
       });
-
       if (res.ok) {
         router.refresh();
       } else {
         const data = await res.json();
         alert(data.error || 'မှတ်တမ်းသိမ်းဆည်းရာတွင် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။');
       }
-    } catch (err) {
+    } catch {
       alert('ကွန်ရက် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။');
     } finally {
       setSaving(false);
     }
   };
 
+  const metricRows = [
+    { label: 'Body Weight (kg)', key: 'body_weight' },
+    { label: 'Steps', key: 'steps' },
+    { label: 'Sleep Score (Hrs)', key: 'sleep_score' },
+  ];
+  const habitRows = [
+    { label: '3L Water', key: 'water_3l' },
+    { label: 'Omega 3', key: 'omega_3' },
+    { label: 'Bed Phone Filter', key: 'bed_phone_filter' },
+    { label: 'Meal Plan', key: 'meal_plan_adhered' },
+    { label: 'Toilet', key: 'toilet' },
+  ];
+
+  const inputClass =
+    'w-full rounded-lg border border-[#cbd5e1] bg-[#f8fafc] p-[0.8rem] text-[#0f172a] outline-none focus:border-[#0ea5e9]';
+  const habits = [
+    { label: '3L Water', checked: water3l, set: setWater3l },
+    { label: 'Omega 3', checked: omega3, set: setOmega3 },
+    { label: 'Bed Phone Filter', checked: bedPhoneFilter, set: setBedPhoneFilter },
+    { label: 'Meal Plan', checked: mealPlanAdhered, set: setMealPlanAdhered },
+    { label: 'Toilet', checked: toilet, set: setToilet },
+  ];
+
   return (
-    <div className="app-page" style={{ paddingBottom: '7rem' }}>
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '1.5rem' }}>
-        <h2><i className="ph ph-calendar-check" style={{ color: '#0ea5e9' }}></i> 12 Weeks Tracker</h2>
-        
+    <div className="min-h-screen bg-[#f8f8f5] pb-28 text-[#1c2b29]">
+      <div className="mx-auto max-w-[680px] p-6">
+        <h2 className="flex items-center gap-2 text-[1.6rem] font-bold text-[#0f172a]">
+          <i className="ph ph-calendar-check text-[#0ea5e9]"></i> 12 Weeks Tracker
+        </h2>
+
         {/* Week Navigation */}
-        <div className="week-nav" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((w) => (
-            <Link
-              key={w}
-              href={`/user/daily-log?w=${w}${isAdminViewing ? `&client_id=${targetUserId}` : ''}`}
-              className={`week-btn ${w === weekOffset ? 'active' : ''}`}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                background: w === weekOffset ? 'var(--btn-primary)' : 'rgba(255, 255, 255, 0.5)',
-                color: w === weekOffset ? '#fff' : 'var(--text-main)',
-                textDecoration: 'none',
-                border: '1px solid var(--glass-border)',
-                whiteSpace: 'nowrap',
-                fontWeight: 600,
-                boxShadow: 'var(--soft-shadow)'
-              }}
-            >
-              Week {w}
-            </Link>
-          ))}
+        <div className="my-6 flex gap-2 overflow-x-auto pb-4">
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((w) => {
+            const active = w === weekOffset;
+            return (
+              <Link
+                key={w}
+                href={`/user/daily-log?w=${w}${isAdminViewing ? `&client_id=${targetUserId}` : ''}`}
+                className={`whitespace-nowrap rounded-lg border border-[var(--glass-border)] px-4 py-2 font-semibold no-underline shadow-[var(--soft-shadow)] ${
+                  active ? 'bg-[linear-gradient(135deg,#0ea5e9,#38bdf8)] text-white' : 'bg-white/50 text-[var(--text-main)]'
+                }`}
+              >
+                Week {w}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Weekly Metrics Table */}
-        <div className="table-container" style={{ overflowX: 'auto', background: '#fff', borderRadius: '16px', border: '1px solid var(--glass-border)', boxShadow: 'var(--soft-shadow)', padding: '1.5rem', marginBottom: '2.5rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+        <div className="mb-10 overflow-x-auto rounded-2xl border border-[var(--glass-border)] bg-white p-6 shadow-[var(--soft-shadow)]">
+          <table className="w-full border-collapse text-center">
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ textAlign: 'left', padding: '1rem', color: '#475569' }}>Metrics / Habits</th>
+              <tr className="border-b border-[#e2e8f0]">
+                <th className="p-4 text-left text-[#475569]">Metrics / Habits</th>
                 {days.map((day) => (
-                  <th key={day.date} style={{ padding: '1rem', color: day.date === today ? '#0ea5e9' : '#475569' }}>
+                  <th key={day.date} className={`p-4 ${day.date === today ? 'text-[#0ea5e9]' : 'text-[#475569]'}`}>
                     {day.name}<br />
-                    <small style={{ fontSize: '0.75rem', opacity: 0.8 }}>{day.date.substring(5)}</small>
+                    <small className="text-xs opacity-80">{day.date.substring(5)}</small>
                   </th>
                 ))}
-                <th style={{ padding: '1rem', color: '#475569', fontWeight: 'bold' }}>Weekly Avg</th>
+                <th className="p-4 font-bold text-[#475569]">Weekly Avg</th>
               </tr>
             </thead>
             <tbody>
-              {/* Metrics */}
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Body Weight (kg)</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.body_weight !== undefined && trackerMap[day.date]?.body_weight !== null ? trackerMap[day.date].body_weight : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcAvg('body_weight')}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Steps</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.steps !== undefined && trackerMap[day.date]?.steps !== null ? trackerMap[day.date].steps : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcAvg('steps')}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Sleep Score (Hrs)</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.sleep_score !== undefined && trackerMap[day.date]?.sleep_score !== null ? trackerMap[day.date].sleep_score : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcAvg('sleep_score')}</td>
-              </tr>
-              {/* Habits */}
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>3L Water</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.water_3l ? <i className="ph-bold ph-check" style={{ color: '#22c55e', fontSize: '1.2rem' }}></i> : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcCheckedAvg('water_3l')}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Omega 3</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.omega_3 ? <i className="ph-bold ph-check" style={{ color: '#22c55e', fontSize: '1.2rem' }}></i> : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcCheckedAvg('omega_3')}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Bed Phone Filter</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.bed_phone_filter ? <i className="ph-bold ph-check" style={{ color: '#22c55e', fontSize: '1.2rem' }}></i> : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcCheckedAvg('bed_phone_filter')}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Meal Plan</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.meal_plan_adhered ? <i className="ph-bold ph-check" style={{ color: '#22c55e', fontSize: '1.2rem' }}></i> : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcCheckedAvg('meal_plan_adhered')}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ textAlign: 'left', padding: '1rem', fontWeight: 600 }}>Toilet</td>
-                {days.map((day) => (
-                  <td key={day.date} style={{ padding: '1rem' }}>
-                    {trackerMap[day.date]?.toilet ? <i className="ph-bold ph-check" style={{ color: '#22c55e', fontSize: '1.2rem' }}></i> : '-'}
-                  </td>
-                ))}
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{calcCheckedAvg('toilet')}</td>
-              </tr>
+              {metricRows.map((row) => (
+                <tr key={row.key} className="border-b border-[#f1f5f9]">
+                  <td className="p-4 text-left font-semibold">{row.label}</td>
+                  {days.map((day) => {
+                    const v = trackerMap[day.date]?.[row.key];
+                    return <td key={day.date} className="p-4">{v !== undefined && v !== null ? v : '-'}</td>;
+                  })}
+                  <td className="p-4 font-bold">{calcAvg(row.key)}</td>
+                </tr>
+              ))}
+              {habitRows.map((row) => (
+                <tr key={row.key} className="border-b border-[#f1f5f9]">
+                  <td className="p-4 text-left font-semibold">{row.label}</td>
+                  {days.map((day) => (
+                    <td key={day.date} className="p-4">
+                      {trackerMap[day.date]?.[row.key] ? <i className="ph-bold ph-check text-[1.2rem] text-[#22c55e]"></i> : '-'}
+                    </td>
+                  ))}
+                  <td className="p-4 font-bold">{calcCheckedAvg(row.key)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
         {/* Daily Entry Form */}
-        <div className="glass-card" style={{ padding: '2rem', borderRadius: '16px', background: '#fff', border: '1px solid var(--glass-border)', boxShadow: 'var(--soft-shadow)', marginBottom: '3rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>ယနေ့မှတ်တမ်း (Today&apos;s Entry - {today})</h3>
+        <div className="mb-12 rounded-2xl border border-[var(--glass-border)] bg-white p-8 shadow-[var(--soft-shadow)]">
+          <h3 className="mb-6 text-[1.3rem] font-bold text-[#0f172a]">ယနေ့မှတ်တမ်း (Today&apos;s Entry - {today})</h3>
           <form onSubmit={handleSubmit}>
-            <div className="grid-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div className="form-group">
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Body Weight (kg)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={bodyWeight}
-                  onChange={(e) => setBodyWeight(e.target.value)}
-                  style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
-                />
+            <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+              <div>
+                <label className="mb-2 block font-semibold">Body Weight (kg)</label>
+                <input type="number" step="0.1" value={bodyWeight} onChange={(e) => setBodyWeight(e.target.value)} className={inputClass} />
               </div>
-              <div className="form-group">
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Steps</label>
-                <input
-                  type="number"
-                  value={steps}
-                  onChange={(e) => setSteps(e.target.value)}
-                  style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
-                />
+              <div>
+                <label className="mb-2 block font-semibold">Steps</label>
+                <input type="number" value={steps} onChange={(e) => setSteps(e.target.value)} className={inputClass} />
               </div>
-              <div className="form-group">
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Sleep Time (Hrs)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={sleepScore}
-                  onChange={(e) => setSleepScore(e.target.value)}
-                  style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
-                />
+              <div>
+                <label className="mb-2 block font-semibold">Sleep Time (Hrs)</label>
+                <input type="number" step="0.5" value={sleepScore} onChange={(e) => setSleepScore(e.target.value)} className={inputClass} />
               </div>
             </div>
 
-            <h4 style={{ marginBottom: '1rem' }}>Habits</h4>
-            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={water3l} onChange={(e) => setWater3l(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                3L Water
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={omega3} onChange={(e) => setOmega3(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                Omega 3
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={bedPhoneFilter} onChange={(e) => setBedPhoneFilter(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                Bed Phone Filter
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={mealPlanAdhered} onChange={(e) => setMealPlanAdhered(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                Meal Plan
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={toilet} onChange={(e) => setToilet(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                Toilet
-              </label>
+            <h4 className="mb-4 text-[1.1rem] font-bold text-[#0f172a]">Habits</h4>
+            <div className="mb-6 flex flex-wrap gap-6">
+              {habits.map((h) => (
+                <label key={h.label} className="flex cursor-pointer items-center gap-2 font-semibold">
+                  <input type="checkbox" checked={h.checked} onChange={(e) => h.set(e.target.checked)} className="h-[18px] w-[18px] accent-[#0ea5e9]" />
+                  {h.label}
+                </label>
+              ))}
             </div>
 
-            <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <i className="ph ph-book-open" style={{ color: '#0ea5e9' }}></i> Journaling
+            <h4 className="mb-4 flex items-center gap-2 text-[1.1rem] font-bold text-[#0f172a]">
+              <i className="ph ph-book-open text-[#0ea5e9]"></i> Journaling
             </h4>
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Diet Status (Over / Under / Ok)</label>
-              <select
-                value={dietStatus}
-                onChange={(e) => setDietStatus(e.target.value)}
-                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
-              >
+            <div className="mb-4">
+              <label className="mb-2 block font-semibold">Diet Status (Over / Under / Ok)</label>
+              <select value={dietStatus} onChange={(e) => setDietStatus(e.target.value)} className={inputClass}>
                 <option value="">ရွေးချယ်ပါ (Select)</option>
                 <option value="over">Over</option>
                 <option value="under">Under</option>
                 <option value="ok">Ok</option>
               </select>
             </div>
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>ဒီနေ့အတွက် ကျေနပ်ခဲ့ရတဲ့ အရာတစ်ခုက ဘာလဲ? (Satisfied with)</label>
-              <textarea
-                rows={2}
-                value={satisfiedWith}
-                onChange={(e) => setSatisfiedWith(e.target.value)}
-                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
-              ></textarea>
+            <div className="mb-4">
+              <label className="mb-2 block font-semibold">ဒီနေ့အတွက် ကျေနပ်ခဲ့ရတဲ့ အရာတစ်ခုက ဘာလဲ? (Satisfied with)</label>
+              <textarea rows={2} value={satisfiedWith} onChange={(e) => setSatisfiedWith(e.target.value)} className={inputClass}></textarea>
             </div>
-            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>ဒီနေ့အတွက် ခက်ခဲခဲ့တဲ့ အရာတစ်ခုက ဘာလဲ? (Difficult with)</label>
-              <textarea
-                rows={2}
-                value={difficultWith}
-                onChange={(e) => setDifficultWith(e.target.value)}
-                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a' }}
-              ></textarea>
+            <div className="mb-6">
+              <label className="mb-2 block font-semibold">ဒီနေ့အတွက် ခက်ခဲခဲ့တဲ့ အရာတစ်ခုက ဘာလဲ? (Difficult with)</label>
+              <textarea rows={2} value={difficultWith} onChange={(e) => setDifficultWith(e.target.value)} className={inputClass}></textarea>
             </div>
 
             <button
               type="submit"
               disabled={saving}
-              className="btn btn-cta"
-              style={{ background: 'var(--btn-primary)', color: '#fff', padding: '0.8rem 2rem', borderRadius: '50px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+              className="cursor-pointer rounded-full border-none bg-[linear-gradient(135deg,#0ea5e9,#38bdf8)] px-8 py-[0.8rem] font-bold text-white disabled:opacity-60"
             >
               {saving ? 'မှတ်တမ်းတင်နေပါသည်...' : 'မှတ်တမ်းတင်မည် (Save)'}
             </button>
@@ -343,8 +258,8 @@ export default function DailyLogClient({
 
         {/* Weekly Journal list */}
         <div>
-          <h3>ယခင်မှတ်တမ်းများ (Week&apos;s Journals)</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+          <h3 className="text-[1.3rem] font-bold text-[#0f172a]">ယခင်မှတ်တမ်းများ (Week&apos;s Journals)</h3>
+          <div className="mt-6 flex flex-col gap-4">
             {days
               .filter((day) => {
                 const j = journalMap[day.date];
@@ -353,12 +268,12 @@ export default function DailyLogClient({
               .map((day) => {
                 const j = journalMap[day.date];
                 return (
-                  <div key={day.date} style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)', boxShadow: 'var(--soft-shadow)' }}>
-                    <h4 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
-                      {day.name} ({day.date}) - Diet: <span style={{ textTransform: 'capitalize', color: 'var(--text-main)' }}>{j.diet_status || 'N/A'}</span>
+                  <div key={day.date} className="rounded-xl border border-[var(--glass-border)] bg-white/70 p-6 shadow-[var(--soft-shadow)] backdrop-blur-md">
+                    <h4 className="mb-2 font-bold text-[var(--accent-color)]">
+                      {day.name} ({day.date}) - Diet: <span className="capitalize text-[var(--text-main)]">{j.diet_status || 'N/A'}</span>
                     </h4>
-                    {j.satisfied_with && <p style={{ margin: '0.2rem 0', color: 'var(--text-main)' }}><strong>Satisfied:</strong> {j.satisfied_with}</p>}
-                    {j.difficult_with && <p style={{ margin: '0.2rem 0', color: 'var(--text-main)' }}><strong>Difficult:</strong> {j.difficult_with}</p>}
+                    {j.satisfied_with && <p className="my-1 text-[var(--text-main)]"><strong>Satisfied:</strong> {j.satisfied_with}</p>}
+                    {j.difficult_with && <p className="my-1 text-[var(--text-main)]"><strong>Difficult:</strong> {j.difficult_with}</p>}
                   </div>
                 );
               })}
@@ -367,28 +282,7 @@ export default function DailyLogClient({
 
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="bottom-nav">
-        <div className="bottom-nav-inner" style={{ maxWidth: '680px' }}>
-          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-house"></i>
-            <span>Home</span>
-          </Link>
-          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item active">
-            <i className="ph ph-chart-line-up"></i>
-            <span>Progress</span>
-          </Link>
-          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-book-open"></i>
-            <span>Learn</span>
-          </Link>
-          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-mountains"></i>
-            <span>Climb</span>
-          </Link>
-        </div>
-      </div>
-
+      <BottomNav active="progress" clientQuery={clientQuery} />
     </div>
   );
 }

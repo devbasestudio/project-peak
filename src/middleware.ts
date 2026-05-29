@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -66,7 +67,8 @@ export async function middleware(request: NextRequest) {
   const resolveIsAdmin = async () => {
     if (!user) return false;
     if (user.email === 'admin@projectpeak.com') return true;
-    const { data: profile } = await supabase
+    // Role lookup via service role — the authenticated client is blocked by RLS.
+    const { data: profile } = await createAdminClient()
       .from('profiles')
       .select('role')
       .eq('id', user.id)

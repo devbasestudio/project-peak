@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
       // If the user's email is admin@projectpeak.com, let's redirect them to the admin dashboard.
       let redirectUrl = `${origin}${next}`;
       
-      const { data: profile } = await supabase
+      const { data: profile } = await createAdminClient()
         .from('profiles')
         .select('role')
         .eq('id', user.id)

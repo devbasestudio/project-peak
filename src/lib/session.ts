@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export interface SessionPayload {
   userId: string;
@@ -17,8 +18,10 @@ export async function decrypt(token?: string): Promise<SessionPayload | null> {
 
     if (userError || !user) return null;
 
-    // Fetch user role and username from the public profiles table
-    const { data: profile } = await supabase
+    // Fetch role/username via the service-role client — the authenticated
+    // client is blocked by RLS from reading its own profiles row.
+    const admin = createAdminClient();
+    const { data: profile } = await admin
       .from('profiles')
       .select('username, role')
       .eq('id', user.id)

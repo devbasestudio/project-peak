@@ -1,7 +1,9 @@
-import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T> {
-  const supabase = await createClient();
+  // Service-role client: the authenticated/anon client is blocked by RLS from
+  // reading a user's own rows, which caused the post-login redirect loop.
+  const supabase = createAdminClient();
   const normalizedSql = sql.replace(/\s+/g, ' ').trim().toLowerCase();
 
   try {
@@ -18,8 +20,8 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
 
       // SAFETY NET: If profile doesn't exist, create it on-the-fly using Auth Metadata to prevent redirect loops!
       if (!profile) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && user.id === userId) {
+        const { data: { user } } = await supabase.auth.admin.getUserById(userId);
+        if (user) {
           const username = user.user_metadata?.username || user.user_metadata?.full_name || 'User';
           const email = user.email || '';
           const role = email === 'admin@projectpeak.com' ? 'admin' : 'user';

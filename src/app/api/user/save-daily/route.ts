@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -20,10 +21,12 @@ export async function POST(request: Request) {
       difficultWith,
     } = body;
 
-    const supabase = await createClient();
+    const authClient = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await authClient.auth.getUser();
+    // Data access via service role (RLS blocks the authenticated client).
+    const supabase = createAdminClient();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

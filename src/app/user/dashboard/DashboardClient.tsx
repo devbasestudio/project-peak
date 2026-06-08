@@ -29,9 +29,13 @@ interface DashboardClientProps {
 
 type ActiveTab = "logs" | "progress" | "feedback" | "me";
 
+const SLEEP_SCORES: Record<string, number> = { Poor: 1, Light: 2, OK: 3, Deep: 4 };
+const SCORE_TO_SLEEP: Record<number, string> = { 1: "Poor", 2: "Light", 3: "OK", 4: "Deep" };
+
 export default function DashboardClient({
   username,
   isAdminViewing,
+  clientQuery,
   targetUserId,
   initialQuote,
   dates,
@@ -51,26 +55,34 @@ export default function DashboardClient({
   streak,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("logs");
-  const [weight, setWeight] = useState(() => Number(todayLog?.body_weight || yesterdayWeight || profile?.starting_weight || 81.2));
-  const [steps, setSteps] = useState(() => Number(todayLog?.steps || 8420));
-  const [water, setWater] = useState(() => (todayLog?.water_3l ? 3 : 1.2));
-  const [sleep, setSleep] = useState(todayLog?.sleep_score ? "OK" : "OK");
-  const [phoneOff, setPhoneOff] = useState("22:00");
+
+  const startingWeight = profile?.starting_weight ? Number(profile.starting_weight) : null;
+  const [weight, setWeight] = useState(() =>
+    Number(todayLog?.body_weight ?? yesterdayWeight ?? startingWeight ?? 0),
+  );
+  const [steps, setSteps] = useState(() => Number(todayLog?.steps ?? 0));
+  const [water, setWater] = useState(() =>
+    Number(todayLog?.water_liters ?? (todayLog?.water_3l ? 3 : 0)),
+  );
+  const [sleep, setSleep] = useState<string>(() =>
+    todayLog?.sleep_score ? SCORE_TO_SLEEP[Number(todayLog.sleep_score)] || "" : "",
+  );
+  const [upAt, setUpAt] = useState<string>(todayLog?.wake_time || "");
+  const [phoneOff, setPhoneOff] = useState<string>(todayLog?.phone_off_time || "");
   const [omegaTaken, setOmegaTaken] = useState(Boolean(todayLog?.omega_3));
-  const [mealOne, setMealOne] = useState(eatenMealsCount > 0);
   const [saving, setSaving] = useState(false);
   const [homePrompt, setHomePrompt] = useState(true);
   const [deviceMessage, setDeviceMessage] = useState("");
 
-  const weekLabel = program?.duration_weeks ? `W${Math.min(6, program.duration_weeks)}/${program.duration_weeks}` : "W6/16";
-  const workoutName = schedule?.is_rest ? "Recovery Day" : schedule?.split_name || "Upper - Push";
-  const progressPercent = Math.min(100, Math.round((eatenMealsCount / Math.max(totalMealsCount || 4, 1)) * 100));
+  const hasWeight = weight > 0;
+  const weekLabel = program?.duration_weeks ? `${program.duration_weeks}-week program` : "Your program";
+  const workoutName = schedule?.is_rest ? "Recovery Day" : schedule?.split_name || "No split set";
+  const mealTarget = Math.max(totalMealsCount || 0, 0);
+  const adherence = mealTarget > 0 ? Math.round((eatenMealsCount / mealTarget) * 100) : 0;
 
   const weightDelta = useMemo(() => {
-    if (!weights.length) return "-2.4kg";
-    const first = weights[0];
-    const last = weights[weights.length - 1];
-    const delta = Math.round((last - first) * 10) / 10;
+    if (weights.length < 2) return null;
+    const delta = Math.round((weights[weights.length - 1] - weights[0]) * 10) / 10;
     return `${delta > 0 ? "+" : ""}${delta}kg`;
   }, [weights]);
 
@@ -105,13 +117,12 @@ export default function DashboardClient({
           date: todayStr,
           bodyWeight: weight,
           steps,
-          sleepScore: sleep === "Poor" ? 1 : sleep === "Light" ? 2 : sleep === "OK" ? 3 : 4,
+          sleepScore: sleep ? SLEEP_SCORES[sleep] : null,
           water3l: water >= 3,
           waterLiters: water,
-          phoneOffTime: phoneOff,
+          phoneOffTime: phoneOff || null,
           omega3: omegaTaken,
           bedPhoneFilter: true,
-          mealPlanAdhered: mealOne,
           ...extra,
         }),
       });
@@ -120,290 +131,418 @@ export default function DashboardClient({
     }
   }
 
+  const firstName = username?.split(" ")[0] || "there";
+
   return (
-    <main className="pp-user-app">
-      <section className="pp-phone-shell">
+    <main className="min-h-screen bg-[#f6f8f7] pb-24 text-[#1c2b29]">
+      <div className="mx-auto w-full max-w-[480px] px-4 pt-4">
         {isAdminViewing && (
-          <div className="pp-admin-viewing">
-            <i className="ph ph-eye" />
-            Admin previewing client dashboard
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-[#ffd9c7] bg-[#fff4ee] px-3 py-2 text-xs font-semibold text-[#b25b15]">
+            <i className="ph ph-eye text-base" /> Admin previewing client dashboard
           </div>
         )}
 
-        <header className="pp-user-header">
+        <header className="flex items-center justify-between py-2">
           <div>
-            <p>PROJECT PEAK · {weekLabel}</p>
-            <h1>Morning, {username?.split(" ")[0] || "Zwe"}</h1>
+            <p className="text-[0.7rem] font-bold uppercase tracking-wide text-[#9aa8a4]">
+              Project Peak · {weekLabel}
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight">Hi, {firstName}</h1>
           </div>
-          <div className="pp-streak">
-            <i className="ph ph-fire" />
-            {streak || 13}
+          <div className="flex items-center gap-1.5 rounded-full bg-[#1c2b29] px-3 py-1.5 text-sm font-bold text-white">
+            <i className="ph-fill ph-fire text-[#ff6b35]" />
+            {streak}
           </div>
         </header>
 
         {activeTab === "logs" && (
-          <div className="pp-daily-panel">
-            <SectionTitle icon="ph-sun" title="Morning" />
-            <TrackerRow icon="ph-scales" label="Weight">
-              <button type="button" onClick={() => setWeight((value) => Math.round((value - 0.1) * 10) / 10)}>
-                <i className="ph ph-minus" />
-              </button>
-              <strong>{weight.toFixed(1)}<small>kg</small></strong>
-              <button type="button" onClick={() => setWeight((value) => Math.round((value + 0.1) * 10) / 10)}>
-                <i className="ph ph-plus" />
-              </button>
-              <button type="button" className="pp-log-button" onClick={() => saveDaily()}>
-                Log
-              </button>
-            </TrackerRow>
-            <TrackerRow icon="ph-clock" label="Up at">
-              {["5:30", "6:00", "6:30", "7:00"].map((time) => (
-                <button key={time} type="button" className={time === "6:30" ? "is-selected" : ""}>
-                  {time}
-                </button>
-              ))}
-            </TrackerRow>
-            <TrackerRow icon="ph-moon" label="Sleep">
-              {["Poor", "Light", "OK", "Deep"].map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={sleep === item ? "is-selected" : ""}
-                  onClick={() => {
-                    setSleep(item);
-                    saveDaily({ sleepScore: item === "Poor" ? 1 : item === "Light" ? 2 : item === "OK" ? 3 : 4 });
+          <div className="mt-3 flex flex-col gap-4">
+            {/* Morning */}
+            <Section icon="ph-sun" title="Morning">
+              <Row icon="ph-scales" label="Weight">
+                <div className="flex items-center gap-2">
+                  <StepBtn
+                    icon="ph-minus"
+                    onClick={() => setWeight((v) => Math.round((v - 0.1) * 10) / 10)}
+                  />
+                  <strong className="min-w-[64px] text-center text-lg font-extrabold">
+                    {hasWeight ? weight.toFixed(1) : "—"}
+                    <small className="ml-0.5 text-xs font-semibold text-[#9aa8a4]">kg</small>
+                  </strong>
+                  <StepBtn
+                    icon="ph-plus"
+                    onClick={() => setWeight((v) => Math.round((v + 0.1) * 10) / 10)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => saveDaily()}
+                    className="rounded-lg bg-[#1c2b29] px-3 py-1.5 text-xs font-bold text-white"
+                  >
+                    Log
+                  </button>
+                </div>
+              </Row>
+              <Row icon="ph-clock" label="Up at">
+                <Choices
+                  options={["5:30", "6:00", "6:30", "7:00"]}
+                  value={upAt}
+                  onSelect={(v) => {
+                    setUpAt(v);
+                    saveDaily({ wakeTime: v });
                   }}
-                >
-                  {item}
-                </button>
-              ))}
-            </TrackerRow>
-
-            <div className="pp-first-win">
-              <strong>FIRST WIN</strong>
-              <span><i className="ph ph-drop" /> 500ml</span>
-              <span><i className="ph ph-sun" /> 10min</span>
-            </div>
-
-            <SectionTitle icon="ph-mountains" title="Mid-day" />
-            <TrackerRow icon="ph-barbell" label={workoutName}>
-              <span>~45 min</span>
-              <button type="button" className="pp-light-button">Start</button>
-            </TrackerRow>
-            <TrackerRow icon="ph-check" label="Meal 1" active={mealOne}>
-              <button
-                type="button"
-                className="pp-text-button"
-                onClick={() => {
-                  setMealOne((value) => !value);
-                  saveDaily({ mealPlanAdhered: !mealOne });
-                }}
-              >
-                600 kcal · 31p
-              </button>
-            </TrackerRow>
-            {["Meal 2", "Meal 3", "Meal 4"].map((meal, index) => (
-              <TrackerRow key={meal} icon="ph-camera" label={meal}>
-                <span>~{[410, 283, 436][index]} kcal · {[40, 12, 30][index]}p</span>
-              </TrackerRow>
-            ))}
-            <button type="button" className="pp-off-plan">
-              <i className="ph ph-plus" /> Off plan? Snap it
-            </button>
-
-            <SectionTitle icon="ph-moon" title="Night" />
-            <TrackerRow icon="ph-person-simple-walk" label="Steps">
-              <span className="pp-auto">auto</span>
-              <strong>{steps.toLocaleString()}</strong>
-            </TrackerRow>
-            <TrackerRow icon="ph-device-mobile-slash" label="Phone off">
-              {["21:30", "22:00", "22:30", "23:00"].map((time) => (
-                <button
-                  key={time}
-                  type="button"
-                  className={phoneOff === time ? "is-selected" : ""}
-                  onClick={() => {
-                    setPhoneOff(time);
-                    saveDaily({ phoneOffTime: time });
+                />
+              </Row>
+              <Row icon="ph-moon" label="Sleep">
+                <Choices
+                  options={["Poor", "Light", "OK", "Deep"]}
+                  value={sleep}
+                  onSelect={(v) => {
+                    setSleep(v);
+                    saveDaily({ sleepScore: SLEEP_SCORES[v] });
                   }}
+                />
+              </Row>
+            </Section>
+
+            {/* Mid-day */}
+            <Section icon="ph-mountains" title="Mid-day">
+              <Row icon="ph-barbell" label={workoutName}>
+                <a
+                  href={`/user/workout${clientQuery}`}
+                  className="rounded-lg bg-[#eef2f0] px-3 py-1.5 text-xs font-bold text-[#1c2b29] no-underline"
                 >
-                  {time}
+                  {schedule?.is_rest ? "Rest" : "Start"}
+                </a>
+              </Row>
+              <Row icon="ph-fork-knife" label="Meals">
+                <a
+                  href={`/user/diet${clientQuery}`}
+                  className="flex items-center gap-2 no-underline text-[#1c2b29]"
+                >
+                  <span className="text-xs font-semibold text-[#6b7a77]">
+                    {eatenMealsCount}/{mealTarget || "—"} · {consumedCalories} kcal
+                  </span>
+                  <i className="ph ph-caret-right text-sm text-[#b6c1bd]" />
+                </a>
+              </Row>
+            </Section>
+
+            {/* Night */}
+            <Section icon="ph-moon" title="Night">
+              <Row icon="ph-person-simple-walk" label="Steps">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={steps || ""}
+                    placeholder="0"
+                    onChange={(e) => setSteps(Number(e.target.value) || 0)}
+                    onBlur={() => saveDaily()}
+                    className="w-24 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
+                  />
+                </div>
+              </Row>
+              <Row icon="ph-device-mobile-slash" label="Phone off">
+                <Choices
+                  options={["21:30", "22:00", "22:30", "23:00"]}
+                  value={phoneOff}
+                  onSelect={(v) => {
+                    setPhoneOff(v);
+                    saveDaily({ phoneOffTime: v });
+                  }}
+                />
+              </Row>
+              <Row icon="ph-drop" label="Water">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold">{water.toFixed(1)} / 3 L</span>
+                  <StepBtn
+                    icon="ph-plus"
+                    onClick={() => {
+                      const next = Math.min(3, Math.round((water + 0.5) * 10) / 10);
+                      setWater(next);
+                      saveDaily({ water3l: next >= 3, waterLiters: next });
+                    }}
+                  />
+                </div>
+              </Row>
+              <Row icon="ph-pill" label="Omega 3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !omegaTaken;
+                    setOmegaTaken(next);
+                    saveDaily({ omega3: next });
+                  }}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    omegaTaken
+                      ? "bg-[#1c2b29] text-white"
+                      : "bg-[#eef2f0] text-[#6b7a77]"
+                  }`}
+                >
+                  {omegaTaken ? "Taken" : "Tap when taken"}
                 </button>
-              ))}
-            </TrackerRow>
-            <TrackerRow icon="ph-drop" label="Water">
-              <span>{water.toFixed(1)} / 3 L</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const next = Math.min(3, Math.round((water + 0.5) * 10) / 10);
-                  setWater(next);
-                  saveDaily({ water3l: next >= 3, waterLiters: next });
-                }}
-              >
-                <i className="ph ph-plus" />
-              </button>
-            </TrackerRow>
-            <TrackerRow icon="ph-pill" label="Omega 3">
-              <button
-                type="button"
-                className={omegaTaken ? "is-selected" : ""}
-                onClick={() => {
-                  setOmegaTaken((value) => !value);
-                  saveDaily({ omega3: !omegaTaken });
-                }}
-              >
-                {omegaTaken ? "Taken" : "Tap when taken"}
-              </button>
-            </TrackerRow>
-            <JournalRow icon="ph-trend-up" label="One win" tone="green" />
-            <JournalRow icon="ph-trend-down" label="One struggle" tone="gold" />
+              </Row>
+            </Section>
           </div>
         )}
 
         {activeTab === "progress" && (
-          <div className="pp-tab-panel">
-            <h2>Progress</h2>
-            <div className="pp-progress-grid">
-              <MetricCard label="Weight change" value={weightDelta} />
-              <MetricCard label="Calories" value={`${consumedCalories || 1690}`} sub={`${consumedProtein || 143}p · ${consumedCarbs || 185}c · ${consumedFat || 48}f`} />
-              <MetricCard label="Adherence" value={`${progressPercent || 75}%`} />
+          <div className="mt-3 flex flex-col gap-4">
+            <h2 className="text-lg font-extrabold">Progress</h2>
+            <div className="grid grid-cols-3 gap-2">
+              <Metric label="Weight Δ" value={weightDelta ?? "—"} />
+              <Metric label="Calories" value={consumedCalories ? `${consumedCalories}` : "—"} sub={consumedCalories ? `${consumedProtein}p · ${consumedCarbs}c · ${consumedFat}f` : undefined} />
+              <Metric label="Adherence" value={mealTarget ? `${adherence}%` : "—"} />
             </div>
-            <div className="pp-chart-lite">
-              {(weights.length ? weights : [83.6, 82.9, 82.2, 81.8, 81.2]).map((value, index, arr) => (
-                <span key={`${value}-${index}`} style={{ height: `${42 + ((value - Math.min(...arr)) / Math.max(1, Math.max(...arr) - Math.min(...arr))) * 50}%` }} />
-              ))}
+
+            <div className="rounded-2xl border border-[#e6eae8] bg-white p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">
+                Weight trend
+              </p>
+              {weights.length === 0 ? (
+                <p className="py-6 text-center text-sm text-[#9aa8a4]">
+                  Log your weight to see your trend here.
+                </p>
+              ) : (
+                <>
+                  <div className="flex h-28 items-end gap-1.5">
+                    {weights.map((value, index, arr) => {
+                      const min = Math.min(...arr);
+                      const max = Math.max(...arr);
+                      const h = 30 + ((value - min) / Math.max(1, max - min)) * 65;
+                      return (
+                        <span
+                          key={`${value}-${index}`}
+                          className="flex-1 rounded-t bg-[#1c2b29]"
+                          style={{ height: `${h}%` }}
+                          title={`${dates[index] || ""}: ${value}kg`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs text-[#6b7a77]">
+                    {dates.length ? `Latest log: ${dates[dates.length - 1]}` : ""}
+                  </p>
+                </>
+              )}
             </div>
-            <p>{dates.length ? `Latest log: ${dates[dates.length - 1]}` : initialQuote}</p>
+            <p className="rounded-2xl bg-[#eef2f0] px-4 py-3 text-sm italic text-[#3a4744]">
+              “{initialQuote}”
+            </p>
           </div>
         )}
 
         {activeTab === "feedback" && (
-          <div className="pp-tab-panel">
-            <h2>Feedback</h2>
-            <div className="pp-feedback-card is-open">
-              <i className="ph ph-chat-circle-text" />
-              <div>
-                <strong>Weekly Check-in</strong>
-                <span>Unlocked · submit progress photo, average weight, energy and struggle notes.</span>
-              </div>
-            </div>
-            <div className="pp-feedback-card">
-              <i className="ph ph-lock" />
-              <div>
-                <strong>End Program Review</strong>
-                <span>Unlocks at the end of your current program.</span>
-              </div>
+          <div className="mt-3 flex flex-col gap-3">
+            <h2 className="text-lg font-extrabold">Feedback</h2>
+            <a
+              href={`/user/check-in${clientQuery}`}
+              className="flex items-start gap-3 rounded-2xl border border-[#e6eae8] bg-white p-4 no-underline text-[#1c2b29]"
+            >
+              <i className="ph ph-chat-circle-text mt-0.5 text-xl text-[#ff6b35]" />
+              <span className="flex flex-col">
+                <strong className="text-sm font-bold">Weekly Check-in</strong>
+                <span className="text-xs text-[#6b7a77]">
+                  Submit progress photo, average weight, energy and struggle notes.
+                </span>
+              </span>
+            </a>
+            <div className="flex items-start gap-3 rounded-2xl border border-[#e6eae8] bg-[#f6f8f7] p-4 opacity-70">
+              <i className="ph ph-lock mt-0.5 text-xl text-[#9aa8a4]" />
+              <span className="flex flex-col">
+                <strong className="text-sm font-bold">End Program Review</strong>
+                <span className="text-xs text-[#6b7a77]">
+                  Unlocks at the end of your current program.
+                </span>
+              </span>
             </div>
           </div>
         )}
 
         {activeTab === "me" && (
-          <div className="pp-tab-panel">
-            <h2>Me</h2>
-            <div className="pp-profile-list">
-              <span><strong>Name</strong>{username}</span>
-              <span><strong>Telegram ID</strong>{targetUserId.slice(0, 8)}...</span>
-              <span><strong>Program</strong>{program?.program_type || "customized"}</span>
-              <span><strong>Device limit</strong>2 devices</span>
-              <button
-                type="button"
-                onClick={async () => {
-                  setDeviceMessage("");
-                  const response = await fetch("/api/user/reset-devices", { method: "POST" });
-                  setDeviceMessage(response.ok ? "Device sessions reset. Reload on the device you want to keep." : "Device reset failed.");
-                }}
-              >
-                <i className="ph ph-arrows-clockwise" /> Request device reset
-              </button>
+          <div className="mt-3 flex flex-col gap-3">
+            <h2 className="text-lg font-extrabold">Me</h2>
+            <div className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white">
+              <InfoRow label="Name" value={username} />
+              <InfoRow label="Program" value={program?.program_type || "Not assigned"} />
+              <InfoRow
+                label="Starting weight"
+                value={startingWeight ? `${startingWeight} kg` : "—"}
+              />
+              <InfoRow label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : "—"} />
+              <InfoRow label="Device limit" value="2 devices" last />
             </div>
+            <button
+              type="button"
+              onClick={async () => {
+                setDeviceMessage("");
+                const response = await fetch("/api/user/reset-devices", { method: "POST" });
+                setDeviceMessage(
+                  response.ok
+                    ? "Device sessions reset. Reload on the device you want to keep."
+                    : "Device reset failed.",
+                );
+              }}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-[#e6eae8] bg-white py-2.5 text-sm font-bold text-[#1c2b29]"
+            >
+              <i className="ph ph-arrows-clockwise text-base" /> Request device reset
+            </button>
           </div>
         )}
 
-        {homePrompt && (
-          <div className="pp-home-prompt">
-            <button type="button" onClick={() => setHomePrompt(false)} aria-label="Close add to home screen prompt">
+        {homePrompt && activeTab === "logs" && (
+          <div className="relative mt-4 rounded-2xl border border-[#e6eae8] bg-white p-4">
+            <button
+              type="button"
+              onClick={() => setHomePrompt(false)}
+              aria-label="Close"
+              className="absolute right-3 top-3 text-[#b6c1bd]"
+            >
               <i className="ph ph-x" />
             </button>
-            <strong>Add to Home Screen</strong>
-            <span>Daily log ကို app လိုသုံးနိုင်ပါတယ်။</span>
+            <strong className="text-sm font-bold">Add to Home Screen</strong>
+            <p className="mt-0.5 text-xs text-[#6b7a77]">Daily log ကို app လိုသုံးနိုင်ပါတယ်။</p>
           </div>
         )}
 
         {deviceMessage && (
-          <div className="pp-device-warning">
-            <i className="ph ph-warning" />
-            <span>{deviceMessage}</span>
+          <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#ffd9c7] bg-[#fff4ee] px-3 py-2 text-xs font-semibold text-[#b25b15]">
+            <i className="ph ph-warning text-base" /> {deviceMessage}
           </div>
         )}
+      </div>
 
-        <nav className="pp-bottom-nav" aria-label="Dashboard tabs">
-          <TabButton icon="ph-house" label="Daily Logs" active={activeTab === "logs"} onClick={() => setActiveTab("logs")} />
-          <TabButton icon="ph-trend-up" label="Progress" active={activeTab === "progress"} onClick={() => setActiveTab("progress")} />
-          <TabButton icon="ph-chat-circle-text" label="Feedback" active={activeTab === "feedback"} onClick={() => setActiveTab("feedback")} />
-          <TabButton icon="ph-user" label="Me" active={activeTab === "me"} onClick={() => setActiveTab("me")} />
-        </nav>
+      {/* Bottom tabs */}
+      <nav
+        className="fixed bottom-0 left-0 z-50 w-full border-t border-[#e6eae8] bg-white/95 pb-[calc(0.4rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-md"
+        aria-label="Dashboard tabs"
+      >
+        <div className="mx-auto flex max-w-[480px] items-center justify-around">
+          <Tab icon="ph-house" label="Logs" active={activeTab === "logs"} onClick={() => setActiveTab("logs")} />
+          <Tab icon="ph-trend-up" label="Progress" active={activeTab === "progress"} onClick={() => setActiveTab("progress")} />
+          <Tab icon="ph-chat-circle-text" label="Feedback" active={activeTab === "feedback"} onClick={() => setActiveTab("feedback")} />
+          <Tab icon="ph-user" label="Me" active={activeTab === "me"} onClick={() => setActiveTab("me")} />
+        </div>
+      </nav>
 
-        {saving && <div className="pp-saving-pill">Saving...</div>}
-      </section>
+      {saving && (
+        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#1c2b29] px-4 py-1.5 text-xs font-semibold text-white">
+          Saving…
+        </div>
+      )}
     </main>
   );
 }
 
-function SectionTitle({ icon, title }: { icon: string; title: string }) {
+function Section({ icon, title, children }: { icon: string; title: string; children: ReactNode }) {
   return (
-    <div className="pp-section-title">
-      <i className={`ph ${icon}`} />
-      <span>{title}</span>
+    <div className="rounded-2xl border border-[#e6eae8] bg-white p-4">
+      <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">
+        <i className={`ph ${icon} text-sm text-[#ff6b35]`} />
+        {title}
+      </div>
+      <div className="flex flex-col divide-y divide-[#f1f4f2]">{children}</div>
     </div>
   );
 }
 
-function TrackerRow({
-  icon,
-  label,
-  children,
-  active = false,
-}: {
-  icon: string;
-  label: string;
-  children: ReactNode;
-  active?: boolean;
-}) {
+function Row({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
   return (
-    <div className={`pp-tracker-row ${active ? "is-complete" : ""}`}>
-      <i className={`ph ${icon}`} />
-      <strong>{label}</strong>
+    <div className="flex items-center justify-between gap-3 py-2.5">
+      <span className="flex items-center gap-2 text-sm font-semibold">
+        <i className={`ph ${icon} text-base text-[#5b6a67]`} />
+        {label}
+      </span>
       <div>{children}</div>
     </div>
   );
 }
 
-function JournalRow({ icon, label, tone }: { icon: string; label: string; tone: "green" | "gold" }) {
+function StepBtn({ icon, onClick }: { icon: string; onClick: () => void }) {
   return (
-    <button type="button" className={`pp-journal-row pp-journal-row--${tone}`}>
-      <i className={`ph ${icon}`} />
-      <strong>{label}</strong>
-      <span>tap to write</span>
+    <button
+      type="button"
+      onClick={onClick}
+      className="grid h-8 w-8 place-items-center rounded-lg bg-[#eef2f0] text-[#1c2b29]"
+    >
+      <i className={`ph ${icon} text-base`} />
     </button>
   );
 }
 
-function MetricCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Choices({
+  options,
+  value,
+  onSelect,
+}: {
+  options: string[];
+  value: string;
+  onSelect: (v: string) => void;
+}) {
   return (
-    <div className="pp-metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {sub && <em>{sub}</em>}
+    <div className="flex flex-wrap justify-end gap-1.5">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onSelect(opt)}
+          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+            value === opt ? "bg-[#1c2b29] text-white" : "bg-[#eef2f0] text-[#6b7a77]"
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
     </div>
   );
 }
 
-function TabButton({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
+function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <button type="button" className={active ? "is-active" : ""} onClick={onClick}>
-      <i className={`ph ${icon}`} />
-      <span>{label}</span>
+    <div className="rounded-2xl border border-[#e6eae8] bg-white p-3 text-center">
+      <span className="text-[0.64rem] font-bold uppercase tracking-wide text-[#9aa8a4]">{label}</span>
+      <strong className="mt-1 block text-lg font-extrabold leading-tight">{value}</strong>
+      {sub && <em className="text-[0.6rem] not-italic text-[#9aa8a4]">{sub}</em>}
+    </div>
+  );
+}
+
+function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div
+      className={`flex items-center justify-between px-4 py-3 ${
+        last ? "" : "border-b border-[#f1f4f2]"
+      }`}
+    >
+      <span className="text-sm font-semibold text-[#6b7a77]">{label}</span>
+      <span className="text-sm font-bold capitalize">{value}</span>
+    </div>
+  );
+}
+
+function Tab({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-1 transition ${
+        active ? "text-[#1c2b29]" : "text-[#9aa8a4]"
+      }`}
+    >
+      {active && (
+        <span className="absolute -top-2 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#ff6b35]" />
+      )}
+      <i className={`ph ${icon} text-xl`} />
+      <span className="text-[0.66rem] font-bold">{label}</span>
     </button>
   );
 }

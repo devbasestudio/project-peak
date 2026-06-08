@@ -2,65 +2,83 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { formatMmk, projectPrograms } from "@/lib/projectPeakConfig";
+import { FlowSteps } from "./FlowSteps";
 
 export default function MiniAppPage() {
   return (
-    <main className="pp-shell">
-      <section className="pp-miniapp pp-miniapp-flow">
-        <motion.header
-          className="pp-miniapp-flow__hero"
-        >
-          <Image src="/img/hero_bg.jpg" alt="Project Peak mountain training" fill priority sizes="(max-width: 780px) 100vw, 780px" />
-          <div />
-          <article>
-            <p>Welcome · Project Peak Mini App</p>
-            <h1>Choose your package</h1>
-            <span>Package တစ်ခုရွေးပြီး detail page မှာဘာတွေပါလဲကြည့်ပါ။ ပြီးမှ duration ရွေးပြီး payment submit လုပ်ပါ။</span>
-          </article>
-        </motion.header>
+    <main className="min-h-screen bg-[#f6f8f7] pb-10 text-[#1c2b29]">
+      <div className="mx-auto w-full max-w-[760px] px-4 pt-4">
+        <header className="relative overflow-hidden rounded-3xl">
+          <Image
+            src="/img/hero_bg.jpg"
+            alt="Project Peak mountain training"
+            width={760}
+            height={320}
+            priority
+            className="h-52 w-full object-cover sm:h-60"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-wide text-white/70">
+              Project Peak Mini App
+            </p>
+            <h1 className="mt-1 text-2xl font-extrabold text-white sm:text-3xl">
+              Choose your package
+            </h1>
+            <p className="mt-1 max-w-md text-sm text-white/80">
+              Package တစ်ခုရွေးပြီး detail ကြည့်ပါ။ ပြီးမှ duration ရွေးပြီး payment submit လုပ်ပါ။
+            </p>
+          </div>
+        </header>
 
-        <div className="pp-flow-steps" aria-label="Purchase steps">
-          {["Package", "Details", "Payment"].map((step, index) => (
-            <motion.span
-              key={step}
-              className={index === 0 ? "is-active" : ""}
-            >
-              {index + 1}. {step}
-            </motion.span>
-          ))}
-        </div>
+        <FlowSteps active={0} className="mt-5" />
 
-        <div className="pp-package-grid">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {projectPrograms.map((program) => (
             <motion.article
               key={program.key}
-              className="pp-package-card"
-              style={{ "--package-accent": program.accent } as CSSProperties}
-              whileHover={{ y: -6 }}
-              whileTap={{ scale: 0.985 }}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.99 }}
+              className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
             >
-              <Link href={`/miniapp/packages/${program.key}`} aria-label={`View ${program.name}`}>
-                <div className="pp-package-card__media">
-                  <Image src={program.image} alt={program.name} fill sizes="(max-width: 780px) calc(100vw - 40px), 340px" />
-                  <span>{program.shortName}</span>
+              <Link
+                href={`/miniapp/packages/${program.key}`}
+                aria-label={`View ${program.name}`}
+                className="block no-underline"
+              >
+                <div className="relative">
+                  <Image
+                    src={program.image}
+                    alt={program.name}
+                    width={380}
+                    height={200}
+                    className="h-44 w-full object-cover"
+                  />
+                  <span
+                    className="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold text-white"
+                    style={{ backgroundColor: program.accent }}
+                  >
+                    {program.shortName}
+                  </span>
                 </div>
-                <div className="pp-package-card__body">
-                  <p>{program.bestFor}</p>
-                  <h2>{program.name}</h2>
-                  <span>{program.headline}</span>
-                  <div>
-                    <strong>{formatMmk(program.durations[0].price)}</strong>
-                    <em>starts from</em>
+                <div className="flex flex-col gap-1.5 p-4">
+                  <p className="text-xs font-semibold text-[#9aa8a4]">{program.bestFor}</p>
+                  <h2 className="text-base font-extrabold text-[#1c2b29]">{program.name}</h2>
+                  <span className="text-sm text-[#6b7a77]">{program.headline}</span>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <strong className="text-lg font-extrabold text-[#1c2b29]">
+                      {formatMmk(program.durations[0].price)}
+                    </strong>
+                    <em className="text-xs not-italic text-[#9aa8a4]">starts from</em>
                   </div>
                 </div>
               </Link>
             </motion.article>
           ))}
         </div>
-      </section>
+      </div>
     </main>
   );
 }

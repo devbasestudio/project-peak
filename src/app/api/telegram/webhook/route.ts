@@ -14,12 +14,12 @@ export async function POST(request: Request) {
     }
 
     const baseUrl = appBaseUrl(request);
-    const appUrl = `${baseUrl}/`;
+    const appUrl = `${baseUrl}/miniapp`;
 
     if (text === "/start" || text.startsWith("/start ")) {
       const caption = [
         "<b>Welcome to Project Peak</b>",
-        "Choose your coaching package, upload payment proof, and track your daily plan from one compact app.",
+        "Choose your coaching package and upload payment proof from the Telegram mini app.",
       ].join("\n");
 
       const heroUrl = `${baseUrl}/img/hero_bg.jpg`;
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     await sendTelegramMessage(
       chatId,
-      "Project Peak app ကိုဖွင့်ပြီး package/payment status ကိုစစ်နိုင်ပါတယ်။",
+      "Project Peak mini app ကိုဖွင့်ပြီး package ဝယ်ယူနိုင်ပါတယ်။",
       appUrl,
     ).catch(() => null);
 

@@ -72,7 +72,7 @@ export default function LoginPage() {
           Project Peak <span className="text-[#ff6b35]">空</span>
         </h2>
         <p className="mb-8 text-[0.95rem] font-medium leading-relaxed text-white/50">
-          Admin က ready link ပို့ပြီးတာနဲ့ Telegram ID ဖြင့် login ဝင်ပါ။
+          Admin က ready link ပို့ပြီးတာနဲ့ Telegram username / ID ဖြင့် login ဝင်ပါ။
         </p>
 
         {/* Error message */}
@@ -84,12 +84,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleTelegramLogin} className="mb-4 text-left">
           <label className="mb-2 block text-sm font-bold text-white/70">
-            Telegram ID
+            Telegram username / ID
           </label>
           <input
             value={telegramId}
             onChange={(event) => setTelegramId(event.target.value)}
-            placeholder="e.g. 1827344905"
+            placeholder="@username or 1827344905"
             className="mb-3 w-full rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-4 text-base font-bold text-white outline-none transition focus:border-[#ff6b35]/60"
             required
           />
@@ -99,7 +99,7 @@ export default function LoginPage() {
             className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full bg-[#ff6b35] px-6 py-4 text-base font-black text-white outline-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#ff7d4f] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <i className={`ph ${telegramSubmitting ? 'ph-spinner ph-spin' : 'ph-telegram-logo'} text-xl`} />
-            {telegramSubmitting ? 'Login link ပြင်နေပါသည်...' : 'Telegram ID ဖြင့် ဝင်မည်'}
+            {telegramSubmitting ? 'Login link ပြင်နေပါသည်...' : 'Telegram username ဖြင့် ဝင်မည်'}
           </button>
         </form>
 

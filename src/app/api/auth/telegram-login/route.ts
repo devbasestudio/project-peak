@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { telegramId } = await request.json();
     const cleanTelegramId = String(telegramId || "").trim();
     if (!cleanTelegramId) {
-      return NextResponse.json({ error: "Telegram ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Telegram username / ID is required" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     if (!registration) {
-      return NextResponse.json({ error: "Telegram ID မတွေ့ပါ။ Payment submit ထားတဲ့ ID ကိုသုံးပါ။" }, { status: 404 });
+      return NextResponse.json({ error: "Telegram username / ID မတွေ့ပါ။ Telegram bot မှာ payment submit ထားတဲ့ username / ID ကိုသုံးပါ။" }, { status: 404 });
     }
 
     if (String(registration.status || "").toLowerCase() !== "ready") {

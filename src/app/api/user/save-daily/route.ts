@@ -19,6 +19,10 @@ export async function POST(request: Request) {
       dietStatus,
       satisfiedWith,
       difficultWith,
+      phoneOffTime,
+      waterLiters,
+      oneWin,
+      oneStruggle,
     } = body;
 
     const authClient = await createClient();
@@ -81,6 +85,20 @@ export async function POST(request: Request) {
       }, { onConflict: 'user_id, date' });
 
     if (trackerError) throw trackerError;
+
+    const optionalTrackerFields: Record<string, unknown> = {};
+    if (phoneOffTime !== undefined) optionalTrackerFields.phone_off_time = phoneOffTime || null;
+    if (waterLiters !== undefined) optionalTrackerFields.water_liters = waterLiters || null;
+    if (oneWin !== undefined) optionalTrackerFields.one_win = oneWin || null;
+    if (oneStruggle !== undefined) optionalTrackerFields.one_struggle = oneStruggle || null;
+
+    if (Object.keys(optionalTrackerFields).length > 0) {
+      await supabase
+        .from('daily_trackers')
+        .update(optionalTrackerFields)
+        .eq('user_id', userId)
+        .eq('date', date);
+    }
 
     // Upsert journaling
     const { error: journalError } = await supabase

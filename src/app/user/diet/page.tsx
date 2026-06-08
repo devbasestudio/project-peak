@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import DietClient from './DietClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DietPage(props: {
   searchParams: Promise<{ client_id?: string }>;
 }) {
@@ -79,5 +81,4 @@ export default async function DietPage(props: {
     />
   );
 }
-
 

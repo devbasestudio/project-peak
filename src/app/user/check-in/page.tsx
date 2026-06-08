@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import CheckInClient from './CheckInClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CheckInPage(props: {
   searchParams: Promise<{ client_id?: string; w?: string }>;
 }) {

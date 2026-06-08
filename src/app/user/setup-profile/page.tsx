@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import SetupProfileClient from './SetupProfileClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SetupProfilePage() {
   const session = await decrypt();
 

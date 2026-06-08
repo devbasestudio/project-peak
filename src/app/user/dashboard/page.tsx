@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage(props: {
   searchParams: Promise<{ client_id?: string }>;
 }) {
@@ -183,4 +185,3 @@ export default async function DashboardPage(props: {
     />
   );
 }
-

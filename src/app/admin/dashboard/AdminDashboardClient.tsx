@@ -1,7 +1,14 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import {
+  adminDevicePolicy,
+  defaultTrackerTemplate,
+  feedbackTemplates,
+  formatMmk,
+  projectPrograms,
+} from "@/lib/projectPeakConfig";
 
 interface AdminDashboardClientProps {
   clients: any[];
@@ -9,160 +16,353 @@ interface AdminDashboardClientProps {
   registrations: any[];
 }
 
+type AdminActionState = {
+  id: string;
+  label: string;
+  tone: "success" | "error" | "info";
+} | null;
+
 export default function AdminDashboardClient({
   clients,
   recentCheckins,
   registrations,
 }: AdminDashboardClientProps) {
+  const [actionState, setActionState] = useState<AdminActionState>(null);
+  const [selectedProgram, setSelectedProgram] = useState(projectPrograms[0].key);
+  const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || registrations[0]?.user_id || "");
+  const [broadcastProgram, setBroadcastProgram] = useState(projectPrograms[0].name);
+  const [broadcastTemplate, setBroadcastTemplate] = useState(feedbackTemplates[0].name);
+  const [trackerDraftName, setTrackerDraftName] = useState("Default compact full");
+
+  const pendingRegistrations = useMemo(
+    () => registrations.filter((item) => !["approved", "ready", "rejected"].includes(String(item.status || "").toLowerCase())),
+    [registrations],
+  );
+
+  const selectedProgramConfig = projectPrograms.find((item) => item.key === selectedProgram) || projectPrograms[0];
+
+  async function runAdminAction(id: string, label: string, request: () => Promise<Response>) {
+    setActionState({ id, label: "Working...", tone: "info" });
+    try {
+      const response = await request();
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Action failed");
+      }
+      setActionState({ id, label, tone: "success" });
+    } catch (error) {
+      setActionState({ id, label: error instanceof Error ? error.message : "Action failed", tone: "error" });
+    }
+  }
+
   return (
-    <div className="admin-page">
-      {/* Admin Navigation */}
-      <nav className="admin-nav">
-        <div className="admin-nav-brand">
-          <i className="ph ph-barbell"></i>
-          <span>Project Peak <span style={{ color: '#ff6b35' }}>空</span> Trainer</span>
-        </div>
-        <div className="admin-nav-links">
-          <Link href="/admin/dashboard" className="admin-nav-link active">
-            <i className="ph ph-users"></i> Clients
+    <main className="pp-admin-app">
+      <nav className="pp-admin-topbar">
+        <Link href="/admin/dashboard" className="pp-admin-brand">
+          <i className="ph ph-mountains" />
+          <span>Project Peak Admin</span>
+        </Link>
+        <div>
+          <Link href="/" className="pp-admin-navlink">
+            <i className="ph ph-device-mobile" /> Mini app
           </Link>
           <button
+            type="button"
+            className="pp-admin-navlink"
             onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' });
-              window.location.href = '/login';
+              await fetch("/api/auth/logout", { method: "POST" });
+              window.location.href = "/login";
             }}
-            className="admin-nav-link logout"
           >
-            <i className="ph ph-sign-out"></i> Logout
+            <i className="ph ph-sign-out" /> Logout
           </button>
         </div>
       </nav>
 
-      <div className="admin-container">
-        
-        {/* New Registrations Section */}
-        <div className="admin-card admin-card-highlight" style={{ marginBottom: '2.5rem' }}>
-          <h3 className="admin-section-title" style={{ fontSize: '1.2rem', marginBottom: '1.5rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <i className="ph ph-user-plus" style={{ color: '#22c55e' }}></i> ပရိုဂရမ် အသစ်လျှောက်ထားသူများ
-          </h3>
-          
-          {registrations.length === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0 }}>အသစ်လျှောက်ထားသူ မရှိသေးပါ။</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {registrations.map((reg) => (
-                <div key={reg.id} className="admin-card" style={{ animation: 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                    <h4 className="admin-client-name" style={{ margin: 0 }}>
-                      {reg.name}{' '}
-                      <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
-                        (Age: {reg.age} | Height: {reg.height} | Weight: {reg.weight} lbs)
-                      </span>
-                    </h4>
-                    <span className="admin-badge admin-badge-reviewed">{reg.workout_split}</span>
-                  </div>
-                  
-                  <div className="admin-reg-grid">
-                    <div className="admin-reg-detail"><strong>Email:</strong> {reg.email}</div>
-                    <div className="admin-reg-detail"><strong>Phone:</strong> {reg.phone}</div>
-                    <div className="admin-reg-detail"><strong>Date:</strong> {new Date(reg.created_at).toLocaleDateString()}</div>
-                  </div>
-                  
-                  <div className="admin-notes-box">
-                    <strong><i className="ph ph-note"></i> ရည်မှန်းချက်:</strong>
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{reg.notes}</p>
-                  </div>
-
-                  <div className="admin-photo-links">
-                    {reg.photo_front && (
-                      <a href={`/${reg.photo_front}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-secondary">
-                        <i className="ph ph-image"></i> ရှေ့ပိုင်း
-                      </a>
-                    )}
-                    {reg.photo_back && (
-                      <a href={`/${reg.photo_back}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-secondary">
-                        <i className="ph ph-image"></i> နောက်ပိုင်း
-                      </a>
-                    )}
-                    {reg.photo_side && (
-                      <a href={`/${reg.photo_side}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-secondary">
-                        <i className="ph ph-image"></i> ဘေးပိုင်း
-                      </a>
-                    )}
-                    {reg.payment_screenshot && (
-                      <a href={`/${reg.payment_screenshot}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-success">
-                        <i className="ph ph-receipt"></i> ပြေစာ
-                      </a>
-                    )}
-                    {reg.user_id && (
-                      <Link href={`/admin/client-view?id=${reg.user_id}`} className="admin-btn admin-btn-primary">
-                        <i className="ph ph-user"></i> View Client
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      <section className="pp-admin-hero">
+        <div>
+          <p>Trainer operating system</p>
+          <h1>Programs, payments, custom trackers and feedback broadcasts</h1>
+          <span>Admin က website ထဲကနေ package create, payment approve, custom daily tracker build, feedback form broadcast လုပ်နိုင်တဲ့ flow အဖြစ် ပြန်တည်ဆောက်ထားပါတယ်။</span>
         </div>
-
-        {/* Client Management */}
-        <h2 className="admin-section-title">
-          <i className="ph ph-users"></i> Client Management
-        </h2>
-        
-        <div className="admin-client-grid" style={{ marginBottom: '3rem' }}>
-          {clients.map((c) => (
-            <Link key={c.id} href={`/admin/client-view?id=${c.id}`} className="admin-client-card">
-              <h3 className="admin-client-name">{c.username}</h3>
-              <p className="admin-client-meta">
-                <i className="ph ph-envelope"></i> {c.email}
-              </p>
-              <p className="admin-client-meta">
-                <i className="ph ph-calendar"></i> {c.duration_weeks || 12} Weeks Program
-              </p>
-            </Link>
-          ))}
+        <div className="pp-admin-stat-grid">
+          <StatCard icon="ph-users" label="Clients" value={clients.length} />
+          <StatCard icon="ph-receipt" label="Pending payments" value={pendingRegistrations.length} />
+          <StatCard icon="ph-clipboard-text" label="Feedback templates" value={feedbackTemplates.length} />
         </div>
+      </section>
 
-        {/* Recent Check-ins */}
-        <div className="admin-card">
-          <h3 className="admin-section-title" style={{ fontSize: '1.2rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <i className="ph ph-clipboard-text" style={{ color: '#a855f7' }}></i> နောက်ဆုံးဝင်ထားသော Check-ins
-          </h3>
-          
-          {recentCheckins.length === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0 }}>Check-in ဝင်ထားသူ မရှိသေးပါ။</p>
-          ) : (
+      {actionState && (
+        <div className={`pp-admin-toast pp-admin-toast--${actionState.tone}`}>
+          <i className={`ph ${actionState.tone === "success" ? "ph-check-circle" : actionState.tone === "error" ? "ph-warning" : "ph-spinner"}`} />
+          <span>{actionState.label}</span>
+        </div>
+      )}
+
+      <section className="pp-admin-grid">
+        <article className="pp-admin-panel pp-admin-panel--wide">
+          <PanelTitle icon="ph-package" title="Program Builder" action="Editable catalog" />
+          <div className="pp-program-admin-tabs">
+            {projectPrograms.map((program) => (
+              <button
+                key={program.key}
+                type="button"
+                className={selectedProgram === program.key ? "is-active" : ""}
+                onClick={() => setSelectedProgram(program.key)}
+              >
+                {program.shortName}
+              </button>
+            ))}
+          </div>
+          <div className="pp-program-admin-card">
             <div>
-              {recentCheckins.map((chk) => (
-                <div key={chk.id} className="admin-checkin-row">
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
-                      {chk.username} - Week {chk.week_number}
-                    </h4>
-                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)' }}>
-                      Submitted: {new Date(chk.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    {chk.admin_feedback ? (
-                      <span className="admin-badge admin-badge-reviewed">Reviewed</span>
-                    ) : (
-                      <span className="admin-badge admin-badge-pending">Needs Feedback</span>
-                    )}
-                    <Link href={`/admin/client-view?id=${chk.user_id}&week=${chk.week_number}`} className="admin-btn admin-btn-primary">
-                      View & Feedback
-                    </Link>
-                  </div>
+              <p>Program Name</p>
+              <input defaultValue={selectedProgramConfig.name} />
+            </div>
+            <div>
+              <p>Description</p>
+              <textarea rows={4} defaultValue={selectedProgramConfig.description} />
+            </div>
+            <div className="pp-price-table">
+              {selectedProgramConfig.durations.map((duration) => (
+                <div key={duration.months}>
+                  <span>{duration.label}</span>
+                  <strong>{formatMmk(duration.price)}</strong>
+                  <em>{duration.note}</em>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+            <button
+              type="button"
+              className="pp-admin-action"
+              onClick={() =>
+                runAdminAction("program", "Program catalog saved", () =>
+                  fetch("/api/admin/save-program-template", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(selectedProgramConfig),
+                  }),
+                )
+              }
+            >
+              <i className="ph ph-floppy-disk" /> Save program
+            </button>
+          </div>
+        </article>
 
+        <article className="pp-admin-panel">
+          <PanelTitle icon="ph-clipboard-text" title="Feedback Forms" action="Template + broadcast" />
+          <div className="pp-feedback-admin-list">
+            {feedbackTemplates.map((template) => (
+              <div key={template.name}>
+                <div>
+                  <strong>{template.name}</strong>
+                  <span>{template.cadence} · {template.status}</span>
+                </div>
+                <p>{template.fields.join(" · ")}</p>
+              </div>
+            ))}
+          </div>
+          <label>
+            Program
+            <select value={broadcastProgram} onChange={(event) => setBroadcastProgram(event.target.value)}>
+              {projectPrograms.map((program) => (
+                <option key={program.key} value={program.name}>{program.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Form
+            <select value={broadcastTemplate} onChange={(event) => setBroadcastTemplate(event.target.value)}>
+              {feedbackTemplates.map((template) => (
+                <option key={template.name} value={template.name}>{template.name}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="pp-admin-action"
+            onClick={() =>
+              runAdminAction("broadcast", "Feedback broadcast queued", () =>
+                fetch("/api/admin/broadcast-feedback", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ programName: broadcastProgram, templateName: broadcastTemplate }),
+                }),
+              )
+            }
+          >
+            <i className="ph ph-paper-plane-tilt" /> Broadcast
+          </button>
+        </article>
+
+        <article className="pp-admin-panel pp-admin-panel--wide">
+          <PanelTitle icon="ph-receipt" title="Payment Queue" action="Approve + build" />
+          <div className="pp-registration-list">
+            {(registrations.length ? registrations : []).map((reg) => (
+              <div key={reg.id} className="pp-registration-row">
+                <div>
+                  <strong>{reg.name || reg.username || "Client"}</strong>
+                  <span>{reg.program_name || "Custom program"} · {reg.telegram_id ? `TG ${reg.telegram_id}` : reg.email}</span>
+                  <p>{reg.notes || "No notes submitted yet."}</p>
+                </div>
+                <div className="pp-registration-actions">
+                  {reg.payment_screenshot && (
+                    <a href={reg.payment_screenshot.startsWith("http") ? reg.payment_screenshot : `/${reg.payment_screenshot}`} target="_blank" rel="noopener noreferrer">
+                      <i className="ph ph-image" /> Receipt
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedClientId(reg.user_id || selectedClientId);
+                      runAdminAction(`approve-${reg.id}`, "Payment approved and plan workspace opened", () =>
+                        fetch("/api/admin/approve-registration", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ registrationId: reg.id }),
+                        }),
+                      );
+                    }}
+                  >
+                    <i className="ph ph-check-circle" /> Approve
+                  </button>
+                </div>
+              </div>
+            ))}
+            {registrations.length === 0 && <p className="pp-empty">Payment အသစ် မရှိသေးပါ။</p>}
+          </div>
+        </article>
+
+        <article className="pp-admin-panel pp-admin-panel--wide">
+          <PanelTitle icon="ph-layout" title="Custom Tracker Builder" action="Morning · Mid-day · Night" />
+          <div className="pp-tracker-builder-head">
+            <label>
+              Client
+              <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}>
+                {[...clients, ...registrations.filter((item) => item.user_id)].map((client) => (
+                  <option key={client.id || client.user_id} value={client.id || client.user_id}>
+                    {client.username || client.name || client.email || client.user_id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Template name
+              <input value={trackerDraftName} onChange={(event) => setTrackerDraftName(event.target.value)} />
+            </label>
+          </div>
+          <div className="pp-tracker-builder-grid">
+            {defaultTrackerTemplate.map((section) => (
+              <div key={section.title}>
+                <h3><i className={`ph ${section.icon}`} /> {section.title}</h3>
+                {section.fields.map((field) => (
+                  <span key={field.id}>
+                    <i className={`ph ${field.icon}`} />
+                    {field.label}
+                    <em>{field.type}{field.fixed ? " · fixed" : ""}</em>
+                  </span>
+                ))}
+                <button type="button"><i className="ph ph-plus" /> Add field</button>
+              </div>
+            ))}
+          </div>
+          <div className="pp-admin-button-row">
+            <button
+              type="button"
+              className="pp-admin-action"
+              onClick={() =>
+                runAdminAction("tracker", "Custom tracker saved", () =>
+                  fetch("/api/admin/save-tracker-template", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId: selectedClientId, name: trackerDraftName, sections: defaultTrackerTemplate }),
+                  }),
+                )
+              }
+            >
+              <i className="ph ph-floppy-disk" /> Save tracker
+            </button>
+            <button
+              type="button"
+              className="pp-admin-action pp-admin-action--light"
+              onClick={() =>
+                runAdminAction("ready", "Client access message sent", () =>
+                  fetch("/api/admin/send-ready", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId: selectedClientId }),
+                  }),
+                )
+              }
+            >
+              <i className="ph ph-telegram-logo" /> Send ready link
+            </button>
+          </div>
+        </article>
+
+        <article className="pp-admin-panel">
+          <PanelTitle icon="ph-devices" title="Devices" action={`${adminDevicePolicy.maxDevices} device limit`} />
+          <p className="pp-device-copy">{adminDevicePolicy.reason}</p>
+          <div className="pp-device-list">
+            {clients.slice(0, 6).map((client) => (
+              <div key={client.id}>
+                <span>{client.username}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    runAdminAction(`device-${client.id}`, "Device sessions reset", () =>
+                      fetch("/api/admin/reset-devices", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: client.id }),
+                      }),
+                    )
+                  }
+                >
+                  Reset
+                </button>
+              </div>
+            ))}
+            {clients.length === 0 && <p className="pp-empty">Client မရှိသေးပါ။</p>}
+          </div>
+        </article>
+
+        <article className="pp-admin-panel">
+          <PanelTitle icon="ph-chart-line-up" title="Recent Check-ins" action="Review" />
+          <div className="pp-checkin-admin-list">
+            {recentCheckins.map((checkin) => (
+              <Link key={checkin.id} href={`/admin/client-view?id=${checkin.user_id}&week=${checkin.week_number}`}>
+                <strong>{checkin.username || "Client"} · Week {checkin.week_number}</strong>
+                <span>{checkin.admin_feedback ? "Reviewed" : "Needs feedback"}</span>
+              </Link>
+            ))}
+            {recentCheckins.length === 0 && <p className="pp-empty">Check-in မရှိသေးပါ။</p>}
+          </div>
+        </article>
+      </section>
+    </main>
+  );
+}
+
+function PanelTitle({ icon, title, action }: { icon: string; title: string; action: string }) {
+  return (
+    <header className="pp-panel-title">
+      <div>
+        <i className={`ph ${icon}`} />
+        <h2>{title}</h2>
       </div>
+      <span>{action}</span>
+    </header>
+  );
+}
+
+function StatCard({ icon, label, value }: { icon: string; label: string; value: number }) {
+  return (
+    <div className="pp-admin-stat">
+      <i className={`ph ${icon}`} />
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import SetupScheduleClient from './SetupScheduleClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SetupSchedulePage() {
   const session = await decrypt();
 

@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import WorkoutClient from './WorkoutClient';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function WorkoutPage(props: {
   searchParams: Promise<{ client_id?: string }>;
 }) {
@@ -247,4 +249,3 @@ export default async function WorkoutPage(props: {
     />
   );
 }
-

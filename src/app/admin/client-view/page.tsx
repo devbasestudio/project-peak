@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import ClientViewClient from './ClientViewClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ClientViewPage(props: {
   searchParams: Promise<{ id?: string; week?: string }>;
 }) {

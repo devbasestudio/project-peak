@@ -1864,8 +1864,13 @@
 html { scroll-behavior: smooth; }
 body { background-color: var(--primary-color); color: var(--text-main); overflow-x: hidden; }
 
-h1, h2, h3 { font-weight: 700; color: #0f172a; }
-p { font-weight: 400; line-height: 1.7; color: var(--text-muted); }
+/* These bare element resets live in Tailwind's `base` layer so utility classes
+   (text-white, text-[#…], font-extrabold, …) on converted pages win over them.
+   Legacy pages still get these defaults via more-specific `.pp-*` selectors. */
+@layer base {
+  h1, h2, h3 { font-weight: 700; color: #0f172a; }
+  p { font-weight: 400; line-height: 1.7; color: var(--text-muted); }
+}
 .bold { font-weight: 900; }
 .accent { color: var(--accent-color); }
 .text-center { text-align: center; }

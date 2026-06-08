@@ -1,5 +1,5 @@
 import { decrypt } from '@/lib/session';
-import { query } from '@/lib/db';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { redirect } from 'next/navigation';
 import AdminDashboardClient from './AdminDashboardClient';
 
@@ -12,31 +12,63 @@ export default async function AdminDashboardPage() {
     redirect('/login');
   }
 
-  const adminId = session.userId;
+  const supabase = createAdminClient();
 
-  // Get all clients for this admin
-  const clients = await query(
-    `SELECT u.id, u.username, u.email, p.duration_weeks, p.start_date 
-     FROM users u 
-     LEFT JOIN programs p ON u.id = p.user_id 
-     WHERE u.trainer_id = ? AND u.role = 'user'`,
-    [adminId]
-  );
+  // Get all clients (users with role = 'user') with their program info
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select(`
+      id,
+      username,
+      email,
+      programs (
+        duration_weeks,
+        start_date
+      )
+    `)
+    .eq('role', 'user');
+
+  const clients = (profiles || []).map((p: any) => ({
+    id: p.id,
+    username: p.username,
+    email: p.email,
+    duration_weeks: p.programs?.[0]?.duration_weeks || null,
+    start_date: p.programs?.[0]?.start_date || null,
+  }));
 
   // Get recent check-ins that need feedback
-  const recentCheckins = await query(
-    `SELECT wc.*, u.username 
-     FROM weekly_checkins wc 
-     JOIN users u ON wc.user_id = u.id 
-     WHERE u.trainer_id = ? 
-     ORDER BY wc.created_at DESC LIMIT 15`,
-    [adminId]
-  );
+  const { data: checkins } = await supabase
+    .from('weekly_checkins')
+    .select(`
+      id,
+      user_id,
+      week_number,
+      admin_feedback,
+      created_at,
+      profiles:user_id (
+        username
+      )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(15);
 
-  // Get all new program registrations
+  const recentCheckins = (checkins || []).map((c: any) => ({
+    id: c.id,
+    user_id: c.user_id,
+    username: c.profiles?.username || 'Client',
+    week_number: c.week_number,
+    admin_feedback: c.admin_feedback,
+    created_at: c.created_at,
+  }));
+
+  // Get all program registrations
   let registrations: any[] = [];
   try {
-    registrations = await query('SELECT * FROM program_registrations ORDER BY created_at DESC');
+    const { data } = await supabase
+      .from('program_registrations')
+      .select('*')
+      .order('created_at', { ascending: false });
+    registrations = data || [];
   } catch (err) {
     console.error('Error fetching registrations:', err);
   }
@@ -49,3 +81,4 @@ export default async function AdminDashboardPage() {
     />
   );
 }
+

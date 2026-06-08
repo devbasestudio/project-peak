@@ -12,6 +12,10 @@ export default async function SetupSchedulePage() {
     redirect('/login');
   }
 
+  if (session.role === 'admin') {
+    redirect('/admin/dashboard');
+  }
+
   if (session.role !== 'user') {
     redirect('/login');
   }

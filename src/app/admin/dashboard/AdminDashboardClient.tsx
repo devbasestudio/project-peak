@@ -147,6 +147,15 @@ export default function AdminDashboardClient({
             >
               <i className="ph ph-floppy-disk" /> Save program
             </button>
+            <a
+              href={`/miniapp/packages/${selectedProgramConfig.key}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pp-admin-action pp-admin-action--light"
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}
+            >
+              <i className="ph ph-eye" /> Preview package
+            </a>
           </div>
         </article>
 

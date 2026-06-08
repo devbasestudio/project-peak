@@ -22,6 +22,8 @@ export default async function WorkoutPage(props: {
   if (session.role === 'admin' && searchParams.client_id) {
     targetUserId = searchParams.client_id;
     isAdminViewing = true;
+  } else if (session.role === 'admin') {
+    isAdminViewing = true;
   } else if (session.role !== 'user') {
     redirect('/login');
   }

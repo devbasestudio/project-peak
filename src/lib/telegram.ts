@@ -10,6 +10,16 @@ function telegramConfig() {
   return { token, adminIds, enabled: Boolean(token && adminIds.length) };
 }
 
+export function getTelegramRuntimeStatus() {
+  const { token, adminIds, enabled } = telegramConfig();
+  return {
+    tokenConfigured: Boolean(token),
+    adminIdsConfigured: adminIds.length > 0,
+    adminIdsCount: adminIds.length,
+    adminNotificationsEnabled: enabled,
+  };
+}
+
 async function callTelegram(method: string, payload: TelegramPayload) {
   const { token } = telegramConfig();
   if (!token) return { ok: false, skipped: true };
@@ -36,7 +46,7 @@ export async function sendTelegramMessage(chatId: string, text: string, appUrl?:
     parse_mode: "HTML",
     reply_markup: appUrl
       ? {
-          inline_keyboard: [[{ text: "Open Project Peak", url: appUrl }]],
+          inline_keyboard: [[{ text: "Open Project Peak", web_app: { url: appUrl } }]],
         }
       : undefined,
   });
@@ -51,7 +61,7 @@ export async function sendTelegramPhoto(chatId: string, photoUrl: string, captio
     parse_mode: "HTML",
     reply_markup: appUrl
       ? {
-          inline_keyboard: [[{ text: "Open Project Peak", url: appUrl }]],
+          inline_keyboard: [[{ text: "Open Project Peak", web_app: { url: appUrl } }]],
         }
       : undefined,
   });

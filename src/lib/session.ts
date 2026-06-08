@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { ADMIN_EMAIL, ensureAdminAccount } from './adminAuth';
 
 export interface SessionPayload {
   userId: string;
@@ -27,7 +28,11 @@ export async function decrypt(token?: string): Promise<SessionPayload | null> {
       .eq('id', user.id)
       .single();
 
-    const role = profile?.role || (user.email === 'admin@projectpeak.com' ? 'admin' : 'user');
+    if (user.email === ADMIN_EMAIL && profile?.role !== 'admin') {
+      await ensureAdminAccount();
+    }
+
+    const role = user.email === ADMIN_EMAIL ? 'admin' : profile?.role || 'user';
     const username = profile?.username || user.user_metadata?.username || 'User';
 
     return {

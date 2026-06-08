@@ -1,6 +1,78 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 
+export const ADMIN_EMAIL = "admin@projectpeak.com";
+const ADMIN_USERNAME = "Admin Trainer";
+
+export function normalizeTelegramLoginId(value: string) {
+  return String(value || "").trim();
+}
+
+export function adminTelegramIds() {
+  return (process.env.TELEGRAM_ADMIN_IDS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+export function isAdminTelegramId(telegramId: string) {
+  const cleanTelegramId = normalizeTelegramLoginId(telegramId).replace(/^@/, "");
+  return adminTelegramIds().some((id) => id.replace(/^@/, "") === cleanTelegramId);
+}
+
+export async function ensureAdminAccount(telegramId?: string) {
+  const supabase = createAdminClient();
+  const { data: userList, error: listError } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  if (listError) {
+    throw listError;
+  }
+
+  let user = userList.users.find((item) => item.email?.toLowerCase() === ADMIN_EMAIL);
+
+  if (!user) {
+    const password = `ProjectPeakAdmin-${crypto.randomUUID()}`;
+    const { data: created, error: createError } = await supabase.auth.admin.createUser({
+      email: ADMIN_EMAIL,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        username: ADMIN_USERNAME,
+        telegram_id: normalizeTelegramLoginId(telegramId || ""),
+      },
+    });
+
+    if (createError || !created.user) {
+      throw createError || new Error("Could not create admin account");
+    }
+    user = created.user;
+  }
+
+  const cleanTelegramId = normalizeTelegramLoginId(telegramId || "");
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        username: user.user_metadata?.username || ADMIN_USERNAME,
+        email: ADMIN_EMAIL,
+        role: "admin",
+        onboarding_complete: true,
+        ...(cleanTelegramId ? { telegram_id: cleanTelegramId } : {}),
+      },
+      { onConflict: "id" },
+    );
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  return { user, supabase };
+}
+
 export async function requireAdmin() {
   const authClient = await createClient();
   const {
@@ -18,7 +90,7 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const role = profile?.role || (user.email === "admin@projectpeak.com" ? "admin" : "user");
+  const role = user.email === ADMIN_EMAIL ? "admin" : profile?.role || "user";
   if (role !== "admin") {
     return { user, supabase, error: "Forbidden", status: 403 };
   }

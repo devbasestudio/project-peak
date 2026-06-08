@@ -63,8 +63,11 @@ export default function AdminDashboardClient({
           <span>Project Peak Admin</span>
         </Link>
         <div>
-          <Link href="/" className="pp-admin-navlink">
-            <i className="ph ph-device-mobile" /> Mini app
+          <Link href="/miniapp" className="pp-admin-navlink" target="_blank">
+            <i className="ph ph-device-mobile" /> Package choose
+          </Link>
+          <Link href="/" className="pp-admin-navlink" target="_blank">
+            <i className="ph ph-sign-in" /> Website login
           </Link>
           <button
             type="button"
@@ -147,15 +150,17 @@ export default function AdminDashboardClient({
             >
               <i className="ph ph-floppy-disk" /> Save program
             </button>
-            <a
-              href={`/miniapp/packages/${selectedProgramConfig.key}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pp-admin-action pp-admin-action--light"
-              style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}
-            >
-              <i className="ph ph-eye" /> Preview package
-            </a>
+            <div className="pp-admin-preview-row">
+              <a href="/miniapp" target="_blank" rel="noopener noreferrer">
+                <i className="ph ph-stack" /> Choose page
+              </a>
+              <a href={`/miniapp/packages/${selectedProgramConfig.key}`} target="_blank" rel="noopener noreferrer">
+                <i className="ph ph-eye" /> Details
+              </a>
+              <a href={`/miniapp/checkout/${selectedProgramConfig.key}?months=${selectedProgramConfig.durations[1]?.months || selectedProgramConfig.durations[0].months}`} target="_blank" rel="noopener noreferrer">
+                <i className="ph ph-credit-card" /> Checkout
+              </a>
+            </div>
           </div>
         </article>
 

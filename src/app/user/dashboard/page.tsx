@@ -1,5 +1,6 @@
 import { decrypt } from '@/lib/session';
 import { query } from '@/lib/db';
+import { resolveUserRouteTarget } from '@/lib/adminView';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 
@@ -15,18 +16,10 @@ export default async function DashboardPage(props: {
     redirect('/login');
   }
 
-  let targetUserId = session.userId;
-  let isAdminViewing = false;
-
-  if (session.role === 'admin' && searchParams.client_id) {
-    targetUserId = searchParams.client_id;
-    isAdminViewing = true;
-  } else if (session.role === 'admin') {
-    // Admin visiting without client_id — show their own dashboard view
-    isAdminViewing = true;
-  } else if (session.role !== 'user') {
+  if (session.role !== 'user' && session.role !== 'admin') {
     redirect('/login');
   }
+  const { targetUserId, isAdminViewing } = await resolveUserRouteTarget(session, searchParams.client_id);
 
   // Get user details
   const users = await query('SELECT username, role, email, onboarding_complete FROM users WHERE id = ?', [targetUserId]);

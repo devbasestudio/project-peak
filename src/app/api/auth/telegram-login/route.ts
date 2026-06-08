@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { appBaseUrl } from "@/lib/adminAuth";
+import {
+  ADMIN_EMAIL,
+  appBaseUrl,
+  ensureAdminAccount,
+  isAdminTelegramId,
+  normalizeTelegramLoginId,
+} from "@/lib/adminAuth";
 import { createAdminClient } from "@/utils/supabase/admin";
-
-const ADMIN_EMAIL = "admin@projectpeak.com";
-
-function isAdminTelegramId(telegramId: string): boolean {
-  const adminIds = (process.env.TELEGRAM_ADMIN_IDS || "").split(",").map((id) => id.trim()).filter(Boolean);
-  return adminIds.includes(telegramId);
-}
 
 export async function POST(request: Request) {
   try {
     const { telegramId } = await request.json();
-    const cleanTelegramId = String(telegramId || "").trim();
+    const cleanTelegramId = normalizeTelegramLoginId(telegramId);
     if (!cleanTelegramId) {
       return NextResponse.json({ error: "Telegram username / ID is required" }, { status: 400 });
     }
@@ -23,6 +22,7 @@ export async function POST(request: Request) {
     // If the telegram ID matches one of the TELEGRAM_ADMIN_IDS env
     // values, generate a magic link for the admin account directly.
     if (isAdminTelegramId(cleanTelegramId)) {
+      await ensureAdminAccount(cleanTelegramId);
       const redirectTo = `${appBaseUrl(request)}/api/auth/callback?next=/admin/dashboard`;
       const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
         type: "magiclink",

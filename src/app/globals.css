@@ -736,6 +736,26 @@
     padding-bottom: 4px;
 }
 
+.pp-admin-preview-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.pp-admin-preview-row a {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid rgba(126,182,255,0.28);
+    border-radius: 8px;
+    background: rgba(49,65,91,0.52);
+    color: #dbeafe;
+    text-decoration: none;
+    font-weight: 1000;
+}
+
 .pp-program-pill,
 .pp-payment-tab,
 .pp-duration-card,

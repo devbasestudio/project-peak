@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { motion } from "framer-motion";
 
 const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "https://t.me/fdasfdsafsda_bot";
 
@@ -33,7 +34,9 @@ export default function Home() {
 
   return (
     <main className="pp-shell pp-public-login">
-      <section className="pp-public-login__card">
+      <motion.section
+        className="pp-public-login__card"
+      >
         <div className="pp-public-login__mark">
           <i className="ph ph-mountains" />
         </div>
@@ -59,17 +62,24 @@ export default function Home() {
               <span>{error}</span>
             </div>
           )}
-          <button type="submit" disabled={submitting}>
+          <motion.button type="submit" disabled={submitting} whileTap={{ scale: 0.985 }}>
             <i className={`ph ${submitting ? "ph-spinner ph-spin" : "ph-telegram-logo"}`} />
             {submitting ? "Login link ပြင်နေပါသည်..." : "Main app ကိုဝင်မည်"}
-          </button>
+          </motion.button>
         </form>
 
-        <a href={telegramBotUrl} target="_blank" rel="noopener noreferrer" className="pp-public-login__bot">
+        <motion.a
+          href={telegramBotUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pp-public-login__bot"
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.985 }}
+        >
           <i className="ph ph-paper-plane-tilt" />
           Package ဝယ်ရန် Telegram bot ကိုဖွင့်မည်
-        </a>
-      </section>
+        </motion.a>
+      </motion.section>
     </main>
   );
 }

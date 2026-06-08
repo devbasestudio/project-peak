@@ -1,0 +1,237 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { FormEvent, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
+import { motion } from "framer-motion";
+import { formatMmk, paymentMethods, type ProjectProgram } from "@/lib/projectPeakConfig";
+
+type SubmitState = "idle" | "submitting" | "pending" | "error";
+
+export default function CheckoutClient({
+  program,
+  initialMonths,
+}: {
+  program: ProjectProgram;
+  initialMonths: number;
+}) {
+  const initialDuration = useMemo(
+    () => program.durations.find((item) => item.months === initialMonths) || program.durations[0],
+    [initialMonths, program.durations],
+  );
+  const [selectedDuration, setSelectedDuration] = useState(initialDuration.months);
+  const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
+  const [telegramId, setTelegramId] = useState("");
+  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const duration = program.durations.find((item) => item.months === selectedDuration) || program.durations[0];
+  const payment = paymentMethods.find((item) => item.id === selectedPayment) || paymentMethods[0];
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitState("submitting");
+    setErrorMessage("");
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("program_name", program.name);
+    formData.set("duration_months", String(duration.months));
+    formData.set("program_price", String(duration.price));
+    formData.set("payment_method", payment.label);
+
+    try {
+      const response = await fetch("/api/save-registration", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Registration failed");
+      }
+      setSubmitState("pending");
+      form.reset();
+      setTelegramId("");
+    } catch (error) {
+      setSubmitState("error");
+      setErrorMessage(error instanceof Error ? error.message : "Registration failed");
+    }
+  }
+
+  return (
+    <main className="pp-shell">
+      <section className="pp-miniapp pp-checkout-flow">
+        <motion.header
+          className="pp-checkout-top"
+          style={{ "--package-accent": program.accent } as CSSProperties}
+        >
+          <Link href={`/miniapp/packages/${program.key}`} className="pp-back-link">
+            <i className="ph ph-arrow-left" /> Details
+          </Link>
+          <div className="pp-checkout-top__grid">
+            <div>
+              <p>Payment review</p>
+              <h1>{program.shortName}</h1>
+              <span>{program.headline}</span>
+            </div>
+            <strong>{formatMmk(duration.price)}</strong>
+          </div>
+        </motion.header>
+
+        <div className="pp-flow-steps">
+          {["Package", "Details", "Payment"].map((step) => (
+            <span key={step} className="is-active">{step}</span>
+          ))}
+        </div>
+
+        <section className="pp-checkout-summary">
+          <div className="pp-checkout-summary__media">
+            <Image src={program.image} alt={program.name} fill sizes="(max-width: 780px) 96px, 130px" />
+          </div>
+          <div>
+            <p>Included after approval</p>
+            {program.includes.slice(0, 3).map((item) => (
+              <span key={item.title}>
+                <i className={`ph ${item.icon}`} /> {item.title}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <div className="pp-duration-grid pp-checkout-duration-grid">
+          {program.durations.map((item) => (
+            <button
+              type="button"
+              key={item.months}
+              className={`pp-duration-card ${item.months === selectedDuration ? "is-active" : ""}`}
+              onClick={() => setSelectedDuration(item.months)}
+            >
+              <span>{item.label}</span>
+              <strong>{formatMmk(item.price)}</strong>
+              <em>{item.note}</em>
+            </button>
+          ))}
+        </div>
+
+        <motion.form
+          className="pp-checkout"
+          onSubmit={handleSubmit}
+        >
+          <div className="pp-checkout__header">
+            <div>
+              <p>Payment</p>
+              <h2>{formatMmk(duration.price)}</h2>
+            </div>
+            <span>{duration.label}</span>
+          </div>
+
+          <div className="pp-payment-tabs">
+            {paymentMethods.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                className={`pp-payment-tab ${selectedPayment === item.id ? "is-active" : ""}`}
+                onClick={() => setSelectedPayment(item.id)}
+              >
+                <Image src={item.logo} alt="" width={28} height={28} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="pp-payment-panel">
+            <Image src={payment.qr} alt={`${payment.label} QR`} width={190} height={190} className="pp-payment-qr" />
+            <div>
+              <h3>After transfer</h3>
+              <p>Payment screenshot တင်ပြီး Telegram username/ID ဖြည့်ပါ။ Admin approve ပြီး custom tracker ပြင်ပြီးတာနဲ့ bot ကနေ ready link ပို့ပါမယ်။</p>
+              <label>
+                Telegram username / ID
+                <input
+                  name="telegram_id"
+                  value={telegramId}
+                  onChange={(event) => setTelegramId(event.target.value)}
+                  placeholder="@username or 1827344905"
+                  required
+                />
+              </label>
+              <label>
+                Payment screenshot
+                <input name="payment_screenshot" type="file" accept="image/*" required />
+              </label>
+            </div>
+          </div>
+
+          <div className="pp-intake-head">
+            <p>Client intake</p>
+            <h2>Admin က custom plan ဆွဲဖို့လိုတဲ့ data</h2>
+          </div>
+
+          <div className="pp-intake-grid">
+            <label>
+              Name
+              <input name="username" placeholder="Your name" required />
+            </label>
+            <label>
+              Email
+              <input name="email" type="email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Phone
+              <input name="phone" placeholder="09..." required />
+            </label>
+            <label>
+              Age
+              <input name="age" type="number" min="12" placeholder="24" required />
+            </label>
+            <label>
+              Height
+              <input name="height" placeholder="170 cm" required />
+            </label>
+            <label>
+              Weight
+              <input name="weight" type="number" step="0.1" placeholder="81.2" required />
+            </label>
+            <label>
+              Front photo
+              <input name="photo_front" type="file" accept="image/*" />
+            </label>
+            <label>
+              Back photo
+              <input name="photo_back" type="file" accept="image/*" />
+            </label>
+            <label>
+              Side photo
+              <input name="photo_side" type="file" accept="image/*" />
+            </label>
+          </div>
+
+          <label className="pp-full-label">
+            Goal / notes
+            <textarea name="notes" rows={4} placeholder="သင့်ရဲ့ goal, injury, schedule စတာတွေ..." />
+          </label>
+
+          <input type="hidden" name="workout_split" value="Admin customized plan" />
+
+          {submitState === "pending" && (
+            <div className="pp-status-box is-success">
+              <i className="ph ph-check-circle" />
+              <span>Payment pending ဖြစ်သွားပါပြီ။ Admin approve ပြီး custom tracker ဆွဲပြီးတာနဲ့ Telegram bot မှာ access button ပို့ပေးပါမယ်။</span>
+            </div>
+          )}
+          {submitState === "error" && (
+            <div className="pp-status-box is-error">
+              <i className="ph ph-warning" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <button className="pp-primary-action" type="submit" disabled={submitState === "submitting"}>
+            <i className={`ph ${submitState === "submitting" ? "ph-spinner ph-spin" : "ph-paper-plane-tilt"}`} />
+            {submitState === "submitting" ? "Submitting..." : "Submit payment for review"}
+          </button>
+        </motion.form>
+      </section>
+    </main>
+  );
+}

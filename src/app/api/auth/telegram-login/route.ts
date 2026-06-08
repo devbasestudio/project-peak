@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   ADMIN_EMAIL,
-  appBaseUrl,
   ensureAdminAccount,
   isAdminTelegramId,
   normalizeTelegramLoginId,
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
     // values, generate a magic link for the admin account directly.
     if (isAdminTelegramId(cleanTelegramId)) {
       await ensureAdminAccount(cleanTelegramId);
-      const redirectTo = `${appBaseUrl(request)}/api/auth/callback?next=/admin/dashboard`;
+      const redirectTo = `${new URL(request.url).origin}/login?next=/admin/dashboard`;
       const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
         type: "magiclink",
         email: ADMIN_EMAIL,
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This Telegram ID does not have an email-linked account yet." }, { status: 400 });
     }
 
-    const redirectTo = `${appBaseUrl(request)}/api/auth/callback?next=/user/dashboard`;
+    const redirectTo = `${new URL(request.url).origin}/login?next=/user/dashboard`;
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email,

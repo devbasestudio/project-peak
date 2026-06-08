@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AuthHashHandler from "@/components/AuthHashHandler";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +21,10 @@ export default function RootLayout({
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css" />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthHashHandler />
+        {children}
+      </body>
     </html>
   );
 }

@@ -35,9 +35,6 @@ export default function Home() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1c2b29] via-[#2a3f3c] to-[#1c2b29] p-5">
       <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
         className="w-full max-w-[420px] rounded-3xl border border-white/10 bg-white p-7 shadow-2xl sm:p-9"
       >
         <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-[#1c2b29] text-[#ff6b35]">

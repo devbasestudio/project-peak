@@ -35,6 +35,16 @@ export async function POST(request: Request) {
     const appUrl = `${baseUrl}/miniapp`;
 
     if (text === "/start" || text.startsWith("/start ")) {
+      const startAppUrl = telegramId
+        ? `${appUrl}?${new URLSearchParams({
+            tg_id: telegramId,
+            ...(from?.username ? { tg_username: String(from.username) } : {}),
+            ...(from?.first_name || from?.last_name
+              ? { tg_name: [from?.first_name, from?.last_name].filter(Boolean).join(" ") }
+              : {}),
+          }).toString()}`
+        : appUrl;
+
       if (telegramId) {
         await ensureTelegramUserAccount({
           telegramId,
@@ -53,9 +63,9 @@ export async function POST(request: Request) {
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n");
 
       const heroUrl = `${baseUrl}/img/hero_bg.jpg`;
-      const photoResult = await sendTelegramPhoto(chatId, heroUrl, caption, appUrl).catch(() => null);
+      const photoResult = await sendTelegramPhoto(chatId, heroUrl, caption, startAppUrl).catch(() => null);
       if (!photoResult?.ok) {
-        const messageResult = await sendTelegramMessage(chatId, caption, appUrl);
+        const messageResult = await sendTelegramMessage(chatId, caption, startAppUrl);
         return NextResponse.json({ ok: Boolean(messageResult.ok), handled: "start", fallback: "message" });
       }
 

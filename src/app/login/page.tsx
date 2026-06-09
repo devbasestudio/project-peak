@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
-import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from '@/lib/telegramWebApp';
+import { copyText, type TelegramIdentity, watchTelegramIdentity } from '@/lib/telegramWebApp';
 import { createClient } from '@/utils/supabase/client';
 
 export default function LoginPage() {
@@ -13,8 +13,7 @@ export default function LoginPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    initTelegramWebApp();
-    setTelegramIdentity(readTelegramIdentity());
+    return watchTelegramIdentity(setTelegramIdentity);
   }, []);
 
   const handleCopyTelegramId = async () => {

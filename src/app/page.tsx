@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from "@/lib/telegramWebApp";
+import { copyText, type TelegramIdentity, watchTelegramIdentity } from "@/lib/telegramWebApp";
 
 const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "https://t.me/fdasfdsafsda_bot";
 
@@ -14,8 +14,7 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    initTelegramWebApp();
-    setTelegramIdentity(readTelegramIdentity());
+    return watchTelegramIdentity(setTelegramIdentity);
   }, []);
 
   async function handleCopyTelegramId() {

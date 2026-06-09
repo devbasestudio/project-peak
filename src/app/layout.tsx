@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import AuthHashHandler from "@/components/AuthHashHandler";
 import "./globals.css";
 
@@ -22,6 +23,7 @@ export default function RootLayout({
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css" />
       </head>
       <body>
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <AuthHashHandler />
         {children}
       </body>

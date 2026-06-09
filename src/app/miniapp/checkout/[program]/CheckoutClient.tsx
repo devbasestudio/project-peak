@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { formatMmk, paymentMethods, type ProjectProgram } from "@/lib/projectPeakConfig";
-import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from "@/lib/telegramWebApp";
+import { appendTelegramParams, copyText, type TelegramIdentity, watchTelegramIdentity } from "@/lib/telegramWebApp";
 import { FlowSteps } from "../../FlowSteps";
 
 type SubmitState = "idle" | "submitting" | "pending" | "error";
@@ -37,8 +37,7 @@ export default function CheckoutClient({
   const payment = paymentMethods.find((item) => item.id === selectedPayment) || paymentMethods[0];
 
   useEffect(() => {
-    initTelegramWebApp();
-    setTelegramIdentity(readTelegramIdentity());
+    return watchTelegramIdentity(setTelegramIdentity);
   }, []);
 
   async function handleCopyTelegramId() {
@@ -85,7 +84,7 @@ export default function CheckoutClient({
     <main className="min-h-screen bg-[#f6f8f7] pb-10 text-[#1c2b29]">
       <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 pt-4">
         <Link
-          href={`/miniapp/packages/${program.key}`}
+          href={appendTelegramParams(`/miniapp/packages/${program.key}`, telegramIdentity)}
           className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-[#6b7a77] no-underline hover:text-[#1c2b29]"
         >
           <i className="ph ph-arrow-left text-base" /> Details

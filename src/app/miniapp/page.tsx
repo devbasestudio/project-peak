@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { formatMmk, projectPrograms } from "@/lib/projectPeakConfig";
-import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from "@/lib/telegramWebApp";
+import { appendTelegramParams, copyText, type TelegramIdentity, watchTelegramIdentity } from "@/lib/telegramWebApp";
 import { FlowSteps } from "./FlowSteps";
 
 export default function MiniAppPage() {
@@ -13,8 +13,7 @@ export default function MiniAppPage() {
   const [copiedTelegramId, setCopiedTelegramId] = useState(false);
 
   useEffect(() => {
-    initTelegramWebApp();
-    setTelegramIdentity(readTelegramIdentity());
+    return watchTelegramIdentity(setTelegramIdentity);
   }, []);
 
   async function handleCopyTelegramId() {
@@ -91,7 +90,7 @@ export default function MiniAppPage() {
               className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
             >
               <Link
-                href={`/miniapp/packages/${program.key}`}
+                href={appendTelegramParams(`/miniapp/packages/${program.key}`, telegramIdentity)}
                 aria-label={`View ${program.name}`}
                 className="block no-underline"
               >

@@ -168,14 +168,18 @@ export default function CheckoutClient({
           </div>
 
           {/* QR + instructions */}
-          <div className="flex flex-col gap-4 rounded-xl bg-[#f6f8f7] p-4 sm:flex-row sm:items-start">
-            <Image
-              src={payment.qr}
-              alt={`${payment.label} QR`}
-              width={170}
-              height={170}
-              className="mx-auto h-40 w-40 shrink-0 rounded-xl border border-[#e6eae8] bg-white object-contain p-2"
-            />
+          <div className="flex flex-col gap-5 rounded-xl bg-[#f6f8f7] p-4">
+            <div className="mx-auto w-full max-w-[380px] rounded-2xl border border-[#d8dedb] bg-white p-3 shadow-sm">
+              <Image
+                src={payment.qr}
+                alt={`${payment.label} QR`}
+                width={720}
+                height={720}
+                sizes="(max-width: 640px) calc(100vw - 112px), 380px"
+                className="aspect-square h-auto w-full rounded-xl object-contain"
+                priority
+              />
+            </div>
             <div className="flex flex-1 flex-col gap-3">
               <h3 className="text-sm font-bold text-[#1c2b29]">After transfer</h3>
               <p className="text-xs leading-relaxed text-[#6b7a77]">

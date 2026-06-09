@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { appBaseUrl, ensureTelegramUserAccount, normalizeTelegramLoginId } from '@/lib/adminAuth';
+import { appBaseUrl, ensureTelegramUserAccount, isAdminTelegramId, normalizeTelegramLoginId } from '@/lib/adminAuth';
 import { notifyAdminsPayment } from '@/lib/telegram';
 
 // Instantiate Supabase Admin Client using Service Role Key (with fallbacks to prevent build-time crashes)
@@ -35,13 +35,25 @@ function getProgramDefaults(programType: string) {
 let bucketReady = false;
 async function ensureBucket() {
   if (bucketReady) return;
+  const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+  if (listError) {
+    throw new Error(`Supabase Storage bucket check failed: ${listError.message}`);
+  }
+
+  const exists = buckets?.some((bucket) => bucket.id === 'registrations');
+  if (exists) {
+    bucketReady = true;
+    return;
+  }
+
   const { error } = await supabaseAdmin.storage.createBucket('registrations', {
     public: true,
     fileSizeLimit: 10 * 1024 * 1024, // 10 MB
   });
-  // 'already exists' is fine — any other error we just log
   if (error && !error.message?.includes('already exists')) {
-    console.warn('Storage bucket creation note:', error.message);
+    throw new Error(
+      `Supabase Storage bucket "registrations" is missing. Run supabase_storage_setup.sql first. Storage said: ${error.message}`,
+    );
   }
   bucketReady = true;
 }
@@ -66,7 +78,7 @@ async function uploadFile(file: File | null, prefix: string): Promise<string | n
 
   if (error) {
     console.error('Storage upload error:', error);
-    return null;
+    throw new Error(`Payment/photo upload failed: ${error.message}`);
   }
 
   const {
@@ -114,7 +126,7 @@ export async function POST(request: Request) {
 
     let userId: string | null = null;
 
-    if (telegramId) {
+    if (telegramId && !isAdminTelegramId(telegramId)) {
       const telegramAccount = await ensureTelegramUserAccount({
         telegramId,
         username: name,
@@ -205,7 +217,7 @@ export async function POST(request: Request) {
         .update({
           username: name,
           email,
-          telegram_id: telegramId || undefined,
+          ...(telegramId && !isAdminTelegramId(telegramId) ? { telegram_id: telegramId } : {}),
           ...(trainerId ? { trainer_id: trainerId } : {}),
         })
         .eq('id', userId);

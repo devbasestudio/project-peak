@@ -1860,14 +1860,14 @@
     }
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Noto Sans Myanmar', sans-serif; }
 html { scroll-behavior: smooth; }
 body { background-color: var(--primary-color); color: var(--text-main); overflow-x: hidden; }
 
-/* These bare element resets live in Tailwind's `base` layer so utility classes
-   (text-white, text-[#…], font-extrabold, …) on converted pages win over them.
+/* These bare resets live in Tailwind's `base` layer so utility classes
+   (p-7, mt-6, text-white, text-[#…], font-extrabold, …) on converted pages win over them.
    Legacy pages still get these defaults via more-specific `.pp-*` selectors. */
 @layer base {
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans Myanmar', 'Inter', sans-serif; }
   h1, h2, h3 { font-weight: 700; color: #0f172a; }
   p { font-weight: 400; line-height: 1.7; color: var(--text-muted); }
 }

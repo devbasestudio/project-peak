@@ -14,6 +14,73 @@ const fieldClass =
   "w-full rounded-xl border border-[#d8dedb] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[#1c2b29] focus:ring-2 focus:ring-[#1c2b29]/10";
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-[#3a4744]";
 
+async function readJsonResponse(response: Response) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+}
+
+function payloadError(payload: Record<string, unknown>, fallback: string) {
+  return typeof payload.error === "string" && payload.error ? payload.error : fallback;
+}
+
+function postFormDataWithXhr(url: string, formData: FormData) {
+  return new Promise<Record<string, unknown>>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.responseType = "text";
+    xhr.onload = () => {
+      let payload: Record<string, unknown> = {};
+      try {
+        payload = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch {
+        payload = { error: xhr.responseText };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(payload);
+      } else {
+        reject(new Error(payloadError(payload, `Upload failed with status ${xhr.status}`)));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network upload failed. Please reopen Telegram and try again."));
+    xhr.ontimeout = () => reject(new Error("Upload timed out. Please try again with smaller photos."));
+    xhr.timeout = 120000;
+    xhr.send(formData);
+  });
+}
+
+async function submitRegistrationForm(formData: FormData) {
+  const url = new URL("/api/save-registration", window.location.href).toString();
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
+      cache: "no-store",
+    });
+    const payload = await readJsonResponse(response);
+    if (!response.ok) {
+      throw new Error(payloadError(payload, "Registration failed"));
+    }
+    return payload;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const shouldRetryWithXhr =
+      message.includes("expected pattern") ||
+      message.includes("Failed to fetch") ||
+      message.includes("NetworkError") ||
+      message.includes("Load failed");
+
+    if (!shouldRetryWithXhr) throw error;
+    return postFormDataWithXhr(url, formData);
+  }
+}
+
 export default function CheckoutClient({
   program,
   initialMonths,
@@ -69,9 +136,7 @@ export default function CheckoutClient({
     formData.set("telegram_id", telegramIdentity.id);
 
     try {
-      const response = await fetch("/api/save-registration", { method: "POST", body: formData });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Registration failed");
+      await submitRegistrationForm(formData);
       setSubmitState("pending");
       form.reset();
     } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { appBaseUrl, programDefaults, requireAdmin, toProgramType } from "@/lib/adminAuth";
-import { notifyAdminsPayment } from "@/lib/telegram";
+import { notifyAdminsApproval } from "@/lib/telegram";
+import { saveUserProgram } from "@/lib/userProgram";
 
 export async function POST(request: Request) {
   const { supabase, error, status } = await requireAdmin();
@@ -29,17 +30,13 @@ export async function POST(request: Request) {
 
     if (registration.user_id) {
       const today = new Date().toISOString().split("T")[0];
-      const { error: programError } = await supabase.from("programs").upsert(
-        {
-          user_id: registration.user_id,
-          program_type: programType,
-          duration_weeks: durationWeeks,
-          start_date: today,
-          ...programDefaults(programType),
-        },
-        { onConflict: "user_id" },
-      );
-      if (programError) throw programError;
+      await saveUserProgram(supabase, {
+        user_id: registration.user_id,
+        program_type: programType,
+        duration_weeks: durationWeeks,
+        start_date: today,
+        ...programDefaults(programType),
+      });
     }
 
     const updateResult = await supabase
@@ -65,7 +62,7 @@ export async function POST(request: Request) {
       // Optional migration table. Approval should still succeed without it.
     }
 
-    await notifyAdminsPayment(registration, appBaseUrl(request)).catch(() => null);
+    await notifyAdminsApproval(registration, appBaseUrl(request)).catch(() => null);
 
     return NextResponse.json({ success: true, persistedStatus });
   } catch (err) {

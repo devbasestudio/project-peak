@@ -1,5 +1,10 @@
 type TelegramPayload = Record<string, unknown>;
 
+type TelegramButtonOptions = {
+  buttonText?: string;
+  webApp?: boolean;
+};
+
 function telegramConfig() {
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const adminIds = (process.env.TELEGRAM_ADMIN_IDS || "")
@@ -38,32 +43,42 @@ async function callTelegram(method: string, payload: TelegramPayload) {
   return response.json();
 }
 
-export async function sendTelegramMessage(chatId: string, text: string, appUrl?: string) {
+function telegramButton(appUrl?: string, options: TelegramButtonOptions = {}) {
+  if (!appUrl) return undefined;
+  const text = options.buttonText || "Open Project Peak";
+  const button = options.webApp === false ? { text, url: appUrl } : { text, web_app: { url: appUrl } };
+  return { inline_keyboard: [[button]] };
+}
+
+export async function sendTelegramMessage(
+  chatId: string,
+  text: string,
+  appUrl?: string,
+  options?: TelegramButtonOptions,
+) {
   if (!chatId) return { ok: false, skipped: true };
   return callTelegram("sendMessage", {
     chat_id: chatId,
     text,
     parse_mode: "HTML",
-    reply_markup: appUrl
-      ? {
-          inline_keyboard: [[{ text: "Open Project Peak", web_app: { url: appUrl } }]],
-        }
-      : undefined,
+    reply_markup: telegramButton(appUrl, options),
   });
 }
 
-export async function sendTelegramPhoto(chatId: string, photoUrl: string, caption: string, appUrl?: string) {
+export async function sendTelegramPhoto(
+  chatId: string,
+  photoUrl: string,
+  caption: string,
+  appUrl?: string,
+  options?: TelegramButtonOptions,
+) {
   if (!chatId || !photoUrl) return { ok: false, skipped: true };
   return callTelegram("sendPhoto", {
     chat_id: chatId,
     photo: photoUrl,
     caption,
     parse_mode: "HTML",
-    reply_markup: appUrl
-      ? {
-          inline_keyboard: [[{ text: "Open Project Peak", web_app: { url: appUrl } }]],
-        }
-      : undefined,
+    reply_markup: telegramButton(appUrl, options),
   });
 }
 
@@ -71,17 +86,70 @@ export async function notifyAdminsPayment(registration: any, appUrl: string) {
   const { adminIds, enabled } = telegramConfig();
   if (!enabled) return { ok: false, skipped: true };
 
-  const text = [
+  const adminUrl = `${appUrl}/admin/payments`;
+  const caption = [
     "<b>New Project Peak payment</b>",
     `Client: ${registration.name || registration.username || "Unknown"}`,
     `Program: ${registration.program_name || "Custom"}`,
+    registration.program_price ? `Amount: ${registration.program_price} MMK` : "",
+    registration.payment_method ? `Method: ${registration.payment_method}` : "",
     `Telegram ID: ${registration.telegram_id || "not provided"}`,
     `Email: ${registration.email || "not provided"}`,
+  ].filter(Boolean).join("\n");
+
+  const results = [];
+  for (const adminId of adminIds) {
+    if (registration.payment_screenshot) {
+      const photoResult = await sendTelegramPhoto(
+        adminId,
+        registration.payment_screenshot,
+        caption,
+        adminUrl,
+        { buttonText: "Open admin payments", webApp: false },
+      ).catch((err) => ({
+        ok: false,
+        error: err instanceof Error ? err.message : "Telegram photo failed",
+      }));
+
+      if (photoResult && typeof photoResult === "object" && "ok" in photoResult && photoResult.ok) {
+        results.push(photoResult);
+        continue;
+      }
+    }
+
+    results.push(
+      await sendTelegramMessage(
+        adminId,
+        registration.payment_screenshot
+          ? `${caption}\nReceipt: ${registration.payment_screenshot}`
+          : caption,
+        adminUrl,
+        { buttonText: "Open admin payments", webApp: false },
+      ),
+    );
+  }
+  return { ok: true, results };
+}
+
+export async function notifyAdminsApproval(registration: any, appUrl: string) {
+  const { adminIds, enabled } = telegramConfig();
+  if (!enabled) return { ok: false, skipped: true };
+
+  const text = [
+    "<b>Payment approved</b>",
+    `Client: ${registration.name || registration.username || "Unknown"}`,
+    `Program: ${registration.program_name || "Custom"}`,
+    "Build or confirm the tracker, then send the ready link.",
   ].join("\n");
 
   const results = [];
   for (const adminId of adminIds) {
-    results.push(await sendTelegramMessage(adminId, text, `${appUrl}/admin/dashboard`));
+    results.push(
+      await sendTelegramMessage(adminId, text, `${appUrl}/admin/trackers`, {
+        buttonText: "Open trackers",
+        webApp: false,
+      }),
+    );
   }
   return { ok: true, results };
 }

@@ -193,6 +193,12 @@ export default function ClientViewClient({
               <div className="flex flex-col gap-4">
                 {checkins.map((chk) => {
                   const highlighted = selectedWeek === chk.week_number;
+                  const progressPhotoUrl =
+                    chk.progress_photo_url && String(chk.progress_photo_url).startsWith("http")
+                      ? chk.progress_photo_url
+                      : chk.progress_photo_url
+                        ? `/${chk.progress_photo_url}`
+                        : "";
                   return (
                     <Card
                       key={chk.id}
@@ -214,16 +220,15 @@ export default function ClientViewClient({
                         <Metric label="Motivation" value={`${chk.motivation}/10`} />
                       </div>
 
-                      {chk.progress_photo_url && (
+                      {progressPhotoUrl && (
                         <a
-                          href={`/${chk.progress_photo_url}`}
+                          href={progressPhotoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="mt-4 inline-block overflow-hidden rounded-xl border border-[#e6eae8]"
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={`/${chk.progress_photo_url}`}
+                            src={progressPhotoUrl}
                             alt="Progress"
                             className="block max-h-40 w-auto"
                           />

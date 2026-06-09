@@ -1,24 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatMmk, projectPrograms } from "@/lib/projectPeakConfig";
+import { formatMmk, projectPrograms, type ProjectProgram } from "@/lib/projectPeakConfig";
 import { Card, FieldLabel, PageHeader, inputClass } from "@/components/admin/ui";
 import { Toast, actionButtonClass, useAdminAction } from "@/components/admin/useAdminAction";
 
-export default function ProgramsClient() {
+export default function ProgramsClient({ programs = projectPrograms }: { programs?: ProjectProgram[] }) {
   const { state, pendingId, run } = useAdminAction();
-  const [selected, setSelected] = useState(projectPrograms[0].key);
+  const [selected, setSelected] = useState(programs[0]?.key || projectPrograms[0].key);
   const config = useMemo(
-    () => projectPrograms.find((p) => p.key === selected) || projectPrograms[0],
-    [selected],
+    () => programs.find((p) => p.key === selected) || programs[0] || projectPrograms[0],
+    [programs, selected],
   );
 
   // Local editable copies keyed by program so edits persist while switching tabs.
   const [names, setNames] = useState<Record<string, string>>(
-    Object.fromEntries(projectPrograms.map((p) => [p.key, p.name])),
+    Object.fromEntries(programs.map((p) => [p.key, p.name])),
   );
   const [descriptions, setDescriptions] = useState<Record<string, string>>(
-    Object.fromEntries(projectPrograms.map((p) => [p.key, p.description])),
+    Object.fromEntries(programs.map((p) => [p.key, p.description])),
   );
 
   const saving = pendingId === "program";
@@ -32,7 +32,7 @@ export default function ProgramsClient() {
       />
 
       <div className="inline-flex flex-wrap gap-2">
-        {projectPrograms.map((program) => (
+        {programs.map((program) => (
           <button
             key={program.key}
             type="button"

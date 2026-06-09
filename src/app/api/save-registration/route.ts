@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { appBaseUrl } from '@/lib/adminAuth';
+import { appBaseUrl, ensureTelegramUserAccount, normalizeTelegramLoginId } from '@/lib/adminAuth';
 import { notifyAdminsPayment } from '@/lib/telegram';
 
 // Instantiate Supabase Admin Client using Service Role Key (with fallbacks to prevent build-time crashes)
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     const split = (formData.get('workout_split') as string) || '';
     const notes = (formData.get('notes') as string) || '';
     const programName = (formData.get('program_name') as string) || '';
-    const telegramId = (formData.get('telegram_id') as string) || '';
+    const telegramId = normalizeTelegramLoginId((formData.get('telegram_id') as string) || '').replace(/^@/, '');
     const durationMonths = parseInt((formData.get('duration_months') as string) || '3', 10);
     const programPrice = parseInt((formData.get('program_price') as string) || '0', 10);
     const paymentMethod = (formData.get('payment_method') as string) || '';
@@ -112,14 +112,26 @@ export async function POST(request: Request) {
     const programType = getProgramType(programName);
     const programDefaults = getProgramDefaults(programType);
 
-    // --- Check if email already exists in profiles ---
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
+    let userId: string | null = null;
 
-    let userId = existingProfile ? existingProfile.id : null;
+    if (telegramId) {
+      const telegramAccount = await ensureTelegramUserAccount({
+        telegramId,
+        username: name,
+        firstName: name,
+        email,
+      });
+      userId = telegramAccount.userId;
+    } else {
+      // --- Check if email already exists in profiles ---
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      userId = existingProfile ? existingProfile.id : null;
+    }
 
     if (!userId) {
       // Find the admin / head trainer to assign
@@ -180,6 +192,25 @@ export async function POST(request: Request) {
 
         if (quoteInsertError) throw quoteInsertError;
       }
+    } else {
+      const { data: admins } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1);
+
+      const trainerId = admins && admins.length > 0 ? admins[0].id : null;
+      const { error: updateProfileError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          username: name,
+          email,
+          telegram_id: telegramId || undefined,
+          ...(trainerId ? { trainer_id: trainerId } : {}),
+        })
+        .eq('id', userId);
+
+      if (updateProfileError) throw updateProfileError;
     }
 
     const fullRegistration = {

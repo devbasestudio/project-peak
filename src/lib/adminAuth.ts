@@ -3,6 +3,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 export const ADMIN_EMAIL = "admin@projectpeak.com";
 const ADMIN_USERNAME = "Admin Trainer";
+const TELEGRAM_EMAIL_DOMAIN = "telegram.projectpeak.local";
 
 export function normalizeTelegramLoginId(value: string) {
   return String(value || "").trim();
@@ -18,6 +19,125 @@ export function adminTelegramIds() {
 export function isAdminTelegramId(telegramId: string) {
   const cleanTelegramId = normalizeTelegramLoginId(telegramId).replace(/^@/, "");
   return adminTelegramIds().some((id) => id.replace(/^@/, "") === cleanTelegramId);
+}
+
+export function telegramSystemEmail(telegramId: string) {
+  const cleanTelegramId = normalizeTelegramLoginId(telegramId).replace(/^@/, "");
+  return `telegram-${cleanTelegramId}@${TELEGRAM_EMAIL_DOMAIN}`;
+}
+
+export function isTelegramSystemEmail(email?: string | null) {
+  return Boolean(email?.toLowerCase().endsWith(`@${TELEGRAM_EMAIL_DOMAIN}`));
+}
+
+export async function ensureTelegramUserAccount({
+  telegramId,
+  username,
+  firstName,
+  lastName,
+  email,
+}: {
+  telegramId: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}) {
+  const cleanTelegramId = normalizeTelegramLoginId(telegramId).replace(/^@/, "");
+  if (!cleanTelegramId) {
+    throw new Error("Telegram ID is required");
+  }
+
+  const supabase = createAdminClient();
+  const displayName = [firstName, lastName].filter(Boolean).join(" ").trim() || username || `Telegram ${cleanTelegramId}`;
+  const systemEmail = telegramSystemEmail(cleanTelegramId);
+  const preferredEmail = normalizeTelegramLoginId(email || "");
+
+  const { data: existingProfile, error: profileLookupError } = await supabase
+    .from("profiles")
+    .select("id, email, username, role, onboarding_complete")
+    .eq("telegram_id", cleanTelegramId)
+    .maybeSingle();
+
+  if (profileLookupError) {
+    throw profileLookupError;
+  }
+
+  let userId = existingProfile?.id || "";
+  let authEmail = existingProfile?.email || systemEmail;
+
+  if (!userId) {
+    const { data: existingAuth } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    const matchedAuthUser = existingAuth?.users.find((user) => {
+      const metaTelegramId = normalizeTelegramLoginId(String(user.user_metadata?.telegram_id || "")).replace(/^@/, "");
+      return metaTelegramId === cleanTelegramId || user.email?.toLowerCase() === systemEmail;
+    });
+
+    if (matchedAuthUser) {
+      userId = matchedAuthUser.id;
+      authEmail = matchedAuthUser.email || systemEmail;
+    }
+  }
+
+  if (!userId) {
+    const { data: created, error: createError } = await supabase.auth.admin.createUser({
+      email: preferredEmail || systemEmail,
+      password: `ProjectPeakTelegram-${crypto.randomUUID()}`,
+      email_confirm: true,
+      user_metadata: {
+        username: displayName,
+        telegram_id: cleanTelegramId,
+        telegram_username: username || "",
+      },
+    });
+
+    if (createError || !created.user) {
+      throw createError || new Error("Could not create Telegram user account");
+    }
+
+    userId = created.user.id;
+    authEmail = created.user.email || preferredEmail || systemEmail;
+  } else {
+    const nextEmail = preferredEmail && isTelegramSystemEmail(authEmail) ? preferredEmail : authEmail;
+    const { error: updateAuthError } = await supabase.auth.admin.updateUserById(userId, {
+      email: nextEmail,
+      email_confirm: true,
+      user_metadata: {
+        username: displayName,
+        telegram_id: cleanTelegramId,
+        telegram_username: username || "",
+      },
+    });
+
+    if (updateAuthError && preferredEmail) {
+      console.warn("Telegram user email sync skipped:", updateAuthError.message);
+    } else {
+      authEmail = nextEmail;
+    }
+  }
+
+  const { error: upsertError } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: userId,
+        username: existingProfile?.username || displayName,
+        email: preferredEmail || authEmail || systemEmail,
+        role: existingProfile?.role || "user",
+        onboarding_complete: existingProfile?.onboarding_complete ?? false,
+        telegram_id: cleanTelegramId,
+      },
+      { onConflict: "id" },
+    );
+
+  if (upsertError) {
+    throw upsertError;
+  }
+
+  return { userId, email: preferredEmail || authEmail || systemEmail, telegramId: cleanTelegramId, supabase };
 }
 
 export async function ensureAdminAccount(telegramId?: string) {

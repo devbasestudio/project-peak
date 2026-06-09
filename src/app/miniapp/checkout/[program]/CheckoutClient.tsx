@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { formatMmk, paymentMethods, type ProjectProgram } from "@/lib/projectPeakConfig";
+import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from "@/lib/telegramWebApp";
 import { FlowSteps } from "../../FlowSteps";
 
 type SubmitState = "idle" | "submitting" | "pending" | "error";
@@ -26,7 +27,8 @@ export default function CheckoutClient({
   );
   const [selectedDuration, setSelectedDuration] = useState(initialDuration.months);
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
-  const [telegramId, setTelegramId] = useState("");
+  const [telegramIdentity, setTelegramIdentity] = useState<TelegramIdentity | null>(null);
+  const [copiedTelegramId, setCopiedTelegramId] = useState(false);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -34,8 +36,28 @@ export default function CheckoutClient({
     program.durations.find((item) => item.months === selectedDuration) || program.durations[0];
   const payment = paymentMethods.find((item) => item.id === selectedPayment) || paymentMethods[0];
 
+  useEffect(() => {
+    initTelegramWebApp();
+    setTelegramIdentity(readTelegramIdentity());
+  }, []);
+
+  async function handleCopyTelegramId() {
+    if (!telegramIdentity?.id) return;
+    const copied = await copyText(telegramIdentity.id);
+    setCopiedTelegramId(copied);
+    if (copied) {
+      window.setTimeout(() => setCopiedTelegramId(false), 1600);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!telegramIdentity?.id) {
+      setSubmitState("error");
+      setErrorMessage("Telegram bot ကနေ mini app ကိုဖွင့်မှ Telegram ID auto ချိတ်နိုင်ပါမယ်။");
+      return;
+    }
+
     setSubmitState("submitting");
     setErrorMessage("");
 
@@ -45,6 +67,7 @@ export default function CheckoutClient({
     formData.set("duration_months", String(duration.months));
     formData.set("program_price", String(duration.price));
     formData.set("payment_method", payment.label);
+    formData.set("telegram_id", telegramIdentity.id);
 
     try {
       const response = await fetch("/api/save-registration", { method: "POST", body: formData });
@@ -52,7 +75,6 @@ export default function CheckoutClient({
       if (!response.ok) throw new Error(payload.error || "Registration failed");
       setSubmitState("pending");
       form.reset();
-      setTelegramId("");
     } catch (error) {
       setSubmitState("error");
       setErrorMessage(error instanceof Error ? error.message : "Registration failed");
@@ -183,20 +205,39 @@ export default function CheckoutClient({
             <div className="flex flex-1 flex-col gap-3">
               <h3 className="text-sm font-bold text-[#1c2b29]">After transfer</h3>
               <p className="text-xs leading-relaxed text-[#6b7a77]">
-                Payment screenshot တင်ပြီး Telegram username/ID ဖြည့်ပါ။ Admin approve ပြီး custom
-                tracker ပြင်ပြီးတာနဲ့ bot ကနေ ready link ပို့ပါမယ်။
+                Payment screenshot တင်ပါ။ Telegram ID ကို bot ကနေ auto ချိတ်ပေးထားတာမလို့ ဖြည့်စရာမလိုပါ။
+                Admin approve ပြီး custom tracker ပြင်ပြီးတာနဲ့ bot ကနေ ready link ပို့ပါမယ်။
               </p>
-              <label className={labelClass}>
-                Telegram username / ID
-                <input
-                  name="telegram_id"
-                  value={telegramId}
-                  onChange={(event) => setTelegramId(event.target.value)}
-                  placeholder="@username or 1827344905"
-                  required
-                  className={fieldClass}
-                />
-              </label>
+              <input type="hidden" name="telegram_id" value={telegramIdentity?.id || ""} />
+              <div className="rounded-2xl border border-[#d8dedb] bg-white p-3">
+                <p className="text-[0.68rem] font-bold uppercase tracking-wide text-[#9aa8a4]">
+                  Your Telegram ID
+                </p>
+                {telegramIdentity ? (
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-lg font-extrabold text-[#1c2b29]">
+                        {telegramIdentity.id}
+                      </strong>
+                      <span className="block truncate text-xs font-semibold text-[#6b7a77]">
+                        {telegramIdentity.username ? `@${telegramIdentity.username}` : telegramIdentity.displayName}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyTelegramId}
+                      className="shrink-0 rounded-xl bg-[#eef2f0] px-3 py-2 text-xs font-extrabold text-[#1c2b29]"
+                    >
+                      {copiedTelegramId ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 rounded-xl border border-[#f4d6a8] bg-[#fff7e8] px-3 py-2 text-xs font-bold leading-relaxed text-[#9a5a12]">
+                    Telegram bot မှာ /start နှိပ်ပြီး Open Project Peak ကိုဖွင့်ပေးပါ။ Telegram ID ကို
+                    ဒီနေရာမှာ auto ပြပါမယ်။
+                  </div>
+                )}
+              </div>
               <label className={labelClass}>
                 Payment screenshot
                 <input
@@ -293,7 +334,7 @@ export default function CheckoutClient({
 
           <button
             type="submit"
-            disabled={submitState === "submitting"}
+            disabled={submitState === "submitting" || !telegramIdentity?.id}
             className="flex items-center justify-center gap-2 rounded-xl bg-[#1c2b29] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#26403c] disabled:opacity-60"
           >
             <i className={`ph ${submitState === "submitting" ? "ph-spinner animate-spin" : "ph-paper-plane-tilt"} text-base`} />

@@ -2,11 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { formatMmk, projectPrograms } from "@/lib/projectPeakConfig";
+import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from "@/lib/telegramWebApp";
 import { FlowSteps } from "./FlowSteps";
 
 export default function MiniAppPage() {
+  const [telegramIdentity, setTelegramIdentity] = useState<TelegramIdentity | null>(null);
+  const [copiedTelegramId, setCopiedTelegramId] = useState(false);
+
+  useEffect(() => {
+    initTelegramWebApp();
+    setTelegramIdentity(readTelegramIdentity());
+  }, []);
+
+  async function handleCopyTelegramId() {
+    if (!telegramIdentity?.id) return;
+    const copied = await copyText(telegramIdentity.id);
+    setCopiedTelegramId(copied);
+    if (copied) {
+      window.setTimeout(() => setCopiedTelegramId(false), 1600);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f6f8f7] pb-10 text-[#1c2b29]">
       <div className="mx-auto w-full max-w-[760px] px-4 pt-4">
@@ -32,6 +51,34 @@ export default function MiniAppPage() {
             </p>
           </div>
         </header>
+
+        <section className="mt-4 rounded-2xl border border-[#e6eae8] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">Telegram ID</p>
+          {telegramIdentity ? (
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <strong className="block truncate text-2xl font-extrabold text-[#1c2b29]">
+                  {telegramIdentity.id}
+                </strong>
+                <span className="block truncate text-sm font-semibold text-[#6b7a77]">
+                  {telegramIdentity.username ? `@${telegramIdentity.username}` : telegramIdentity.displayName}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyTelegramId}
+                className="shrink-0 rounded-xl bg-[#1c2b29] px-4 py-2.5 text-sm font-extrabold text-white"
+              >
+                {copiedTelegramId ? "Copied" : "Copy"}
+              </button>
+            </div>
+          ) : (
+            <p className="mt-2 rounded-xl border border-[#f4d6a8] bg-[#fff7e8] px-3 py-2 text-sm font-bold leading-relaxed text-[#9a5a12]">
+              Bot မှာ /start နှိပ်ပြီး Open Project Peak ကိုဖွင့်ပါ။ User ID ကို ဒီနေရာမှာ auto
+              ပြပြီး copy လုပ်လို့ရပါမယ်။
+            </p>
+          )}
+        </section>
 
         <FlowSteps active={0} className="mt-5" />
 

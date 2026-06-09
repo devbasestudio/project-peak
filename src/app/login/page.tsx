@@ -1,24 +1,45 @@
 "use client";
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import { copyText, initTelegramWebApp, readTelegramIdentity, type TelegramIdentity } from '@/lib/telegramWebApp';
 import { createClient } from '@/utils/supabase/client';
 
 export default function LoginPage() {
   const [error, setError] = useState('');
-  const [telegramId, setTelegramId] = useState('');
+  const [telegramIdentity, setTelegramIdentity] = useState<TelegramIdentity | null>(null);
+  const [copiedTelegramId, setCopiedTelegramId] = useState(false);
   const [telegramSubmitting, setTelegramSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const supabase = createClient();
 
+  useEffect(() => {
+    initTelegramWebApp();
+    setTelegramIdentity(readTelegramIdentity());
+  }, []);
+
+  const handleCopyTelegramId = async () => {
+    if (!telegramIdentity?.id) return;
+    const copied = await copyText(telegramIdentity.id);
+    setCopiedTelegramId(copied);
+    if (copied) {
+      window.setTimeout(() => setCopiedTelegramId(false), 1600);
+    }
+  };
+
   const handleTelegramLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!telegramIdentity?.id) {
+      setError('Telegram bot ကနေ Open Project Peak ကိုဖွင့်မှ Telegram ID ကို auto သိနိုင်ပါမယ်။');
+      return;
+    }
+
     setError('');
     setTelegramSubmitting(true);
     try {
       const response = await fetch('/api/auth/telegram-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId }),
+        body: JSON.stringify({ telegramId: telegramIdentity.id }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -72,7 +93,7 @@ export default function LoginPage() {
           Project Peak <span className="text-[#ff6b35]">空</span>
         </h2>
         <p className="mb-8 text-[0.95rem] font-medium leading-relaxed text-white/50">
-          Admin က ready link ပို့ပြီးတာနဲ့ Telegram username / ID ဖြင့် login ဝင်ပါ။
+          Telegram bot ကနေဖွင့်ထားရင် ID ကို auto ပြပြီး login ဝင်နိုင်ပါတယ်။
         </p>
 
         {/* Error message */}
@@ -83,23 +104,37 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleTelegramLogin} className="mb-4 text-left">
-          <label className="mb-2 block text-sm font-bold text-white/70">
-            Telegram username / ID
-          </label>
-          <input
-            value={telegramId}
-            onChange={(event) => setTelegramId(event.target.value)}
-            placeholder="@username or 1827344905"
-            className="mb-3 w-full rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-4 text-base font-bold text-white outline-none transition focus:border-[#ff6b35]/60"
-            required
-          />
+          <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.08] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/35">Your Telegram ID</p>
+            {telegramIdentity ? (
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <strong className="block truncate text-2xl font-black text-white">{telegramIdentity.id}</strong>
+                  <span className="block truncate text-xs font-bold text-white/45">
+                    {telegramIdentity.username ? `@${telegramIdentity.username}` : telegramIdentity.displayName}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyTelegramId}
+                  className="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-xs font-black text-white"
+                >
+                  {copiedTelegramId ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-white/50">
+                Bot မှာ /start နှိပ်ပြီး Open Project Peak ကိုဖွင့်ပါ။ ID ကို ဒီနေရာမှာ auto ပြပါမယ်။
+              </p>
+            )}
+          </div>
           <button
             type="submit"
-            disabled={telegramSubmitting}
+            disabled={telegramSubmitting || !telegramIdentity?.id}
             className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full bg-[#ff6b35] px-6 py-4 text-base font-black text-white outline-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#ff7d4f] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <i className={`ph ${telegramSubmitting ? 'ph-spinner ph-spin' : 'ph-telegram-logo'} text-xl`} />
-            {telegramSubmitting ? 'Login link ပြင်နေပါသည်...' : 'Telegram username ဖြင့် ဝင်မည်'}
+            {telegramSubmitting ? 'Login link ပြင်နေပါသည်...' : 'Telegram ဖြင့် ဝင်မည်'}
           </button>
         </form>
 

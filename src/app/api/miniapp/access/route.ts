@@ -147,10 +147,14 @@ export async function POST(request: Request) {
     }
 
     const status = String(registration.status || "pending").toLowerCase();
-    if (status !== "ready") {
+    const paymentStatus = String(registration.payment_status || status).toLowerCase();
+    const effectiveStatus = paymentStatus === "awaiting_payment" ? "awaiting_payment" : status;
+    const isReady = status === "ready" || paymentStatus === "ready";
+
+    if (!isReady) {
       return NextResponse.json({
-        status,
-        paymentStatus: registration.payment_status || status,
+        status: effectiveStatus,
+        paymentStatus,
         programName: registration.program_name || "",
       });
     }
@@ -173,7 +177,7 @@ export async function POST(request: Request) {
       status: "ready",
       actionLink,
       programName: registration.program_name || "",
-      paymentStatus: registration.payment_status || "approved",
+      paymentStatus,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Mini App access check failed.";

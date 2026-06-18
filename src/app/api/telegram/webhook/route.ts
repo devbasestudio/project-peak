@@ -318,7 +318,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     duration_months: duration.months,
     program_price: duration.price,
     payment_method: paymentMethods[0].label,
-    status: "awaiting_payment",
+    status: "pending",
     payment_status: "awaiting_payment",
     notes: "Created from Telegram bot checkout.",
   };
@@ -327,7 +327,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     .from("program_registrations")
     .select("id")
     .eq("telegram_id", telegramId)
-    .eq("status", "awaiting_payment")
+    .eq("payment_status", "awaiting_payment")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -352,7 +352,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
       .from("program_registrations")
       .update({ user_id: account.userId, email: account.email || "" })
       .eq("telegram_id", telegramId)
-      .eq("status", "awaiting_payment");
+      .eq("payment_status", "awaiting_payment");
   }).catch(() => null);
 
   const qrUrl = `${baseUrl}${paymentMethods[0].qr}`;
@@ -380,7 +380,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
     .from("program_registrations")
     .select("*")
     .eq("telegram_id", telegramId)
-    .eq("status", "awaiting_payment")
+    .eq("payment_status", "awaiting_payment")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -464,13 +464,13 @@ export async function POST(request: Request) {
 
       if (!chatId) return NextResponse.json({ ok: true, ignored: true });
       if (data === "buy") {
-        return handlePackageMenu(chatId);
+        return await handlePackageMenu(chatId);
       }
       if (data.startsWith("pkg:")) {
-        return handlePackageDetails(chatId, data.split(":")[1], baseUrl);
+        return await handlePackageDetails(chatId, data.split(":")[1], baseUrl);
       }
       if (data.startsWith("buy:")) {
-        return handleDurationSelection(chatId, callbackQuery.from, data, baseUrl);
+        return await handleDurationSelection(chatId, callbackQuery.from, data, baseUrl);
       }
 
       return NextResponse.json({ ok: true, ignored: true });
@@ -482,7 +482,7 @@ export async function POST(request: Request) {
     if (!chatId) return NextResponse.json({ ok: true, ignored: true });
 
     if (text === "/start" || text.startsWith("/start ")) {
-      return sendStartMenu(chatId, from, baseUrl);
+      return await sendStartMenu(chatId, from, baseUrl);
     }
 
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {

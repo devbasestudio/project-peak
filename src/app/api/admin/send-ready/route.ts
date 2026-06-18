@@ -28,7 +28,11 @@ export async function POST(request: Request) {
     const registrationUpdate = registration?.id
       ? await supabase
           .from("program_registrations")
-          .update({ status: "ready", ready_at: new Date().toISOString() })
+          .update({
+            status: "approved",
+            payment_status: "ready",
+            ready_at: new Date().toISOString(),
+          })
           .eq("id", registration.id)
       : { error: null };
 

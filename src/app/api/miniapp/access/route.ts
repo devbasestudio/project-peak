@@ -52,6 +52,25 @@ function verifyTelegramInitData(initData: string) {
   }
 }
 
+function verifySignedLaunch(telegramId: string, timestamp: string, signature: string) {
+  const cleanTelegramId = normalizeTelegramLoginId(telegramId).replace(/^@/, "");
+  const ts = Number(timestamp || "0");
+  const secret = process.env.TELEGRAM_BOT_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!cleanTelegramId || !ts || !signature || !secret) return "";
+
+  const maxAgeSeconds = 24 * 60 * 60;
+  if (Math.abs(Math.floor(Date.now() / 1000) - ts) > maxAgeSeconds) return "";
+
+  const calculated = createHmac("sha256", secret)
+    .update(`${cleanTelegramId}:${timestamp}`)
+    .digest("hex");
+  const expected = Buffer.from(signature, "hex");
+  const actual = Buffer.from(calculated, "hex");
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return "";
+
+  return cleanTelegramId;
+}
+
 async function createMagicLink(email: string, redirectTo: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase.auth.admin.generateLink({
@@ -69,10 +88,15 @@ async function createMagicLink(email: string, redirectTo: string) {
 
 export async function POST(request: Request) {
   try {
-    const { telegramId, username, displayName, initData } = await request.json();
+    const { telegramId, username, displayName, initData, launchSig, launchTs } = await request.json();
     const verifiedTelegramUser = verifyTelegramInitData(String(initData || ""));
+    const signedTelegramId = verifySignedLaunch(
+      String(telegramId || ""),
+      String(launchTs || ""),
+      String(launchSig || ""),
+    );
     const allowLocalFallback = process.env.NODE_ENV !== "production";
-    const effectiveTelegramId = verifiedTelegramUser?.id || (allowLocalFallback ? telegramId : "");
+    const effectiveTelegramId = verifiedTelegramUser?.id || signedTelegramId || (allowLocalFallback ? telegramId : "");
     const cleanTelegramId = normalizeTelegramLoginId(String(effectiveTelegramId || "")).replace(/^@/, "");
 
     if (!cleanTelegramId) {

@@ -81,6 +81,15 @@ export function readTelegramInitData() {
   return String((window as any).Telegram?.WebApp?.initData || "");
 }
 
+export function readTelegramLaunchSignature() {
+  if (typeof window === "undefined") return { launchSig: "", launchTs: "" };
+  const params = new URLSearchParams(window.location.search);
+  return {
+    launchSig: params.get("tg_sig") || "",
+    launchTs: params.get("tg_ts") || "",
+  };
+}
+
 export function watchTelegramIdentity(onChange: (identity: TelegramIdentity | null) => void) {
   if (typeof window === "undefined") return () => {};
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   copyText,
   readTelegramInitData,
+  readTelegramLaunchSignature,
   type TelegramIdentity,
   watchTelegramIdentity,
 } from "@/lib/telegramWebApp";
@@ -98,7 +99,8 @@ export default function MiniAppClient() {
       setAccess({ status: "loading" });
       try {
         const initData = await waitForTelegramInitData();
-        if (!initData && process.env.NODE_ENV === "production") {
+        const launchSignature = readTelegramLaunchSignature();
+        if (!initData && !launchSignature.launchSig && process.env.NODE_ENV === "production") {
           throw new Error("Telegram bot ထဲက Open Mini App button နဲ့ပြန်ဖွင့်ပါ။");
         }
 
@@ -110,6 +112,8 @@ export default function MiniAppClient() {
             username: identity.username,
             displayName: identity.displayName,
             initData,
+            launchSig: launchSignature.launchSig,
+            launchTs: launchSignature.launchTs,
           }),
         });
         const payload = await response.json();

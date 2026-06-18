@@ -209,14 +209,38 @@ async function getFastProjectPrograms() {
   return withTimeout(getPublicProjectPrograms(), projectPrograms, 650);
 }
 
+function telegramImageFileType(fileUrl: string, headerContentType: string | null) {
+  const header = String(headerContentType || "").toLowerCase();
+  const pathname = (() => {
+    try {
+      return new URL(fileUrl).pathname.toLowerCase();
+    } catch {
+      return fileUrl.toLowerCase();
+    }
+  })();
+
+  if (header.includes("image/png") || pathname.endsWith(".png")) {
+    return { contentType: "image/png", ext: "png" };
+  }
+  if (header.includes("image/webp") || pathname.endsWith(".webp")) {
+    return { contentType: "image/webp", ext: "webp" };
+  }
+  if (header.includes("image/heic") || pathname.endsWith(".heic")) {
+    return { contentType: "image/heic", ext: "heic" };
+  }
+  if (header.includes("image/heif") || pathname.endsWith(".heif")) {
+    return { contentType: "image/heif", ext: "heif" };
+  }
+  return { contentType: "image/jpeg", ext: "jpg" };
+}
+
 async function uploadTelegramFile(fileUrl: string, telegramId: string) {
   const response = await fetch(fileUrl);
   if (!response.ok) {
     throw new Error("Could not download Telegram payment screenshot.");
   }
 
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-  const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
+  const { contentType, ext } = telegramImageFileType(fileUrl, response.headers.get("content-type"));
   const buffer = Buffer.from(await response.arrayBuffer());
   const filename = `telegram_payment_${telegramId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const supabase = createAdminClient();
@@ -248,6 +272,15 @@ async function seedTelegramUser(from?: TelegramUser) {
     firstName: from?.first_name ? String(from.first_name) : "",
     lastName: from?.last_name ? String(from.last_name) : "",
   });
+}
+
+async function sendTelegramMessageQuietly(
+  chatId: string,
+  text: string,
+  appUrl?: string,
+  options?: { buttonText?: string; webApp?: boolean },
+) {
+  await sendTelegramMessage(chatId, text, appUrl, options).catch(() => null);
 }
 
 async function sendStartMenu(chatId: string, from: TelegramUser | undefined, baseUrl: string) {
@@ -363,7 +396,8 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
 async function handlePaymentScreenshot(chatId: string, from: TelegramUser | undefined, message: TelegramMessage, baseUrl: string) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
-    return sendTelegramMessage(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပါ။");
+    await sendTelegramMessageQuietly(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပါ။");
+    return;
   }
 
   const largestPhoto = message.photo?.slice().sort((a, b) => (b.file_size || 0) - (a.file_size || 0))[0];
@@ -371,7 +405,8 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   const fileId = largestPhoto?.file_id || imageDocument?.file_id || "";
 
   if (!fileId) {
-    return sendTelegramMessage(chatId, "Payment screenshot ကို photo/image file အနေနဲ့ ပို့ပေးပါ။");
+    await sendTelegramMessageQuietly(chatId, "Payment screenshot ကို photo/image file အနေနဲ့ ပို့ပေးပါ။");
+    return;
   }
 
   const supabase = createAdminClient();
@@ -387,10 +422,11 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
 
   if (registrationError) throw registrationError;
   if (!registration) {
-    return sendTelegramMessage(
+    await sendTelegramMessageQuietly(
       chatId,
       "Payment စောင့်နေတဲ့ package မတွေ့ပါ။ Buy Package ကိုနှိပ်ပြီး package/duration အရင်ရွေးပါ။",
     );
+    return;
   }
 
   const fileUrl = await getTelegramFileUrl(fileId);
@@ -418,7 +454,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
 
   await notifyAdminsPayment(updatedRegistration, baseUrl).catch(() => null);
 
-  return sendTelegramMessage(
+  await sendTelegramMessageQuietly(
     chatId,
     "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီးတာနဲ့ tracker ready ဖြစ်ရင် Mini App ဖွင့်နိုင်ပါမယ်။",
     miniAppUrl(baseUrl, from),

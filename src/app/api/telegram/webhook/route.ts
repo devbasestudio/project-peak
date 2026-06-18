@@ -15,6 +15,7 @@ import {
   sendTelegramButtons,
   sendTelegramMessage,
   sendTelegramPhoto,
+  sendTelegramPhotoButtons,
   setTelegramChatMenuButton,
   type TelegramInlineButton,
 } from "@/lib/telegram";
@@ -63,39 +64,69 @@ function miniAppUrl(baseUrl: string, from?: TelegramUser) {
   return `${appUrl}?${params.toString()}`;
 }
 
-function packageRows(programs: ProjectProgram[]): TelegramInlineButton[][] {
-  return programs.map((program) => [
-    {
-      text: `${program.shortName} - ${formatMmk(program.durations[0]?.price || 0)}`,
-      callback_data: `pkg:${program.key}`,
-    },
-  ]);
+function assetUrl(baseUrl: string, path: string) {
+  if (!path) return `${baseUrl}/img/hero_bg.jpg`;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function escapeHtml(value: string | number | undefined | null) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function telegramCaption(lines: string[]) {
+  const caption = lines.join("\n");
+  return caption.length > 1000 ? `${caption.slice(0, 997)}...` : caption;
 }
 
 function durationRows(program: ProjectProgram): TelegramInlineButton[][] {
   const rows = program.durations.map((duration) => [
     {
-      text: `${duration.label} - ${formatMmk(duration.price)}`,
+      text: `${duration.label} | ${formatMmk(duration.price)}`,
       callback_data: `buy:${program.key}:${duration.months}`,
     },
   ]);
-  rows.push([{ text: "Back to packages", callback_data: "buy" }]);
+  rows.push([{ text: "Package အားလုံးပြန်ကြည့်မယ်", callback_data: "buy" }]);
   return rows;
+}
+
+function packageCaption(program: ProjectProgram) {
+  const includes = program.includes.slice(0, 3).map((item) => `• ${escapeHtml(item.title)}`).join("\n");
+  const prices = program.durations
+    .map((duration) => `${escapeHtml(duration.label)}: ${formatMmk(duration.price)}`)
+    .join("\n");
+
+  return telegramCaption([
+    `<b>${escapeHtml(program.name)}</b>`,
+    escapeHtml(program.headline),
+    "",
+    `<b>သင့်တော်တဲ့သူ</b>\n${escapeHtml(program.bestFor)}`,
+    "",
+    `<b>ပါဝင်တာတွေ</b>\n${includes}`,
+    "",
+    `<b>ဈေးနှုန်း</b>\n${prices}`,
+    "",
+    "ဝယ်မယ်ဆိုရင် အောက်က duration ကိုနှိပ်ပါ။ Payment QR ကိုချက်ချင်းပို့ပေးပါမယ်။",
+  ]);
 }
 
 function paymentCaption(program: ProjectProgram, months: number, price: number, telegramId: string) {
   const paymentMethod = paymentMethods[0];
   return [
-    "<b>Project Peak Payment</b>",
-    `Package: ${program.name}`,
+    "<b>Payment Detail</b>",
+    `Package: ${escapeHtml(program.name)}`,
     `Duration: ${months} month${months > 1 ? "s" : ""}`,
     `Amount: ${formatMmk(price)}`,
-    `Method: ${paymentMethod.label}`,
+    `Pay with: ${escapeHtml(paymentMethod.label)}`,
     "",
     `Telegram ID: <code>${telegramId}</code>`,
     "",
-    "Payment ပြီးရင် screenshot ကို ဒီ bot chat ထဲကို photo အနေနဲ့ ပို့ပေးပါ။",
-    "Admin approve ပြီး tracker ပြင်ပြီးမှ Mini App ကိုသုံးလို့ရပါမယ်။",
+    "Payment လုပ်ပြီးရင် screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပေးပါ။",
+    "Admin စစ်ပြီး approve လုပ်ပြီးမှ သင့်အတွက် tracker ကိုဖွင့်ပေးပါမယ်။",
   ].join("\n");
 }
 
@@ -143,47 +174,58 @@ async function seedTelegramUser(from?: TelegramUser) {
 async function sendStartMenu(chatId: string, from: TelegramUser | undefined, baseUrl: string) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   const appUrl = miniAppUrl(baseUrl, from);
-  await seedTelegramUser(from);
-  await setTelegramChatMenuButton(chatId, appUrl).catch(() => null);
+  void seedTelegramUser(from).catch(() => null);
+  void setTelegramChatMenuButton(chatId, appUrl).catch(() => null);
 
   const text = [
-    "<b>Welcome to Project Peak</b>",
-    telegramId ? `Your Telegram ID: <code>${telegramId}</code>` : "",
+    "<b>Project Peak မှကြိုဆိုပါတယ်</b>",
+    telegramId ? `သင့် Telegram ID: <code>${telegramId}</code>` : "",
     "",
-    "Package ဝယ်တာကို ဒီ bot chat ထဲမှာပဲ လုပ်ပါ။",
-    "Mini App ကတော့ admin approve လုပ်ပြီး custom tracker ready ဖြစ်တဲ့ user တွေအတွက်ပဲ ဖွင့်ပါမယ်။",
+    "ဒီ chat ထဲမှာ package ရွေးပြီး payment လုပ်နိုင်ပါတယ်။",
+    "Admin approve ပြီး tracker ready ဖြစ်မှ Mini App ကိုသုံးလို့ရပါမယ်။",
   ].filter(Boolean).join("\n");
 
   return sendTelegramButtons(chatId, text, [
-    [{ text: "Open Mini App", web_app: { url: appUrl } }],
-    [{ text: "Buy Package", callback_data: "buy" }],
+    [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
+    [{ text: "Mini App ဖွင့်မယ်", web_app: { url: appUrl } }],
   ]);
 }
 
-async function handlePackageMenu(chatId: string) {
+async function handlePackageMenu(chatId: string, baseUrl: string) {
   const programs = await getPublicProjectPrograms();
-  return sendTelegramButtons(
+  await sendTelegramMessage(
     chatId,
-    "<b>Choose your Project Peak package</b>\nPackage တစ်ခုရွေးပြီး duration ကိုဆက်ရွေးပါ။",
-    packageRows(programs),
+    "<b>Project Peak Packages</b>\nအောက်က package ပုံတွေထဲက သင့် goal နဲ့ကိုက်တဲ့ program ကိုရွေးပါ။ Duration နှိပ်တာနဲ့ payment QR ပို့ပေးပါမယ်။",
   );
+
+  const results = await Promise.allSettled(
+    programs.map((program) => sendPackageCard(chatId, baseUrl, program)),
+  );
+
+  return { ok: true, results };
 }
 
-async function handlePackageDetails(chatId: string, packageKey: string) {
+async function sendPackageCard(chatId: string, baseUrl: string, program: ProjectProgram) {
+  const caption = packageCaption(program);
+  const rows = durationRows(program);
+  const result = await sendTelegramPhotoButtons(
+    chatId,
+    assetUrl(baseUrl, program.image),
+    caption,
+    rows,
+  ).catch(() => null);
+
+  if (result && typeof result === "object" && "ok" in result && result.ok) {
+    return result;
+  }
+
+  return sendTelegramButtons(chatId, caption, rows);
+}
+
+async function handlePackageDetails(chatId: string, packageKey: string, baseUrl: string) {
   const programs = await getPublicProjectPrograms();
   const program = programs.find((item) => item.key === packageKey) || programs[0];
-  const includes = program.includes.map((item) => `• ${item.title}`).join("\n");
-  const text = [
-    `<b>${program.name}</b>`,
-    program.headline,
-    "",
-    "<b>Included after approval</b>",
-    includes,
-    "",
-    "Duration ကိုရွေးပါ။",
-  ].join("\n");
-
-  return sendTelegramButtons(chatId, text, durationRows(program));
+  return sendPackageCard(chatId, baseUrl, program);
 }
 
 async function handleDurationSelection(chatId: string, from: TelegramUser | undefined, data: string, baseUrl: string) {
@@ -310,7 +352,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
 
   return sendTelegramMessage(
     chatId,
-    "Payment screenshot ရပါပြီ။ Admin ကို image နဲ့ပို့ထားပါတယ်။ Approve ပြီး tracker ready ဖြစ်ရင် Mini App ဖွင့်လို့ရပါမယ်။",
+    "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီးတာနဲ့ tracker ready ဖြစ်ရင် Mini App ဖွင့်နိုင်ပါမယ်။",
     miniAppUrl(baseUrl, from),
     { buttonText: "Open Mini App" },
   );
@@ -354,11 +396,11 @@ export async function POST(request: Request) {
 
       if (!chatId) return NextResponse.json({ ok: true, ignored: true });
       if (data === "buy") {
-        await handlePackageMenu(chatId);
+        await handlePackageMenu(chatId, baseUrl);
         return NextResponse.json({ ok: true, handled: "package-menu" });
       }
       if (data.startsWith("pkg:")) {
-        await handlePackageDetails(chatId, data.split(":")[1]);
+        await handlePackageDetails(chatId, data.split(":")[1], baseUrl);
         return NextResponse.json({ ok: true, handled: "package-details" });
       }
       if (data.startsWith("buy:")) {
@@ -384,9 +426,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, handled: "payment-screenshot" });
     }
 
-    await sendTelegramButtons(chatId, "Project Peak မှာ ဘာလုပ်ချင်ပါသလဲ?", [
-      [{ text: "Open Mini App", web_app: { url: miniAppUrl(baseUrl, from) } }],
-      [{ text: "Buy Package", callback_data: "buy" }],
+    await sendTelegramButtons(chatId, "ဘာလုပ်ချင်ပါသလဲ?", [
+      [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
+      [{ text: "Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
     ]);
 
     return NextResponse.json({ ok: true, handled: "menu" });

@@ -119,6 +119,22 @@ export async function sendTelegramPhoto(
   });
 }
 
+export async function sendTelegramPhotoButtons(
+  chatId: string,
+  photoUrl: string,
+  caption: string,
+  rows: TelegramInlineButton[][],
+) {
+  if (!chatId || !photoUrl) return { ok: false, skipped: true };
+  return callTelegram("sendPhoto", {
+    chat_id: chatId,
+    photo: photoUrl,
+    caption,
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: rows },
+  });
+}
+
 export async function getTelegramFileUrl(fileId: string) {
   const { token } = telegramConfig();
   if (!token || !fileId) return "";

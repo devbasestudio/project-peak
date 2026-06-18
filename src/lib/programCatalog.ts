@@ -12,7 +12,7 @@ type ProgramCatalogRow = {
 };
 
 let cachedPrograms: { value: ProjectProgram[]; expiresAt: number } | null = null;
-const PROGRAM_CACHE_MS = 60_000;
+const PROGRAM_CACHE_MS = 5 * 60_000;
 
 function validDurations(value: unknown): ProgramDuration[] | null {
   if (!Array.isArray(value)) return null;

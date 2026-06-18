@@ -1,17 +1,7 @@
-import { projectPrograms } from "@/lib/projectPeakConfig";
-import { getPublicProjectProgram } from "@/lib/programCatalog";
-import ProgramDetailClient from "./ProgramDetailClient";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return projectPrograms.map((program) => ({ program: program.key }));
-}
-
-export default async function ProgramDetailPage(props: {
-  params: Promise<{ program: string }>;
-}) {
-  const { program } = await props.params;
-
-  return <ProgramDetailClient program={await getPublicProjectProgram(program)} />;
+export default function ProgramDetailPage() {
+  redirect("/miniapp");
 }

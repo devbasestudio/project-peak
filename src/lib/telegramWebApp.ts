@@ -76,6 +76,11 @@ export function readTelegramIdentity(): TelegramIdentity | null {
   return identity;
 }
 
+export function readTelegramInitData() {
+  if (typeof window === "undefined") return "";
+  return String((window as any).Telegram?.WebApp?.initData || "");
+}
+
 export function watchTelegramIdentity(onChange: (identity: TelegramIdentity | null) => void) {
   if (typeof window === "undefined") return () => {};
 

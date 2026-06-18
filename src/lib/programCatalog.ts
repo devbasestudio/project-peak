@@ -11,6 +11,9 @@ type ProgramCatalogRow = {
   active?: boolean | null;
 };
 
+let cachedPrograms: { value: ProjectProgram[]; expiresAt: number } | null = null;
+const PROGRAM_CACHE_MS = 60_000;
+
 function validDurations(value: unknown): ProgramDuration[] | null {
   if (!Array.isArray(value)) return null;
   const durations = value
@@ -51,6 +54,10 @@ export function mergeProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
 }
 
 export async function getPublicProjectPrograms(): Promise<ProjectProgram[]> {
+  if (cachedPrograms && cachedPrograms.expiresAt > Date.now()) {
+    return cachedPrograms.value;
+  }
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -59,7 +66,9 @@ export async function getPublicProjectPrograms(): Promise<ProjectProgram[]> {
       .eq("active", true);
 
     if (error) return projectPrograms;
-    return mergeProgramCatalogRows((data || []) as ProgramCatalogRow[]);
+    const programs = mergeProgramCatalogRows((data || []) as ProgramCatalogRow[]);
+    cachedPrograms = { value: programs, expiresAt: Date.now() + PROGRAM_CACHE_MS };
+    return programs;
   } catch {
     return projectPrograms;
   }

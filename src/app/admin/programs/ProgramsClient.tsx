@@ -28,7 +28,7 @@ export default function ProgramsClient({ programs = projectPrograms }: { program
       <PageHeader
         icon="ph-package"
         title="Programs"
-        subtitle="Edit the package catalog clients see in the mini app — names, descriptions and pricing."
+        subtitle="Edit the package catalog clients choose from inside the Telegram bot — names, descriptions and pricing."
       />
 
       <div className="inline-flex flex-wrap gap-2">
@@ -113,19 +113,7 @@ export default function ProgramsClient({ programs = projectPrograms }: { program
           </button>
 
           <div className="flex flex-wrap gap-2">
-            <PreviewLink href="/miniapp" icon="ph-stack" label="Choose page" />
-            <PreviewLink
-              href={`/miniapp/packages/${config.key}`}
-              icon="ph-eye"
-              label="Details"
-            />
-            <PreviewLink
-              href={`/miniapp/checkout/${config.key}?months=${
-                config.durations[1]?.months || config.durations[0].months
-              }`}
-              icon="ph-credit-card"
-              label="Checkout"
-            />
+            <PreviewLink href="/miniapp" icon="ph-lock-key" label="Mini App gate" />
           </div>
         </div>
       </Card>

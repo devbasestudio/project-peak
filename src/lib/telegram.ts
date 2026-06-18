@@ -5,6 +5,13 @@ type TelegramButtonOptions = {
   webApp?: boolean;
 };
 
+export type TelegramInlineButton = {
+  text: string;
+  callback_data?: string;
+  url?: string;
+  web_app?: { url: string };
+};
+
 function telegramConfig() {
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const adminIds = (process.env.TELEGRAM_ADMIN_IDS || "")
@@ -25,7 +32,7 @@ export function getTelegramRuntimeStatus() {
   };
 }
 
-async function callTelegram(method: string, payload: TelegramPayload) {
+export async function callTelegram(method: string, payload: TelegramPayload) {
   const { token } = telegramConfig();
   if (!token) return { ok: false, skipped: true };
 
@@ -41,6 +48,26 @@ async function callTelegram(method: string, payload: TelegramPayload) {
   }
 
   return response.json();
+}
+
+export async function answerCallbackQuery(callbackQueryId: string, text?: string) {
+  if (!callbackQueryId) return { ok: false, skipped: true };
+  return callTelegram("answerCallbackQuery", {
+    callback_query_id: callbackQueryId,
+    text,
+  });
+}
+
+export async function setTelegramChatMenuButton(chatId: string, appUrl: string) {
+  if (!chatId || !appUrl) return { ok: false, skipped: true };
+  return callTelegram("setChatMenuButton", {
+    chat_id: chatId,
+    menu_button: {
+      type: "web_app",
+      text: "Open App",
+      web_app: { url: appUrl },
+    },
+  });
 }
 
 function telegramButton(appUrl?: string, options: TelegramButtonOptions = {}) {
@@ -65,6 +92,16 @@ export async function sendTelegramMessage(
   });
 }
 
+export async function sendTelegramButtons(chatId: string, text: string, rows: TelegramInlineButton[][]) {
+  if (!chatId) return { ok: false, skipped: true };
+  return callTelegram("sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: rows },
+  });
+}
+
 export async function sendTelegramPhoto(
   chatId: string,
   photoUrl: string,
@@ -80,6 +117,14 @@ export async function sendTelegramPhoto(
     parse_mode: "HTML",
     reply_markup: telegramButton(appUrl, options),
   });
+}
+
+export async function getTelegramFileUrl(fileId: string) {
+  const { token } = telegramConfig();
+  if (!token || !fileId) return "";
+  const file = await callTelegram("getFile", { file_id: fileId });
+  const filePath = (file as any)?.result?.file_path;
+  return filePath ? `https://api.telegram.org/file/bot${token}/${filePath}` : "";
 }
 
 export async function notifyAdminsPayment(registration: any, appUrl: string) {
@@ -158,9 +203,11 @@ export async function notifyClientReady(telegramId: string, appUrl: string) {
   const text = [
     "<b>Your Project Peak plan is ready.</b>",
     "Admin approved your payment and prepared your daily tracker.",
-    "Open the app and login with your Telegram ID.",
+    "Open the Telegram Mini App to start using your tracker.",
   ].join("\n");
-  return sendTelegramMessage(telegramId, text, `${appUrl}/login`);
+  return sendTelegramMessage(telegramId, text, `${appUrl}/miniapp`, {
+    buttonText: "Open Mini App",
+  });
 }
 
 export async function broadcastFeedbackMessage(telegramIds: string[], templateName: string, appUrl: string) {

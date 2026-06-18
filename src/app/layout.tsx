@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Phosphor Icons — load each weight the markup actually uses (regular, fill, bold).
             The combined `src/style.css` does not exist on the CDN (404), which previously left every icon blank. */}

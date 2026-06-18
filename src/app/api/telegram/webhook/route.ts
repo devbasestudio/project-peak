@@ -7,16 +7,13 @@ import {
   normalizeTelegramLoginId,
 } from "@/lib/adminAuth";
 import { getPublicProjectPrograms } from "@/lib/programCatalog";
-import { formatMmk, paymentMethods, type ProjectProgram } from "@/lib/projectPeakConfig";
+import { formatMmk, paymentMethods, projectPrograms, type ProjectProgram } from "@/lib/projectPeakConfig";
 import {
   answerCallbackQuery,
   getTelegramFileUrl,
   getTelegramRuntimeStatus,
   notifyAdminsPayment,
-  sendTelegramButtons,
   sendTelegramMessage,
-  sendTelegramPhoto,
-  sendTelegramPhotoButtons,
   setTelegramChatMenuButton,
   type TelegramInlineButton,
 } from "@/lib/telegram";
@@ -167,6 +164,51 @@ function paymentCaption(program: ProjectProgram, months: number, price: number, 
   ].join("\n");
 }
 
+function telegramMethodResponse(method: string, payload: Record<string, unknown>) {
+  return NextResponse.json({ method, ...payload });
+}
+
+function telegramMessagePayload(chatId: string, text: string, rows?: TelegramInlineButton[][]) {
+  return {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    ...(rows ? { reply_markup: { inline_keyboard: rows } } : {}),
+  };
+}
+
+function sendMessageResponse(chatId: string, text: string, rows?: TelegramInlineButton[][]) {
+  return telegramMethodResponse("sendMessage", telegramMessagePayload(chatId, text, rows));
+}
+
+function sendPhotoResponse(chatId: string, photoUrl: string, caption: string, rows?: TelegramInlineButton[][]) {
+  return telegramMethodResponse("sendPhoto", {
+    chat_id: chatId,
+    photo: photoUrl,
+    caption,
+    parse_mode: "HTML",
+    ...(rows ? { reply_markup: { inline_keyboard: rows } } : {}),
+  });
+}
+
+async function withTimeout<T>(promise: Promise<T>, fallback: T, ms: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timeoutId = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+async function getFastProjectPrograms() {
+  return withTimeout(getPublicProjectPrograms(), projectPrograms, 650);
+}
+
 async function uploadTelegramFile(fileUrl: string, telegramId: string) {
   const response = await fetch(fileUrl);
   if (!response.ok) {
@@ -222,42 +264,30 @@ async function sendStartMenu(chatId: string, from: TelegramUser | undefined, bas
     "Admin approve ပြီး tracker ready ဖြစ်မှ Mini App ကိုသုံးလို့ရပါမယ်။",
   ].filter(Boolean).join("\n");
 
-  return sendTelegramButtons(chatId, text, [
+  return sendMessageResponse(chatId, text, [
     [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
     [{ text: "Mini App ဖွင့်မယ်", web_app: { url: appUrl } }],
   ]);
 }
 
 async function handlePackageMenu(chatId: string) {
-  const programs = await getPublicProjectPrograms();
-  return sendTelegramButtons(
+  const programs = await getFastProjectPrograms();
+  return sendMessageResponse(
     chatId,
     packageSummary(programs),
     packageRows(programs),
   );
 }
 
-async function sendPackageCard(chatId: string, baseUrl: string, program: ProjectProgram) {
-  const caption = packageCaption(program);
-  const rows = durationRows(program);
-  const result = await sendTelegramPhotoButtons(
+async function handlePackageDetails(chatId: string, packageKey: string, baseUrl: string) {
+  const programs = await getFastProjectPrograms();
+  const program = programs.find((item) => item.key === packageKey) || programs[0];
+  return sendPhotoResponse(
     chatId,
     assetUrl(baseUrl, program.image),
-    caption,
-    rows,
-  ).catch(() => null);
-
-  if (result && typeof result === "object" && "ok" in result && result.ok) {
-    return result;
-  }
-
-  return sendTelegramButtons(chatId, caption, rows);
-}
-
-async function handlePackageDetails(chatId: string, packageKey: string, baseUrl: string) {
-  const programs = await getPublicProjectPrograms();
-  const program = programs.find((item) => item.key === packageKey) || programs[0];
-  return sendPackageCard(chatId, baseUrl, program);
+    packageCaption(program),
+    durationRows(program),
+  );
 }
 
 async function handleDurationSelection(chatId: string, from: TelegramUser | undefined, data: string, baseUrl: string) {
@@ -265,22 +295,22 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   const months = Number(monthValue);
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
-    return sendTelegramMessage(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပါ။");
+    return sendMessageResponse(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပါ။");
   }
 
-  const programs = await getPublicProjectPrograms();
+  const programs = await getFastProjectPrograms();
   const program = programs.find((item) => item.key === packageKey) || programs[0];
   const duration = program.durations.find((item) => item.months === months) || program.durations[0];
-  const account = await seedTelegramUser(from);
+  const accountPromise = seedTelegramUser(from).catch(() => null);
   const supabase = createAdminClient();
 
   const registration = {
-    user_id: account?.userId || null,
+    user_id: null,
     name: userDisplayName(from),
     age: 0,
     height: "",
     weight: 0,
-    email: account?.email || "",
+    email: "",
     phone: "",
     telegram_id: telegramId,
     workout_split: "Admin customized plan",
@@ -316,14 +346,18 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
 
   if (saveResult.error) throw saveResult.error;
 
+  void accountPromise.then(async (account) => {
+    if (!account?.userId) return;
+    await supabase
+      .from("program_registrations")
+      .update({ user_id: account.userId, email: account.email || "" })
+      .eq("telegram_id", telegramId)
+      .eq("status", "awaiting_payment");
+  }).catch(() => null);
+
   const qrUrl = `${baseUrl}${paymentMethods[0].qr}`;
   const caption = paymentCaption(program, duration.months, duration.price, telegramId);
-  const result = await sendTelegramPhoto(chatId, qrUrl, caption).catch(() => null);
-  if (!result?.ok) {
-    await sendTelegramMessage(chatId, `${caption}\n\nQR: ${qrUrl}`);
-  }
-
-  return { ok: true };
+  return sendPhotoResponse(chatId, qrUrl, caption);
 }
 
 async function handlePaymentScreenshot(chatId: string, from: TelegramUser | undefined, message: TelegramMessage, baseUrl: string) {
@@ -341,6 +375,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   }
 
   const supabase = createAdminClient();
+  const account = await seedTelegramUser(from).catch(() => null);
   const { data: registration, error: registrationError } = await supabase
     .from("program_registrations")
     .select("*")
@@ -372,6 +407,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   const { error: updateError } = await supabase
     .from("program_registrations")
     .update({
+      ...(account?.userId ? { user_id: account.userId, email: account.email || registration.email || "" } : {}),
       payment_screenshot,
       status: "pending",
       payment_status: "pending",
@@ -424,20 +460,17 @@ export async function POST(request: Request) {
     if (callbackQuery?.id) {
       const chatId = callbackQuery.message?.chat?.id ? String(callbackQuery.message.chat.id) : String(callbackQuery.from?.id || "");
       const data = String(callbackQuery.data || "");
-      await answerCallbackQuery(callbackQuery.id).catch(() => null);
+      void answerCallbackQuery(callbackQuery.id).catch(() => null);
 
       if (!chatId) return NextResponse.json({ ok: true, ignored: true });
       if (data === "buy") {
-        await handlePackageMenu(chatId);
-        return NextResponse.json({ ok: true, handled: "package-menu" });
+        return handlePackageMenu(chatId);
       }
       if (data.startsWith("pkg:")) {
-        await handlePackageDetails(chatId, data.split(":")[1], baseUrl);
-        return NextResponse.json({ ok: true, handled: "package-details" });
+        return handlePackageDetails(chatId, data.split(":")[1], baseUrl);
       }
       if (data.startsWith("buy:")) {
-        await handleDurationSelection(chatId, callbackQuery.from, data, baseUrl);
-        return NextResponse.json({ ok: true, handled: "duration" });
+        return handleDurationSelection(chatId, callbackQuery.from, data, baseUrl);
       }
 
       return NextResponse.json({ ok: true, ignored: true });
@@ -449,8 +482,7 @@ export async function POST(request: Request) {
     if (!chatId) return NextResponse.json({ ok: true, ignored: true });
 
     if (text === "/start" || text.startsWith("/start ")) {
-      await sendStartMenu(chatId, from, baseUrl);
-      return NextResponse.json({ ok: true, handled: "start" });
+      return sendStartMenu(chatId, from, baseUrl);
     }
 
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {
@@ -458,12 +490,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, handled: "payment-screenshot" });
     }
 
-    await sendTelegramButtons(chatId, "ဘာလုပ်ချင်ပါသလဲ?", [
+    return sendMessageResponse(chatId, "ဘာလုပ်ချင်ပါသလဲ?", [
       [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
       [{ text: "Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
     ]);
-
-    return NextResponse.json({ ok: true, handled: "menu" });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Webhook failed";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

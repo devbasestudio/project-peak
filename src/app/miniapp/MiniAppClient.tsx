@@ -22,8 +22,8 @@ type AccessState = {
 function statusCopy(access: AccessState) {
   if (access.status === "admin") {
     return {
-      title: "Admin access ready",
-      body: "Telegram admin ID နဲ့ဝင်ထားတာဖြစ်လို့ admin dashboard ကိုဖွင့်နိုင်ပါတယ်။",
+      title: "Opening admin dashboard",
+      body: "Admin Telegram ID ဖြစ်တာကြောင့် admin dashboard ကိုတန်းပို့နေပါတယ်။",
       tone: "ready",
     };
   }
@@ -100,9 +100,13 @@ export default function MiniAppClient() {
         }
         if (disposed) return;
         setAccess(payload);
-        if ((payload.status === "ready" || payload.status === "admin") && payload.actionLink) {
+        if (payload.status === "admin" && payload.actionLink) {
+          window.location.replace(payload.actionLink);
+          return;
+        }
+        if (payload.status === "ready" && payload.actionLink) {
           window.setTimeout(() => {
-            window.location.href = payload.actionLink;
+            window.location.replace(payload.actionLink);
           }, 700);
         }
       } catch (err) {
@@ -234,7 +238,7 @@ export default function MiniAppClient() {
                 className="flex items-center justify-center gap-2 rounded-2xl bg-[#1c2b29] px-4 py-4 text-sm font-extrabold text-white no-underline"
               >
                 <i className="ph ph-arrow-square-out text-lg" />
-                {access.status === "admin" ? "Open admin dashboard" : "Open my tracker"}
+                {access.status === "admin" ? "Opening admin dashboard..." : "Open my tracker"}
               </a>
             )}
             <a

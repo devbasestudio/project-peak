@@ -19,6 +19,19 @@ type AccessState = {
   paymentStatus?: string;
 };
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForTelegramInitData() {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const initData = readTelegramInitData();
+    if (initData) return initData;
+    await wait(200);
+  }
+  return "";
+}
+
 function statusCopy(access: AccessState) {
   if (access.status === "admin") {
     return {
@@ -84,6 +97,11 @@ export default function MiniAppClient() {
     async function checkAccess(identity: TelegramIdentity) {
       setAccess({ status: "loading" });
       try {
+        const initData = await waitForTelegramInitData();
+        if (!initData && process.env.NODE_ENV === "production") {
+          throw new Error("Telegram bot ထဲက Open Mini App button နဲ့ပြန်ဖွင့်ပါ။");
+        }
+
         const response = await fetch("/api/miniapp/access", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -91,7 +109,7 @@ export default function MiniAppClient() {
             telegramId: identity.id,
             username: identity.username,
             displayName: identity.displayName,
-            initData: readTelegramInitData(),
+            initData,
           }),
         });
         const payload = await response.json();

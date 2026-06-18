@@ -7,6 +7,7 @@ import {
   isAdminTelegramId,
   normalizeTelegramLoginId,
 } from "@/lib/adminAuth";
+import { createMiniAppSessionLink } from "@/lib/miniappSession";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -71,21 +72,6 @@ function verifySignedLaunch(telegramId: string, timestamp: string, signature: st
   return cleanTelegramId;
 }
 
-async function createMagicLink(email: string, redirectTo: string) {
-  const supabase = createAdminClient();
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-    options: { redirectTo },
-  });
-
-  if (error || !data.properties?.action_link) {
-    throw error || new Error("Could not create login link.");
-  }
-
-  return data.properties.action_link;
-}
-
 export async function POST(request: Request) {
   try {
     const { telegramId, username, displayName, initData, launchSig, launchTs } = await request.json();
@@ -115,7 +101,11 @@ export async function POST(request: Request) {
 
     if (isAdminTelegramId(cleanTelegramId)) {
       await ensureAdminAccount(cleanTelegramId);
-      const actionLink = await createMagicLink(ADMIN_EMAIL, `${origin}/login?next=/admin/dashboard`);
+      const actionLink = createMiniAppSessionLink(origin, {
+        email: ADMIN_EMAIL,
+        telegramId: cleanTelegramId,
+        next: "/admin/dashboard",
+      });
       return NextResponse.json({
         status: "admin",
         actionLink,
@@ -172,7 +162,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const actionLink = await createMagicLink(email, `${origin}/login?next=/user/dashboard`);
+    const actionLink = createMiniAppSessionLink(origin, {
+      email,
+      telegramId: cleanTelegramId,
+      next: "/user/dashboard",
+    });
     return NextResponse.json({
       status: "ready",
       actionLink,

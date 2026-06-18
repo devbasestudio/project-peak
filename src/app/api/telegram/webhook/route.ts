@@ -94,6 +94,30 @@ function durationRows(program: ProjectProgram): TelegramInlineButton[][] {
   return rows;
 }
 
+function packageRows(programs: ProjectProgram[]): TelegramInlineButton[][] {
+  return programs.map((program) => [
+    {
+      text: `${program.shortName} ကြည့်မယ်`,
+      callback_data: `pkg:${program.key}`,
+    },
+  ]);
+}
+
+function packageSummary(programs: ProjectProgram[]) {
+  const lines = programs.map((program, index) => {
+    const startPrice = program.durations[0]?.price ? formatMmk(program.durations[0].price) : "";
+    return `${index + 1}. <b>${escapeHtml(program.shortName)}</b>${startPrice ? ` - ${startPrice} မှစ` : ""}`;
+  });
+
+  return [
+    "<b>Project Peak Packages</b>",
+    "Package တစ်ခုကိုရွေးပါ။",
+    "ရွေးပြီးမှ photo, detail, price နဲ့ duration buttons ကိုပြပေးပါမယ်။",
+    "",
+    ...lines,
+  ].join("\n");
+}
+
 function packageCaption(program: ProjectProgram) {
   const includes = program.includes.slice(0, 3).map((item) => `• ${escapeHtml(item.title)}`).join("\n");
   const prices = program.durations
@@ -191,18 +215,13 @@ async function sendStartMenu(chatId: string, from: TelegramUser | undefined, bas
   ]);
 }
 
-async function handlePackageMenu(chatId: string, baseUrl: string) {
+async function handlePackageMenu(chatId: string) {
   const programs = await getPublicProjectPrograms();
-  await sendTelegramMessage(
+  return sendTelegramButtons(
     chatId,
-    "<b>Project Peak Packages</b>\nအောက်က package ပုံတွေထဲက သင့် goal နဲ့ကိုက်တဲ့ program ကိုရွေးပါ။ Duration နှိပ်တာနဲ့ payment QR ပို့ပေးပါမယ်။",
+    packageSummary(programs),
+    packageRows(programs),
   );
-
-  const results = await Promise.allSettled(
-    programs.map((program) => sendPackageCard(chatId, baseUrl, program)),
-  );
-
-  return { ok: true, results };
 }
 
 async function sendPackageCard(chatId: string, baseUrl: string, program: ProjectProgram) {
@@ -396,7 +415,7 @@ export async function POST(request: Request) {
 
       if (!chatId) return NextResponse.json({ ok: true, ignored: true });
       if (data === "buy") {
-        await handlePackageMenu(chatId, baseUrl);
+        await handlePackageMenu(chatId);
         return NextResponse.json({ ok: true, handled: "package-menu" });
       }
       if (data.startsWith("pkg:")) {

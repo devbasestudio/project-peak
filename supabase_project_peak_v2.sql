@@ -139,7 +139,15 @@ VALUES
     '/user/Skinnyfat.jpg',
     '#7eb6ff',
     '[{"label":"1 month","months":1,"price":50000,"note":"Starter reset"},{"label":"3 months","months":3,"price":135000,"note":"Most common"},{"label":"6 months","months":6,"price":250000,"note":"Deep coaching"}]'::jsonb,
-    '["Name","Weight","Height","Age","Front photo","Back photo","Side photo"]'::jsonb,
+    '[
+      {"id":"weight","label":"Weight","type":"number","required":true,"unit":"kg","prompt":"လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ? kg နဲ့ရေးပေးပါ။"},
+      {"id":"height","label":"Height","type":"text","required":true,"prompt":"အရပ် ဘယ်လောက်ရှိပါသလဲ? ဥပမာ 5ft 8in / 173cm"},
+      {"id":"age","label":"Age","type":"number","required":true,"unit":"years","prompt":"အသက် ဘယ်လောက်ရှိပါသလဲ?"},
+      {"id":"photo_front","label":"Front body photo","type":"photo","required":true,"photoSlot":"front","prompt":"ရှေ့ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"photo_back","label":"Back body photo","type":"photo","required":true,"photoSlot":"back","prompt":"နောက်ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"photo_side","label":"Side body photo","type":"photo","required":true,"photoSlot":"side","prompt":"ဘေးဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"goal_notes","label":"Goal / notes","type":"text","required":false,"prompt":"ဒီ program မှာ အဓိကဖြစ်ချင်တဲ့ goal ကိုရေးပေးပါ။"}
+    ]'::jsonb,
     'weekly',
     true
   ),
@@ -150,7 +158,15 @@ VALUES
     '/user/project 20.jpg',
     '#f5b84b',
     '[{"label":"1 month","months":1,"price":55000,"note":"Kickstart"},{"label":"3 months","months":3,"price":150000,"note":"Best result window"},{"label":"6 months","months":6,"price":280000,"note":"Long cut"}]'::jsonb,
-    '["Name","Weight","Height","Age","Progress photos","Weekly feedback"]'::jsonb,
+    '[
+      {"id":"weight","label":"Weight","type":"number","required":true,"unit":"kg","prompt":"လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ? kg နဲ့ရေးပေးပါ။"},
+      {"id":"height","label":"Height","type":"text","required":true,"prompt":"အရပ် ဘယ်လောက်ရှိပါသလဲ? ဥပမာ 5ft 8in / 173cm"},
+      {"id":"age","label":"Age","type":"number","required":true,"unit":"years","prompt":"အသက် ဘယ်လောက်ရှိပါသလဲ?"},
+      {"id":"photo_front","label":"Front body photo","type":"photo","required":true,"photoSlot":"front","prompt":"ရှေ့ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"photo_back","label":"Back body photo","type":"photo","required":true,"photoSlot":"back","prompt":"နောက်ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"photo_side","label":"Side body photo","type":"photo","required":true,"photoSlot":"side","prompt":"ဘေးဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"goal_notes","label":"Goal / notes","type":"text","required":false,"prompt":"ဒီ program မှာ အဓိကဖြစ်ချင်တဲ့ goal ကိုရေးပေးပါ။"}
+    ]'::jsonb,
     'weekly',
     true
   ),
@@ -161,7 +177,15 @@ VALUES
     '/user/mass method.jpg',
     '#8bd67a',
     '[{"label":"1 month","months":1,"price":60000,"note":"Technique base"},{"label":"3 months","months":3,"price":165000,"note":"Hypertrophy block"},{"label":"6 months","months":6,"price":310000,"note":"Full bulk"}]'::jsonb,
-    '["Name","Weight","Height","Age","Body photos","End feedback"]'::jsonb,
+    '[
+      {"id":"weight","label":"Weight","type":"number","required":true,"unit":"kg","prompt":"လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ? kg နဲ့ရေးပေးပါ။"},
+      {"id":"height","label":"Height","type":"text","required":true,"prompt":"အရပ် ဘယ်လောက်ရှိပါသလဲ? ဥပမာ 5ft 8in / 173cm"},
+      {"id":"age","label":"Age","type":"number","required":true,"unit":"years","prompt":"အသက် ဘယ်လောက်ရှိပါသလဲ?"},
+      {"id":"photo_front","label":"Front body photo","type":"photo","required":true,"photoSlot":"front","prompt":"ရှေ့ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"photo_back","label":"Back body photo","type":"photo","required":true,"photoSlot":"back","prompt":"နောက်ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"photo_side","label":"Side body photo","type":"photo","required":true,"photoSlot":"side","prompt":"ဘေးဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
+      {"id":"goal_notes","label":"Goal / notes","type":"text","required":false,"prompt":"Muscle gain အတွက် အဓိက goal ကိုရေးပေးပါ။"}
+    ]'::jsonb,
     'end_of_program',
     true
   )

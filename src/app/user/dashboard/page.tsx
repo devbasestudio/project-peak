@@ -7,7 +7,7 @@ import DashboardClient from './DashboardClient';
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage(props: {
-  searchParams: Promise<{ client_id?: string }>;
+  searchParams: Promise<{ client_id?: string; tab?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const session = await decrypt();
@@ -178,6 +178,7 @@ export default async function DashboardPage(props: {
       consumedCarbs={Math.round(consumedCarbs)}
       consumedFat={Math.round(consumedFat)}
       streak={streak}
+      initialTab={searchParams.tab}
     />
   );
 }

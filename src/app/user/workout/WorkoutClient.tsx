@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BottomNav } from '@/components/ui/BottomNav';
 
 interface Exercise {
   id: number;
@@ -892,27 +892,7 @@ export default function WorkoutClient({
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="bottom-nav">
-        <div className="bottom-nav-inner">
-          <Link href={`/user/dashboard${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-house"></i>
-            <span>Home</span>
-          </Link>
-          <Link href={`/user/daily-log${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-chart-line-up"></i>
-            <span>Progress</span>
-          </Link>
-          <Link href={`/user/diet${clientQuery}`} className="bottom-nav-item">
-            <i className="ph ph-book-open"></i>
-            <span>Learn</span>
-          </Link>
-          <Link href={`/user/workout${clientQuery}`} className="bottom-nav-item active">
-            <i className="ph ph-mountains"></i>
-            <span>Climb</span>
-          </Link>
-        </div>
-      </div>
+      <BottomNav active="home" clientQuery={clientQuery} />
 
     </div>
   );

@@ -7,7 +7,7 @@ import SetupProfileClient from './SetupProfileClient';
 export const dynamic = 'force-dynamic';
 
 export default async function SetupProfilePage(props: {
-  searchParams: Promise<{ client_id?: string }>;
+  searchParams: Promise<{ client_id?: string; mode?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const session = await decrypt();
@@ -37,6 +37,8 @@ export default async function SetupProfilePage(props: {
       userId={targetUserId}
       username={username}
       initialProfile={initialProfile}
+      isEditMode={searchParams.mode === "edit"}
+      clientQuery={searchParams.client_id ? `?client_id=${targetUserId}` : ""}
     />
   );
 }

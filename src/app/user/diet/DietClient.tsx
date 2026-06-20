@@ -242,7 +242,7 @@ export default function DietClient({
 
       </div>
 
-      <BottomNav active="learn" clientQuery={clientQuery} />
+      <BottomNav active="home" clientQuery={clientQuery} />
     </div>
   );
 }

@@ -25,6 +25,7 @@ interface DashboardClientProps {
   consumedCarbs: number;
   consumedFat: number;
   streak: number;
+  initialTab?: string;
 }
 
 type ActiveTab = "logs" | "progress" | "feedback" | "me";
@@ -53,8 +54,11 @@ export default function DashboardClient({
   consumedCarbs,
   consumedFat,
   streak,
+  initialTab,
 }: DashboardClientProps) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("logs");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(
+    initialTab === "progress" || initialTab === "feedback" || initialTab === "me" ? initialTab : "logs",
+  );
 
   const startingWeight = profile?.starting_weight ? Number(profile.starting_weight) : null;
   const [weight, setWeight] = useState(() =>
@@ -371,6 +375,13 @@ export default function DashboardClient({
               <InfoRow label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : "—"} />
               <InfoRow label="Device limit" value="2 devices" last />
             </div>
+            <a
+              href={`/user/setup-profile?mode=edit${clientQuery ? `&${clientQuery.replace(/^\?/, "")}` : ""}`}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-[#1c2b29] py-2.5 text-sm font-bold text-white no-underline"
+            >
+              <i className="ph ph-pencil-simple text-base" />
+              Edit profile
+            </a>
             <button
               type="button"
               onClick={async () => {

@@ -7,11 +7,15 @@ interface SetupProfileClientProps {
   userId: string;
   username: string;
   initialProfile: any;
+  isEditMode?: boolean;
+  clientQuery?: string;
 }
 
 export default function SetupProfileClient({
   userId,
   initialProfile,
+  isEditMode = false,
+  clientQuery = "",
 }: SetupProfileClientProps) {
   const router = useRouter();
   const [weight, setWeight] = useState(initialProfile?.starting_weight ? Math.round(initialProfile.starting_weight).toString() : '');
@@ -42,7 +46,7 @@ export default function SetupProfileClient({
       });
 
       if (res.ok) {
-        router.push('/user/setup-schedule');
+        router.push(isEditMode ? `/user/dashboard?tab=me${clientQuery ? `&${clientQuery.replace(/^\?/, "")}` : ""}` : '/user/setup-schedule');
       } else {
         const data = await res.json();
         setErrorMsg(data.error || 'အချက်အလက် သိမ်းဆည်းရန် ပျက်ကွက်ခဲ့သည်။');
@@ -71,11 +75,17 @@ export default function SetupProfileClient({
         {/* Step Indicator */}
         <div className="mb-4 flex items-center gap-2">
           <span className="inline-block h-0.5 w-[30px] bg-[#d97706]"></span>
-          <span className="text-[0.8rem] font-extrabold uppercase tracking-wider text-[#d97706]">BASELINE · 01</span>
+        <span className="text-[0.8rem] font-extrabold uppercase tracking-wider text-[#d97706]">
+          {isEditMode ? 'PROFILE EDIT' : 'BASELINE · 01'}
+        </span>
         </div>
 
-        <h2 className="mb-2 text-left text-[2.2rem] font-extrabold text-[var(--text-main)]">Your starting point</h2>
-        <p className="mb-8 text-[0.95rem] leading-relaxed text-[var(--text-muted)]">Enter once. We measure every win against today.</p>
+        <h2 className="mb-2 text-left text-[2.2rem] font-extrabold text-[var(--text-main)]">
+          {isEditMode ? 'Edit your profile' : 'Your starting point'}
+        </h2>
+        <p className="mb-8 text-[0.95rem] leading-relaxed text-[var(--text-muted)]">
+          {isEditMode ? 'Update your baseline data anytime.' : 'Enter once. We measure every win against today.'}
+        </p>
 
         {errorMsg && (
           <div className="mb-6 rounded-lg bg-[#fee2e2] p-3 text-[0.9rem] font-semibold text-[#b91c1c]">
@@ -154,7 +164,7 @@ export default function SetupProfileClient({
             disabled={saving}
             className="flex w-full items-center justify-center rounded-full border-none bg-[#0f172a] p-4 text-[1.1rem] font-bold text-white shadow-[0_4px_12px_rgba(15,23,42,0.15)] transition-all hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? 'သိမ်းဆည်းနေပါသည်...' : 'Continue'}
+            {saving ? 'သိမ်းဆည်းနေပါသည်...' : isEditMode ? 'Save profile' : 'Continue'}
           </button>
 
         </form>

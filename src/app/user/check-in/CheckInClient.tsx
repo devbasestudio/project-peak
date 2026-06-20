@@ -263,7 +263,7 @@ export default function CheckInClient({
         </form>
       </div>
 
-      <BottomNav clientQuery={clientQuery} />
+      <BottomNav active="feedback" clientQuery={clientQuery} />
     </div>
   );
 }

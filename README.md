@@ -1,38 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project Peak
 
-## Getting Started
+Telegram Mini App first coaching system.
 
-First, run the development server:
+## Local Setup
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Required env:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_ADMIN_IDS=
+NEXT_PUBLIC_TELEGRAM_BOT_URL=
+```
 
-## Learn More
+`NEXT_PUBLIC_APP_URL` is optional. Leave it blank in local development so Telegram links use the current request origin.
 
-To learn more about Next.js, take a look at the following resources:
+## Telegram Flow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Users start from the Telegram bot chat.
+- `/start` creates/updates the Telegram user record and shows their Telegram ID.
+- Package selection, QR payment, screenshot upload, and payment status checking happen in the bot chat.
+- Admins receive payment screenshots in Telegram with approve/reject buttons.
+- The Mini App is only for approved/ready members and admins.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Supabase
 
-## Deploy on Vercel
+Run these SQL files in Supabase when setting up a new project:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `supabase_project_peak_v2.sql`
+- `supabase_storage_setup.sql`
+- `supabase_performance_security_optimization.sql`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The `registrations` storage bucket must exist for Telegram payment screenshots.
 
-<!-- Triggering Vercel rebuild with new Environment Variables - Final -->
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
+
+For real Telegram webhook testing, expose localhost with an HTTPS tunnel and set the bot webhook to:
+
+```text
+https://<your-tunnel>/api/telegram/webhook
+```

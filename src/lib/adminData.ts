@@ -8,10 +8,11 @@ export type AdminClient = {
   start_date: string | null;
 };
 
-const PENDING_EXCLUDED = ["approved", "ready", "rejected"];
-
-export function isPendingRegistration(status: unknown) {
-  return !PENDING_EXCLUDED.includes(String(status || "").toLowerCase());
+export function isPendingRegistration(registration: any) {
+  return (
+    String(registration?.payment_status || "").toLowerCase() === "pending"
+    && Boolean(registration?.payment_screenshot)
+  );
 }
 
 export async function getClients(): Promise<AdminClient[]> {
@@ -48,7 +49,7 @@ export async function getRegistrations(): Promise<any[]> {
 
 export async function getPendingPaymentCount(): Promise<number> {
   const registrations = await getRegistrations();
-  return registrations.filter((r) => isPendingRegistration(r.status)).length;
+  return registrations.filter((r) => isPendingRegistration(r)).length;
 }
 
 export async function getRecentCheckins(limit = 15): Promise<any[]> {

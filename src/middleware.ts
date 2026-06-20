@@ -79,7 +79,7 @@ export async function middleware(request: NextRequest) {
   // Protect Admin dashboard
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      return redirectTo('/login');
+      return redirectTo('/miniapp');
     }
     if (!(await resolveIsAdmin())) {
       return redirectTo('/user/dashboard');
@@ -89,7 +89,7 @@ export async function middleware(request: NextRequest) {
   // Protect User pages
   if (pathname.startsWith('/user')) {
     if (!user) {
-      return redirectTo('/login');
+      return redirectTo('/miniapp');
     }
   }
 

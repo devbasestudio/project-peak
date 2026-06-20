@@ -6,6 +6,7 @@ import {
   isAdminTelegramId,
   normalizeTelegramLoginId,
 } from "@/lib/adminAuth";
+import { approvePaymentRegistration, rejectPaymentRegistration } from "@/lib/paymentReview";
 import { getPublicProjectPrograms } from "@/lib/programCatalog";
 import { formatMmk, paymentMethods, projectPrograms, type ProjectProgram } from "@/lib/projectPeakConfig";
 import {
@@ -111,6 +112,14 @@ function packageRows(programs: ProjectProgram[]): TelegramInlineButton[][] {
       callback_data: `pkg:${program.key}`,
     },
   ]);
+}
+
+function mainMenuRows(appUrl: string): TelegramInlineButton[][] {
+  return [
+    [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
+    [{ text: "Payment status စစ်မယ်", callback_data: "check_payment" }],
+    [{ text: "Mini App ဖွင့်မယ်", web_app: { url: appUrl } }],
+  ];
 }
 
 function packageSummary(programs: ProjectProgram[]) {
@@ -297,10 +306,7 @@ async function sendStartMenu(chatId: string, from: TelegramUser | undefined, bas
     "Admin approve ပြီး tracker ready ဖြစ်မှ Mini App ကိုသုံးလို့ရပါမယ်။",
   ].filter(Boolean).join("\n");
 
-  return sendMessageResponse(chatId, text, [
-    [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
-    [{ text: "Mini App ဖွင့်မယ်", web_app: { url: appUrl } }],
-  ]);
+  return sendMessageResponse(chatId, text, mainMenuRows(appUrl));
 }
 
 async function handlePackageMenu(chatId: string) {
@@ -321,6 +327,107 @@ async function handlePackageDetails(chatId: string, packageKey: string, baseUrl:
     packageCaption(program),
     durationRows(program),
   );
+}
+
+function paymentStatusCopy(registration: any, appUrl: string): { text: string; rows?: TelegramInlineButton[][] } {
+  if (!registration) {
+    return {
+      text: [
+        "<b>Payment status</b>",
+        "Package ရွေးထားတာမတွေ့သေးပါ။ Package ကြည့်မယ် ကိုနှိပ်ပြီး duration ရွေးပါ။",
+      ].join("\n"),
+      rows: [[{ text: "Package ကြည့်မယ်", callback_data: "buy" }]],
+    };
+  }
+
+  const paymentStatus = String(registration.payment_status || registration.status || "").toLowerCase();
+  const rows: TelegramInlineButton[][] = [];
+  let body = "";
+
+  if (paymentStatus === "awaiting_payment") {
+    body = "Payment screenshot မရသေးပါ။ QR နဲ့ငွေလွှဲပြီး screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပါ။";
+  } else if (paymentStatus === "pending") {
+    body = "Payment screenshot ရပါပြီ။ Admin review လုပ်နေပါတယ်။";
+  } else if (paymentStatus === "approved") {
+    body = "Payment approve ဖြစ်ပါပြီ။ Admin က custom tracker ပြင်နေပါတယ်။ Ready ဖြစ်တာနဲ့ bot ကနေပြန်ပို့ပါမယ်။";
+  } else if (paymentStatus === "ready") {
+    body = "Tracker ready ဖြစ်ပါပြီ။ Mini App ကိုဖွင့်ပြီးစသုံးနိုင်ပါပြီ။";
+    rows.push([{ text: "Open Mini App", web_app: { url: appUrl } }]);
+  } else if (paymentStatus === "rejected") {
+    body = "Payment screenshot ကို admin reject လုပ်ထားပါတယ်။ မှန်တဲ့ screenshot ကိုပြန်ပို့ပါ သို့မဟုတ် package/duration ပြန်ရွေးပါ။";
+    rows.push([{ text: "Package ပြန်ရွေးမယ်", callback_data: "buy" }]);
+  } else {
+    body = "Status စစ်နေပါတယ်။ မရသေးရင် /start ပြန်နှိပ်ပါ။";
+  }
+
+  return {
+    text: [
+      "<b>Payment status</b>",
+      `Package: ${escapeHtml(registration.program_name || "Project Peak")}`,
+      `Status: <b>${escapeHtml(paymentStatus.replace(/_/g, " ") || "pending")}</b>`,
+      "",
+      body,
+    ].join("\n"),
+    rows: rows.length ? rows : undefined,
+  };
+}
+
+async function handleCheckPaymentStatus(chatId: string, from: TelegramUser | undefined, baseUrl: string) {
+  const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
+  if (!telegramId) {
+    return sendMessageResponse(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပါ။");
+  }
+
+  const supabase = createAdminClient();
+  const { data: registration, error } = await supabase
+    .from("program_registrations")
+    .select("id, program_name, payment_status, status")
+    .eq("telegram_id", telegramId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  const appUrl = miniAppUrl(baseUrl, from);
+  const copy = paymentStatusCopy(registration, appUrl);
+  return sendMessageResponse(chatId, copy.text, copy.rows);
+}
+
+async function handleAdminPaymentAction(chatId: string, from: TelegramUser | undefined, data: string, baseUrl: string) {
+  const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
+  if (!isAdminTelegramId(telegramId)) {
+    return sendMessageResponse(chatId, "Admin only action ဖြစ်ပါတယ်။");
+  }
+
+  const [, action, registrationId] = data.split(":");
+  if (!registrationId) {
+    return sendMessageResponse(chatId, "Registration ID မတွေ့ပါ။");
+  }
+
+  const supabase = createAdminClient();
+  if (action === "approve") {
+    const registration = await approvePaymentRegistration(supabase, registrationId);
+    await sendTelegramMessageQuietly(
+      String(registration.telegram_id || ""),
+      "<b>Payment approved</b>\nAdmin က payment ကို approve လုပ်ပြီးပါပြီ။ Tracker ပြင်ပြီး ready ဖြစ်တာနဲ့ Mini App ဖွင့်နိုင်ပါမယ်။",
+      miniAppUrl(baseUrl, { id: registration.telegram_id }),
+      { buttonText: "Open Mini App" },
+    );
+    return sendMessageResponse(chatId, "Payment approved လုပ်ပြီးပါပြီ။ Tracker ပြင်ပြီး Send ready လုပ်ပါ။", [
+      [{ text: "Open Mini App", web_app: { url: miniAppUrl(baseUrl, from) } }],
+    ]);
+  }
+
+  if (action === "reject") {
+    const registration = await rejectPaymentRegistration(supabase, registrationId);
+    await sendTelegramMessageQuietly(
+      String(registration.telegram_id || ""),
+      "<b>Payment screenshot rejected</b>\nScreenshot မရှင်းတာ/မကိုက်တာကြောင့် admin က reject လုပ်ထားပါတယ်။ မှန်တဲ့ screenshot ကို ဒီ chat ထဲကိုပြန်ပို့ပါ။",
+    );
+    return sendMessageResponse(chatId, "Payment screenshot ကို reject လုပ်ပြီးပါပြီ။ User ကိုပြန်ပို့ထားပါတယ်။");
+  }
+
+  return sendMessageResponse(chatId, "Unknown admin action.");
 }
 
 async function handleDurationSelection(chatId: string, from: TelegramUser | undefined, data: string, baseUrl: string) {
@@ -360,7 +467,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     .from("program_registrations")
     .select("id")
     .eq("telegram_id", telegramId)
-    .eq("payment_status", "awaiting_payment")
+    .in("payment_status", ["awaiting_payment", "rejected"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -415,7 +522,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
     .from("program_registrations")
     .select("*")
     .eq("telegram_id", telegramId)
-    .eq("payment_status", "awaiting_payment")
+    .in("payment_status", ["awaiting_payment", "pending", "rejected"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -452,11 +559,31 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
 
   if (updateError) throw updateError;
 
-  await notifyAdminsPayment(updatedRegistration, baseUrl).catch(() => null);
+  const adminNotice = await notifyAdminsPayment(
+    { ...updatedRegistration, id: registration.id },
+    baseUrl,
+  ).catch((err) => ({
+    ok: false,
+    error: err instanceof Error ? err.message : "Admin notification failed",
+  }));
+
+  try {
+    await supabase.from("admin_notifications").insert({
+      type: "payment_submitted",
+      title: "Payment submitted",
+      body: `${registration.name || "Client"} sent a payment screenshot.`,
+      data: { registrationId: registration.id, telegramId, adminNotice },
+      read: false,
+    });
+  } catch {
+    // Optional migration table. Payment flow should keep working without it.
+  }
 
   await sendTelegramMessageQuietly(
     chatId,
-    "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီးတာနဲ့ tracker ready ဖြစ်ရင် Mini App ဖွင့်နိုင်ပါမယ်။",
+    adminNotice.ok === false
+      ? "Payment screenshot ရပါပြီ။ Admin dashboard ထဲမှာ queue တက်ထားပါတယ်။ Admin notification ပို့တာတော့ error ဖြစ်နိုင်လို့ ခဏကြာရင် /check-payment နဲ့ပြန်စစ်ပါ။"
+      : "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီးတာနဲ့ tracker ready ဖြစ်ရင် Mini App ဖွင့်နိုင်ပါမယ်။",
     miniAppUrl(baseUrl, from),
     { buttonText: "Open Mini App" },
   );
@@ -502,6 +629,12 @@ export async function POST(request: Request) {
       if (data === "buy") {
         return await handlePackageMenu(chatId);
       }
+      if (data === "check_payment") {
+        return await handleCheckPaymentStatus(chatId, callbackQuery.from, baseUrl);
+      }
+      if (data.startsWith("admin:")) {
+        return await handleAdminPaymentAction(chatId, callbackQuery.from, data, baseUrl);
+      }
       if (data.startsWith("pkg:")) {
         return await handlePackageDetails(chatId, data.split(":")[1], baseUrl);
       }
@@ -521,6 +654,10 @@ export async function POST(request: Request) {
       return await sendStartMenu(chatId, from, baseUrl);
     }
 
+    if (text === "/check-payment" || text === "/check_payment" || text === "Payment status") {
+      return await handleCheckPaymentStatus(chatId, from, baseUrl);
+    }
+
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {
       await handlePaymentScreenshot(chatId, from, message, baseUrl);
       return NextResponse.json({ ok: true, handled: "payment-screenshot" });
@@ -528,6 +665,7 @@ export async function POST(request: Request) {
 
     return sendMessageResponse(chatId, "ဘာလုပ်ချင်ပါသလဲ?", [
       [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
+      [{ text: "Payment status စစ်မယ်", callback_data: "check_payment" }],
       [{ text: "Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
     ]);
   } catch (err) {

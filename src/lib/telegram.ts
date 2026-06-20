@@ -22,6 +22,14 @@ function telegramConfig() {
   return { token, adminIds, enabled: Boolean(token && adminIds.length) };
 }
 
+function escapeTelegramHtml(value: unknown) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export function getTelegramRuntimeStatus() {
   const { token, adminIds, enabled } = telegramConfig();
   return {
@@ -147,26 +155,35 @@ export async function notifyAdminsPayment(registration: any, appUrl: string) {
   const { adminIds, enabled } = telegramConfig();
   if (!enabled) return { ok: false, skipped: true };
 
-  const adminUrl = `${appUrl}/admin/payments`;
+  const registrationId = String(registration.id || "");
+  const reviewRows: TelegramInlineButton[][] = [
+    registrationId
+      ? [
+          { text: "Approve payment", callback_data: `admin:approve:${registrationId}` },
+          { text: "Reject", callback_data: `admin:reject:${registrationId}` },
+        ]
+      : [],
+    [{ text: "Open Mini App", web_app: { url: `${appUrl}/miniapp` } }],
+  ].filter((row) => row.length);
   const caption = [
-    "<b>New Project Peak payment</b>",
-    `Client: ${registration.name || registration.username || "Unknown"}`,
-    `Program: ${registration.program_name || "Custom"}`,
-    registration.program_price ? `Amount: ${registration.program_price} MMK` : "",
-    registration.payment_method ? `Method: ${registration.payment_method}` : "",
-    `Telegram ID: ${registration.telegram_id || "not provided"}`,
-    `Email: ${registration.email || "not provided"}`,
+    "<b>Payment screenshot received</b>",
+    `Client: ${escapeTelegramHtml(registration.name || registration.username || "Unknown")}`,
+    `Program: ${escapeTelegramHtml(registration.program_name || "Custom")}`,
+    registration.program_price ? `Amount: ${escapeTelegramHtml(registration.program_price)} MMK` : "",
+    registration.payment_method ? `Method: ${escapeTelegramHtml(registration.payment_method)}` : "",
+    `Telegram ID: ${escapeTelegramHtml(registration.telegram_id || "not provided")}`,
+    "",
+    "Admin အနေနဲ့ screenshot ကိုစစ်ပြီး အောက်က button ကနေ approve/reject လုပ်ပါ။",
   ].filter(Boolean).join("\n");
 
   const results = [];
   for (const adminId of adminIds) {
     if (registration.payment_screenshot) {
-      const photoResult = await sendTelegramPhoto(
+      const photoResult = await sendTelegramPhotoButtons(
         adminId,
         registration.payment_screenshot,
         caption,
-        adminUrl,
-        { buttonText: "Open admin payments", webApp: false },
+        reviewRows,
       ).catch((err) => ({
         ok: false,
         error: err instanceof Error ? err.message : "Telegram photo failed",
@@ -179,13 +196,12 @@ export async function notifyAdminsPayment(registration: any, appUrl: string) {
     }
 
     results.push(
-      await sendTelegramMessage(
+      await sendTelegramButtons(
         adminId,
         registration.payment_screenshot
           ? `${caption}\nReceipt: ${registration.payment_screenshot}`
           : caption,
-        adminUrl,
-        { buttonText: "Open admin payments", webApp: false },
+        reviewRows,
       ),
     );
   }
@@ -198,18 +214,17 @@ export async function notifyAdminsApproval(registration: any, appUrl: string) {
 
   const text = [
     "<b>Payment approved</b>",
-    `Client: ${registration.name || registration.username || "Unknown"}`,
-    `Program: ${registration.program_name || "Custom"}`,
+    `Client: ${escapeTelegramHtml(registration.name || registration.username || "Unknown")}`,
+    `Program: ${escapeTelegramHtml(registration.program_name || "Custom")}`,
     "Build or confirm the tracker, then send the ready link.",
   ].join("\n");
 
   const results = [];
   for (const adminId of adminIds) {
     results.push(
-      await sendTelegramMessage(adminId, text, `${appUrl}/admin/trackers`, {
-        buttonText: "Open trackers",
-        webApp: false,
-      }),
+      await sendTelegramButtons(adminId, text, [
+        [{ text: "Open Mini App", web_app: { url: `${appUrl}/miniapp` } }],
+      ]),
     );
   }
   return { ok: true, results };
@@ -232,8 +247,8 @@ export async function broadcastFeedbackMessage(telegramIds: string[], templateNa
     results.push(
       await sendTelegramMessage(
         telegramId,
-        `<b>${templateName}</b>\nPlease submit your Project Peak feedback form.`,
-        `${appUrl}/user/dashboard`,
+        `<b>${escapeTelegramHtml(templateName)}</b>\nPlease submit your Project Peak feedback form.`,
+        `${appUrl}/miniapp`,
       ),
     );
   }

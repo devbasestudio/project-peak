@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function loginError(request: NextRequest, error: string) {
-  return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error)}`, request.url));
+  return NextResponse.redirect(new URL(`/miniapp?error=${encodeURIComponent(error)}`, request.url));
 }
 
 async function assertMiniAppAccess(email: string, telegramId: string, next: string) {
@@ -28,15 +28,21 @@ async function assertMiniAppAccess(email: string, telegramId: string, next: stri
   }
 
   const supabase = createAdminClient();
-  const { data: registration, error } = await supabase
+  const { data: registrations, error } = await supabase
     .from("program_registrations")
     .select("id, email, telegram_id, status, payment_status")
     .eq("telegram_id", cleanTelegramId)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
 
   if (error) throw error;
+  const registration =
+    registrations?.find((item) => {
+      const status = String(item.status || "").toLowerCase();
+      const paymentStatus = String(item.payment_status || "").toLowerCase();
+      return status === "ready" || paymentStatus === "ready";
+    }) || registrations?.[0];
+
   if (!registration) throw new Error("Ready registration not found.");
 
   const status = String(registration.status || "").toLowerCase();

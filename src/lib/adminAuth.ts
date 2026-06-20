@@ -236,7 +236,5 @@ export function programDefaults(programType: string) {
 }
 
 export function appBaseUrl(request: Request) {
-  const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (configured) return configured.replace(/\/$/, "");
   return new URL(request.url).origin;
 }

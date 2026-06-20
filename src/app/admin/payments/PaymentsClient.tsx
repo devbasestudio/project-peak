@@ -9,14 +9,15 @@ import {
 } from "@/components/admin/useAdminAction";
 
 function isPending(status: unknown) {
-  return !["approved", "ready", "rejected"].includes(String(status || "").toLowerCase());
+  return String(status || "").toLowerCase() === "pending";
 }
 
-function statusBadge(status: string) {
-  const s = String(status || "pending").toLowerCase();
+function statusBadge(paymentStatus: string) {
+  const s = String(paymentStatus || "awaiting_payment").toLowerCase();
   if (s === "approved" || s === "ready")
     return "bg-[#edf9f0] text-[#1d7a3a]";
   if (s === "rejected") return "bg-[#fdeee9] text-[#c0432b]";
+  if (s === "awaiting_payment") return "bg-[#eef2f0] text-[#6b7a77]";
   return "bg-[#fff4e6] text-[#b25b15]";
 }
 
@@ -25,11 +26,11 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
   const [filter, setFilter] = useState<"pending" | "all">("pending");
 
   const list = useMemo(() => {
-    if (filter === "pending") return registrations.filter((r) => isPending(r.status));
+    if (filter === "pending") return registrations.filter((r) => isPending(r.payment_status) && r.payment_screenshot);
     return registrations;
   }, [registrations, filter]);
 
-  const pendingCount = registrations.filter((r) => isPending(r.status)).length;
+  const pendingCount = registrations.filter((r) => isPending(r.payment_status) && r.payment_screenshot).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,10 +82,10 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
                         </strong>
                         <span
                           className={`rounded-full px-2 py-0.5 text-[0.64rem] font-bold capitalize ${statusBadge(
-                            reg.status,
+                            reg.payment_status,
                           )}`}
                         >
-                          {reg.status || "pending"}
+                          {String(reg.payment_status || "awaiting_payment").replace(/_/g, " ")}
                         </span>
                       </div>
                       <span className="text-xs text-[#6b7a77]">
@@ -112,7 +113,7 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
                         <i className="ph ph-image text-base" /> Receipt
                       </a>
                     )}
-                    {isPending(reg.status) && (
+                    {isPending(reg.payment_status) && reg.payment_screenshot && (
                       <button
                         type="button"
                         disabled={approving}

@@ -14,8 +14,15 @@ CREATE INDEX IF NOT EXISTS program_registrations_telegram_status_created_idx
   ON public.program_registrations (telegram_id, status, created_at DESC)
   WHERE telegram_id IS NOT NULL AND telegram_id <> '';
 
+CREATE INDEX IF NOT EXISTS program_registrations_telegram_payment_created_idx
+  ON public.program_registrations (telegram_id, payment_status, created_at DESC)
+  WHERE telegram_id IS NOT NULL AND telegram_id <> '';
+
 CREATE INDEX IF NOT EXISTS program_registrations_status_created_idx
   ON public.program_registrations (status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS program_registrations_payment_created_idx
+  ON public.program_registrations (payment_status, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS program_registrations_user_created_idx
   ON public.program_registrations (user_id, created_at DESC)

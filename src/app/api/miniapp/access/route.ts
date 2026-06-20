@@ -113,15 +113,21 @@ export async function POST(request: Request) {
       });
     }
 
-    const { data: registration, error: registrationError } = await supabase
+    const { data: registrations, error: registrationError } = await supabase
       .from("program_registrations")
       .select("id, user_id, email, telegram_id, status, payment_status, program_name")
       .eq("telegram_id", cleanTelegramId)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(20);
 
     if (registrationError) throw registrationError;
+
+    const registration =
+      registrations?.find((item) => {
+        const status = String(item.status || "").toLowerCase();
+        const paymentStatus = String(item.payment_status || "").toLowerCase();
+        return status === "ready" || paymentStatus === "ready";
+      }) || registrations?.[0];
 
     if (!registration) {
       await ensureTelegramUserAccount({

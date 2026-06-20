@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { ensureTelegramUserAccount, programDefaults, toProgramType } from "@/lib/adminAuth";
 import { saveUserProgram } from "@/lib/userProgram";
@@ -23,6 +24,7 @@ export function isPendingRegistration(registration: any) {
 }
 
 export async function getClients(): Promise<AdminClient[]> {
+  noStore();
   const supabase = createAdminClient();
 
   const registrations = await getRegistrations();
@@ -101,6 +103,7 @@ export async function getClients(): Promise<AdminClient[]> {
 }
 
 async function repairApprovedRegistrationAccounts(registrations: any[]) {
+  noStore();
   const supabase = createAdminClient();
   const orphaned = registrations.filter((registration) => {
     const status = String(registration.payment_status || registration.status || "").toLowerCase();
@@ -135,6 +138,7 @@ async function repairApprovedRegistrationAccounts(registrations: any[]) {
 }
 
 export async function getDeviceSummaries() {
+  noStore();
   const supabase = createAdminClient();
   const clients = await getClients();
   const userIds = clients.filter((client) => client.canOpenProfile).map((client) => client.id);
@@ -162,6 +166,7 @@ export async function getDeviceSummaries() {
 }
 
 export async function getLegacyProfileClients(): Promise<AdminClient[]> {
+  noStore();
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("profiles")
@@ -183,25 +188,24 @@ export async function getLegacyProfileClients(): Promise<AdminClient[]> {
 }
 
 export async function getRegistrations(): Promise<any[]> {
+  noStore();
   const supabase = createAdminClient();
-  try {
-    const { data } = await supabase
-      .from("program_registrations")
-      .select("*")
-      .order("created_at", { ascending: false });
-    return data || [];
-  } catch (err) {
-    console.error("Error fetching registrations:", err);
-    return [];
-  }
+  const { data, error } = await supabase
+    .from("program_registrations")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getPendingPaymentCount(): Promise<number> {
+  noStore();
   const registrations = await getRegistrations();
   return registrations.filter((r) => isPendingRegistration(r)).length;
 }
 
 export async function getRecentCheckins(limit = 15): Promise<any[]> {
+  noStore();
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("weekly_checkins")

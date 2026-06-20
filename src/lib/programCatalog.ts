@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import {
   normalizeIntakeFields,
   projectPrograms,
@@ -66,8 +67,9 @@ export function mergeProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
   });
 }
 
-export async function getPublicProjectPrograms(): Promise<ProjectProgram[]> {
-  if (cachedPrograms && cachedPrograms.expiresAt > Date.now()) {
+export async function getPublicProjectPrograms(options: { fresh?: boolean } = {}): Promise<ProjectProgram[]> {
+  if (options.fresh) noStore();
+  if (!options.fresh && cachedPrograms && cachedPrograms.expiresAt > Date.now()) {
     return cachedPrograms.value;
   }
 
@@ -80,7 +82,9 @@ export async function getPublicProjectPrograms(): Promise<ProjectProgram[]> {
 
     if (error) return projectPrograms;
     const programs = mergeProgramCatalogRows((data || []) as ProgramCatalogRow[]);
-    cachedPrograms = { value: programs, expiresAt: Date.now() + PROGRAM_CACHE_MS };
+    if (!options.fresh) {
+      cachedPrograms = { value: programs, expiresAt: Date.now() + PROGRAM_CACHE_MS };
+    }
     return programs;
   } catch {
     return projectPrograms;

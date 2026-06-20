@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import RefreshButton from "./RefreshButton";
 
 export function PageHeader({
   title,
@@ -25,7 +26,10 @@ export function PageHeader({
           {subtitle && <p className="mt-1 max-w-2xl text-sm text-[#6b7a77]">{subtitle}</p>}
         </div>
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+        <RefreshButton />
+      </div>
     </header>
   );
 }

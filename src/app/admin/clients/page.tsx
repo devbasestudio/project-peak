@@ -25,7 +25,7 @@ export default async function AdminClientsPage() {
             {clients.map((client) => (
               <li key={client.id}>
                 <Link
-                  href={`/admin/client-view?id=${client.id}`}
+                  href={client.canOpenProfile ? `/admin/client-view?id=${client.id}` : "/admin/payments"}
                   className="flex items-center justify-between gap-3 px-4 py-3.5 no-underline transition hover:bg-[#f6f8f7]"
                 >
                   <span className="flex items-center gap-3">
@@ -37,16 +37,24 @@ export default async function AdminClientsPage() {
                         {client.username || "Client"}
                       </span>
                       <span className="text-xs text-[#6b7a77]">{client.email}</span>
+                      <span className="text-xs text-[#9aa8a4]">
+                        {client.program_name || "No package"} {client.telegram_id ? `· TG ${client.telegram_id}` : ""}
+                      </span>
                     </span>
                   </span>
                   <span className="flex items-center gap-3">
+                    {client.payment_status && (
+                      <span className="hidden rounded-full bg-[#eef2f0] px-2.5 py-1 text-[0.68rem] font-semibold capitalize text-[#6b7a77] sm:inline">
+                        {client.payment_status.replace(/_/g, " ")}
+                      </span>
+                    )}
                     {client.duration_weeks ? (
                       <span className="hidden rounded-full bg-[#eef2f0] px-2.5 py-1 text-[0.68rem] font-semibold text-[#6b7a77] sm:inline">
                         {client.duration_weeks} wk program
                       </span>
                     ) : (
                       <span className="hidden rounded-full bg-[#fff4e6] px-2.5 py-1 text-[0.68rem] font-semibold text-[#b25b15] sm:inline">
-                        No program
+                        {client.canOpenProfile ? "No program" : "Needs account"}
                       </span>
                     )}
                     <i className="ph ph-caret-right text-base text-[#b6c1bd]" />

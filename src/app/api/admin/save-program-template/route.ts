@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
+import { normalizeIntakeFields } from "@/lib/projectPeakConfig";
 
 export async function POST(request: Request) {
   const { supabase, error, status } = await requireAdmin();
@@ -7,6 +8,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    const feedbackFormType = body.feedbackFormType === "end_of_program" ? "end_of_program" : "weekly";
     const row = {
       program_key: body.key,
       name: body.name,
@@ -14,7 +16,8 @@ export async function POST(request: Request) {
       image_url: body.image,
       accent: body.accent,
       durations: body.durations || [],
-      intake_fields: body.intakeFields || [],
+      intake_fields: normalizeIntakeFields(body.intakeFields || []),
+      feedback_form_type: feedbackFormType,
       active: true,
       updated_at: new Date().toISOString(),
     };
@@ -23,10 +26,11 @@ export async function POST(request: Request) {
       .from("program_catalog")
       .upsert(row, { onConflict: "program_key" });
 
+    if (upsertError) throw upsertError;
+
     return NextResponse.json({
       success: true,
-      persisted: !upsertError,
-      note: upsertError ? "Run the v2 Supabase migration to persist program catalog edits." : null,
+      persisted: true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Program save failed";

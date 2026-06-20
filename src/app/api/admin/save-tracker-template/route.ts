@@ -1,6 +1,61 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 
+const TRACKER_FIELD_TYPES = new Set(["number", "time", "select", "checkbox", "counter", "text"]);
+const TRACKER_SECTION_TITLES = new Set(["Morning", "Mid-day", "Night"]);
+
+function cleanId(value: unknown, fallback: string) {
+  const id = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return id || fallback;
+}
+
+function normalizeSections(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((section, sectionIndex) => {
+      if (!section || typeof section !== "object") return null;
+      const raw = section as Record<string, unknown>;
+      const title = String(raw.title || "");
+      const fields = Array.isArray(raw.fields) ? raw.fields : [];
+      if (!TRACKER_SECTION_TITLES.has(title)) return null;
+
+      return {
+        title,
+        icon: String(raw.icon || "ph-list-checks").trim() || "ph-list-checks",
+        fields: fields
+          .map((field, fieldIndex) => {
+            if (!field || typeof field !== "object") return null;
+            const item = field as Record<string, unknown>;
+            const label = String(item.label || "").trim();
+            const type = String(item.type || "text");
+            if (!label || !TRACKER_FIELD_TYPES.has(type)) return null;
+
+            return {
+              id: cleanId(item.id, `field_${sectionIndex}_${fieldIndex}`),
+              label,
+              type,
+              icon: String(item.icon || "ph-check-square").trim() || "ph-check-square",
+              fixed: Boolean(item.fixed),
+              ...(type === "select"
+                ? {
+                    options: Array.isArray(item.options)
+                      ? item.options.map((option) => String(option).trim()).filter(Boolean)
+                      : [],
+                  }
+                : {}),
+            };
+          })
+          .filter(Boolean),
+      };
+    })
+    .filter(Boolean);
+}
+
 export async function POST(request: Request) {
   const { supabase, error, status } = await requireAdmin();
   if (error) return NextResponse.json({ error }, { status });
@@ -10,22 +65,29 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
+    const normalizedSections = normalizeSections(sections);
+    if (normalizedSections.length === 0) {
+      return NextResponse.json({ error: "At least one tracker section is required" }, { status: 400 });
+    }
 
     const { error: upsertError } = await supabase.from("custom_tracker_templates").upsert(
       {
         user_id: userId,
-        name: name || "Custom tracker",
-        sections: sections || [],
+        name: String(name || "").trim() || "Custom tracker",
+        sections: normalizedSections,
         active: true,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },
     );
 
+    if (upsertError) {
+      return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    }
+
     return NextResponse.json({
       success: true,
-      persisted: !upsertError,
-      note: upsertError ? "Run the v2 Supabase migration to persist custom trackers." : null,
+      persisted: true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Tracker save failed";

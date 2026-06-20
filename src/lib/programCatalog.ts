@@ -1,4 +1,10 @@
-import { projectPrograms, type ProgramDuration, type ProjectProgram } from "@/lib/projectPeakConfig";
+import {
+  normalizeIntakeFields,
+  projectPrograms,
+  type FeedbackFormType,
+  type ProgramDuration,
+  type ProjectProgram,
+} from "@/lib/projectPeakConfig";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type ProgramCatalogRow = {
@@ -8,6 +14,8 @@ type ProgramCatalogRow = {
   image_url?: string | null;
   accent?: string | null;
   durations?: unknown;
+  intake_fields?: unknown;
+  feedback_form_type?: string | null;
   active?: boolean | null;
 };
 
@@ -49,6 +57,11 @@ export function mergeProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
       image: row.image_url || program.image,
       accent: row.accent || program.accent,
       durations: validDurations(row.durations) || program.durations,
+      intakeFields: normalizeIntakeFields(row.intake_fields || program.intakeFields),
+      feedbackFormType:
+        row.feedback_form_type === "end_of_program" || row.feedback_form_type === "weekly"
+          ? (row.feedback_form_type as FeedbackFormType)
+          : program.feedbackFormType,
     };
   });
 }
@@ -62,7 +75,7 @@ export async function getPublicProjectPrograms(): Promise<ProjectProgram[]> {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("program_catalog")
-      .select("program_key, name, description, image_url, accent, durations, active")
+      .select("program_key, name, description, image_url, accent, durations, intake_fields, feedback_form_type, active")
       .eq("active", true);
 
     if (error) return projectPrograms;

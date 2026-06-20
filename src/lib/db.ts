@@ -1,5 +1,14 @@
 import { createAdminClient } from '@/utils/supabase/admin';
 
+function datesFromInClause(sql: string) {
+  const match = sql.match(/date\s+in\s*\(([^)]+)\)/i);
+  if (!match) return [];
+  return match[1]
+    .split(',')
+    .map((value) => value.trim().replace(/^['"]|['"]$/g, ''))
+    .filter(Boolean);
+}
+
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T> {
   // Service-role client: the authenticated/anon client is blocked by RLS from
   // reading a user's own rows, which caused the post-login redirect loop.
@@ -45,6 +54,41 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
       }
 
       return (profile ? [profile] : []) as any;
+    }
+
+    // 5b. SELECT * FROM daily_trackers WHERE user_id = ? AND date IN (...)
+    if (
+      normalizedSql.includes('from daily_trackers') &&
+      normalizedSql.includes('where user_id =') &&
+      normalizedSql.includes('date in')
+    ) {
+      const userId = params[0];
+      const dates = datesFromInClause(sql);
+      const { data: trackers, error } = await supabase
+        .from('daily_trackers')
+        .select('*')
+        .eq('user_id', userId)
+        .in('date', dates);
+
+      if (error) throw error;
+      return (trackers || []) as any;
+    }
+
+    // 5c. SELECT * FROM journaling WHERE user_id = ? AND date = ? / date IN (...)
+    if (normalizedSql.includes('from journaling') && normalizedSql.includes('where user_id =')) {
+      const userId = params[0];
+      const queryBuilder = supabase
+        .from('journaling')
+        .select('*')
+        .eq('user_id', userId);
+
+      const dates = normalizedSql.includes('date in') ? datesFromInClause(sql) : [];
+      const { data: journals, error } = dates.length
+        ? await queryBuilder.in('date', dates)
+        : await queryBuilder.eq('date', params[1]);
+
+      if (error) throw error;
+      return (journals || []) as any;
     }
 
     // 2. SELECT * FROM user_profiles WHERE user_id = ?
@@ -301,18 +345,39 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
       return (checkins || []) as any;
     }
 
+    // 14b. SELECT * FROM weekly_checkins WHERE user_id = ? AND week_number = ?
+    if (
+      normalizedSql.includes('from weekly_checkins') &&
+      normalizedSql.includes('where user_id =') &&
+      normalizedSql.includes('week_number =')
+    ) {
+      const userId = params[0];
+      const weekNumber = params[1];
+      const { data: checkins, error } = await supabase
+        .from('weekly_checkins')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('week_number', weekNumber);
+
+      if (error) throw error;
+      return (checkins || []) as any;
+    }
+
     // 15. SELECT AVG(body_weight) FROM daily_trackers WHERE user_id = ? AND date >= ? AND date <= ?
-    if (normalizedSql.includes('avg(body_weight)') && normalizedSql.includes('date >=') && normalizedSql.includes('date <=')) {
+    if (normalizedSql.includes('avg(body_weight)') && normalizedSql.includes('date >=')) {
       const userId = params[0];
       const startDate = params[1];
       const endDate = params[2];
 
-      const { data: trackers, error } = await supabase
+      const queryBuilder = supabase
         .from('daily_trackers')
         .select('body_weight')
         .eq('user_id', userId)
-        .gte('date', startDate)
-        .lte('date', endDate);
+        .gte('date', startDate);
+
+      const { data: trackers, error } = endDate
+        ? await queryBuilder.lte('date', endDate)
+        : await queryBuilder;
 
       if (error) throw error;
 

@@ -12,11 +12,11 @@ export async function POST(request: Request) {
     }
 
     const { error: deleteError } = await supabase.from("user_devices").delete().eq("user_id", userId);
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({
       success: true,
-      persisted: !deleteError,
-      note: deleteError ? "Run the v2 Supabase migration to enable device session storage." : null,
+      persisted: true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Device reset failed";

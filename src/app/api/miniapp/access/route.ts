@@ -144,7 +144,9 @@ export async function POST(request: Request) {
 
     const status = String(registration.status || "pending").toLowerCase();
     const paymentStatus = String(registration.payment_status || status).toLowerCase();
-    const effectiveStatus = paymentStatus === "awaiting_payment" ? "awaiting_payment" : status;
+    const effectiveStatus = ["awaiting_payment", "pending", "approved", "rejected", "ready"].includes(paymentStatus)
+      ? paymentStatus
+      : status;
     const isReady = status === "ready" || paymentStatus === "ready";
 
     if (!isReady) {

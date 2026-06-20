@@ -35,8 +35,14 @@ CREATE INDEX IF NOT EXISTS programs_user_id_idx
 CREATE INDEX IF NOT EXISTS daily_trackers_user_date_desc_idx
   ON public.daily_trackers (user_id, date DESC);
 
+CREATE UNIQUE INDEX IF NOT EXISTS daily_trackers_user_date_unique_idx
+  ON public.daily_trackers (user_id, date);
+
 CREATE INDEX IF NOT EXISTS weekly_checkins_user_week_desc_idx
   ON public.weekly_checkins (user_id, week_number DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS weekly_checkins_user_week_unique_idx
+  ON public.weekly_checkins (user_id, week_number);
 
 CREATE INDEX IF NOT EXISTS weekly_checkins_created_desc_idx
   ON public.weekly_checkins (created_at DESC);
@@ -61,6 +67,9 @@ CREATE INDEX IF NOT EXISTS nutrition_items_program_meal_sort_idx
 
 CREATE INDEX IF NOT EXISTS nutrition_logs_user_date_completed_idx
   ON public.nutrition_logs (user_id, date, completed);
+
+CREATE UNIQUE INDEX IF NOT EXISTS journaling_user_date_unique_idx
+  ON public.journaling (user_id, date);
 
 CREATE INDEX IF NOT EXISTS admin_notifications_read_created_idx
   ON public.admin_notifications (read, created_at DESC);

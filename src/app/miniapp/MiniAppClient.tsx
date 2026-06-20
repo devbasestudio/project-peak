@@ -11,9 +11,11 @@ import {
 } from "@/lib/telegramWebApp";
 
 const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "https://t.me/fdasfdsafsda_bot";
+const ACCESS_CACHE_KEY = "project_peak_miniapp_access_cache";
+const ACCESS_CACHE_MS = 60_000;
 
 type AccessState = {
-  status: "idle" | "loading" | "admin" | "ready" | "none" | "awaiting_payment" | "pending" | "approved" | "error";
+  status: "idle" | "loading" | "admin" | "ready" | "none" | "awaiting_payment" | "pending" | "approved" | "rejected" | "error";
   message?: string;
   actionLink?: string;
   programName?: string;
@@ -69,6 +71,13 @@ function statusCopy(access: AccessState) {
       tone: "waiting",
     };
   }
+  if (access.status === "rejected") {
+    return {
+      title: "Payment screenshot rejected",
+      body: "Payment screenshot ကို admin reject လုပ်ထားပါတယ်။ Telegram bot chat ထဲကို မှန်တဲ့ screenshot ပြန်ပို့ပေးပါ။",
+      tone: "error",
+    };
+  }
   if (access.status === "error") {
     return {
       title: "Access check failed",
@@ -81,6 +90,30 @@ function statusCopy(access: AccessState) {
     body: "Package ဝယ်တာကို Telegram bot chat ထဲမှာပဲလုပ်ပါ။ Admin approve/ready ဖြစ်ပြီးမှ Mini App ကိုသုံးလို့ရပါမယ်။",
     tone: "waiting",
   };
+}
+
+function readCachedAccess(telegramId: string): AccessState | null {
+  try {
+    const raw = window.localStorage.getItem(ACCESS_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as { telegramId: string; expiresAt: number; access: AccessState };
+    if (cached.telegramId !== telegramId || cached.expiresAt < Date.now()) return null;
+    return cached.access;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAccess(telegramId: string, access: AccessState) {
+  if (access.status === "loading" || access.status === "idle" || access.status === "error") return;
+  try {
+    window.localStorage.setItem(
+      ACCESS_CACHE_KEY,
+      JSON.stringify({ telegramId, expiresAt: Date.now() + ACCESS_CACHE_MS, access }),
+    );
+  } catch {
+    // Cache is only a speed optimization.
+  }
 }
 
 export default function MiniAppClient() {
@@ -96,7 +129,8 @@ export default function MiniAppClient() {
     let disposed = false;
 
     async function checkAccess(identity: TelegramIdentity) {
-      setAccess({ status: "loading" });
+      const cached = readCachedAccess(identity.id);
+      setAccess(cached || { status: "loading" });
       try {
         const initData = await waitForTelegramInitData();
         const launchSignature = readTelegramLaunchSignature();
@@ -122,6 +156,7 @@ export default function MiniAppClient() {
         }
         if (disposed) return;
         setAccess(payload);
+        writeCachedAccess(identity.id, payload);
         if (payload.status === "admin" && payload.actionLink) {
           window.location.replace(payload.actionLink);
           return;

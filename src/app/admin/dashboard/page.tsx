@@ -20,7 +20,7 @@ export default async function AdminOverviewPage() {
     getRecentCheckins(8),
   ]);
 
-  const pending = registrations.filter((r) => isPendingRegistration(r.status));
+  const pending = registrations.filter(isPendingRegistration);
   const needsFeedback = recentCheckins.filter((c) => !c.admin_feedback).length;
 
   return (

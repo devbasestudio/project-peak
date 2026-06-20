@@ -15,11 +15,11 @@ export async function POST() {
 
     const supabase = createAdminClient();
     const { error } = await supabase.from("user_devices").delete().eq("user_id", user.id);
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
-      persisted: !error,
-      note: error ? "Device table not migrated yet." : null,
+      persisted: true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Device reset failed";

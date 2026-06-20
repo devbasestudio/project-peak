@@ -8,7 +8,15 @@ import {
   useAdminAction,
 } from "@/components/admin/useAdminAction";
 
-type DeviceClient = { id: string; username: string };
+type DeviceRow = { device_id: string; user_agent?: string; last_seen_at?: string };
+type DeviceClient = {
+  id: string;
+  username: string;
+  email?: string;
+  telegram_id?: string;
+  canOpenProfile: boolean;
+  devices: DeviceRow[];
+};
 
 export default function DevicesClient({ clients }: { clients: DeviceClient[] }) {
   const { state, pendingId, run } = useAdminAction();
@@ -39,13 +47,24 @@ export default function DevicesClient({ clients }: { clients: DeviceClient[] }) 
                     <span className="grid h-9 w-9 place-items-center rounded-full bg-[#eef2f0] text-sm font-bold text-[#1c2b29]">
                       {(client.username || "C").charAt(0).toUpperCase()}
                     </span>
-                    <span className="text-sm font-semibold text-[#1c2b29]">
-                      {client.username || client.id}
+                    <span className="flex flex-col">
+                      <span className="text-sm font-semibold text-[#1c2b29]">
+                        {client.username || client.id}
+                      </span>
+                      <span className="text-xs text-[#6b7a77]">
+                        {client.devices.length}/{adminDevicePolicy.maxDevices} devices
+                        {client.telegram_id ? ` · TG ${client.telegram_id}` : ""}
+                      </span>
+                      {client.devices[0]?.last_seen_at && (
+                        <span className="text-[0.68rem] text-[#9aa8a4]">
+                          Last seen {new Date(client.devices[0].last_seen_at).toLocaleString()}
+                        </span>
+                      )}
                     </span>
                   </span>
                   <button
                     type="button"
-                    disabled={resetting}
+                    disabled={resetting || !client.canOpenProfile}
                     className={actionButtonLightClass}
                     onClick={() =>
                       run(`device-${client.id}`, "Device sessions reset", () =>

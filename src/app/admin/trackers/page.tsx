@@ -1,4 +1,5 @@
 import { getClients, getRegistrations } from "@/lib/adminData";
+import { createAdminClient } from "@/utils/supabase/admin";
 import TrackersClient from "./TrackersClient";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,30 @@ export default async function AdminTrackersPage() {
     seen.add(o.id);
     return true;
   });
+  const clientIds = clientOptions.map((option) => option.id);
+  const templatesByUserId: Record<string, { name: string; sections: unknown }> = {};
 
-  return <TrackersClient clientOptions={clientOptions} />;
+  if (clientIds.length > 0) {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("custom_tracker_templates")
+      .select("user_id, name, sections")
+      .in("user_id", clientIds)
+      .eq("active", true);
+
+    if (error) {
+      console.error("Could not load custom tracker templates:", error.message);
+    }
+
+    for (const template of data || []) {
+      if (template.user_id) {
+        templatesByUserId[template.user_id] = {
+          name: template.name || "Custom tracker",
+          sections: template.sections,
+        };
+      }
+    }
+  }
+
+  return <TrackersClient clientOptions={clientOptions} templatesByUserId={templatesByUserId} />;
 }

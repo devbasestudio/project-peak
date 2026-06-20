@@ -45,7 +45,9 @@ export async function POST(request: Request) {
       { onConflict: "user_id,device_id" },
     );
 
-    return NextResponse.json({ success: true, persisted: !upsertError });
+    if (upsertError) throw upsertError;
+
+    return NextResponse.json({ success: true, persisted: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Device registration failed";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -24,7 +24,21 @@ export type ProjectProgram = {
   }>;
   outcomes: string[];
   process: string[];
-  intakeFields: string[];
+  intakeFields: IntakeField[];
+  feedbackFormType: FeedbackFormType;
+};
+
+export type IntakeFieldType = "text" | "number" | "photo";
+export type FeedbackFormType = "weekly" | "end_of_program";
+
+export type IntakeField = {
+  id: string;
+  label: string;
+  type: IntakeFieldType;
+  required: boolean;
+  unit?: string;
+  photoSlot?: "front" | "back" | "side" | "progress";
+  prompt?: string;
 };
 
 export type TrackerField = {
@@ -66,7 +80,8 @@ export const projectPrograms: ProjectProgram[] = [
     ],
     outcomes: ["Body shape ပိုတင်းလာခြင်း", "Belly fat လျော့ပြီး muscle tone တက်ခြင်း", "Training consistency တည်ဆောက်ခြင်း"],
     process: ["Payment submit", "Admin approval", "Custom tracker setup", "Daily logging + weekly feedback"],
-    intakeFields: ["Name", "Weight", "Height", "Age", "Front photo", "Back photo", "Side photo"],
+    intakeFields: defaultIntakeFields(),
+    feedbackFormType: "weekly",
   },
   {
     key: "project20",
@@ -91,7 +106,8 @@ export const projectPrograms: ProjectProgram[] = [
     ],
     outcomes: ["Weight trend လျော့လာခြင်း", "Meal consistency တိုးလာခြင်း", "Energy မကျဘဲ cut လုပ်နိုင်ခြင်း"],
     process: ["Choose duration", "Upload payment proof", "Admin builds deficit plan", "Track meals + weekly check-in"],
-    intakeFields: ["Name", "Weight", "Height", "Age", "Progress photos", "Weekly feedback"],
+    intakeFields: defaultIntakeFields(),
+    feedbackFormType: "weekly",
   },
   {
     key: "mass",
@@ -116,9 +132,58 @@ export const projectPrograms: ProjectProgram[] = [
     ],
     outcomes: ["Muscle size တိုးလာခြင်း", "Strength progression မြင်ရခြင်း", "Food habit တည်ဆောက်နိုင်ခြင်း"],
     process: ["Select package", "Submit intake photos", "Admin sets bulk tracker", "Daily log + progressive workouts"],
-    intakeFields: ["Name", "Weight", "Height", "Age", "Body photos", "End feedback"],
+    intakeFields: defaultIntakeFields(),
+    feedbackFormType: "end_of_program",
   },
 ];
+
+export function defaultIntakeFields(): IntakeField[] {
+  return [
+    { id: "weight", label: "Weight", type: "number", required: true, unit: "kg", prompt: "လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ?" },
+    { id: "height", label: "Height", type: "text", required: true, prompt: "အရပ်ဘယ်လောက်ရှိပါသလဲ?" },
+    { id: "age", label: "Age", type: "number", required: true, unit: "years", prompt: "အသက်ဘယ်လောက်ရှိပါသလဲ?" },
+    { id: "photo_front", label: "Front body photo", type: "photo", required: true, photoSlot: "front", prompt: "ရှေ့ဘက် body photo ပို့ပေးပါ။" },
+    { id: "photo_back", label: "Back body photo", type: "photo", required: true, photoSlot: "back", prompt: "နောက်ဘက် body photo ပို့ပေးပါ။" },
+    { id: "photo_side", label: "Side body photo", type: "photo", required: true, photoSlot: "side", prompt: "ဘေးဘက် body photo ပို့ပေးပါ။" },
+  ];
+}
+
+export function normalizeIntakeFields(value: unknown): IntakeField[] {
+  if (!Array.isArray(value)) return defaultIntakeFields();
+  const fields = value
+    .map((item, index) => {
+      if (typeof item === "string") {
+        const label = item.trim();
+        if (!label) return null;
+        const lower = label.toLowerCase();
+        const type: IntakeFieldType = lower.includes("photo") || lower.includes("ပုံ") ? "photo" : lower.includes("age") || lower.includes("weight") ? "number" : "text";
+        return {
+          id: label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || `field_${index + 1}`,
+          label,
+          type,
+          required: true,
+          prompt: label,
+        };
+      }
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const label = String(row.label || "").trim();
+      if (!label) return null;
+      const rawType = String(row.type || "text");
+      const type: IntakeFieldType = rawType === "number" || rawType === "photo" ? rawType : "text";
+      return {
+        id: String(row.id || label.toLowerCase().replace(/[^a-z0-9]+/g, "_") || `field_${index + 1}`),
+        label,
+        type,
+        required: row.required !== false,
+        unit: row.unit ? String(row.unit) : undefined,
+        photoSlot: row.photoSlot === "front" || row.photoSlot === "back" || row.photoSlot === "side" || row.photoSlot === "progress" ? row.photoSlot : undefined,
+        prompt: row.prompt ? String(row.prompt) : label,
+      };
+    })
+    .filter(Boolean) as IntakeField[];
+  return fields.length ? fields : defaultIntakeFields();
+}
 
 export function getProjectProgram(key: string | undefined) {
   return projectPrograms.find((program) => program.key === key) || projectPrograms[0];

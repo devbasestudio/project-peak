@@ -11,6 +11,7 @@ ALTER TABLE IF EXISTS public.program_registrations
   ADD COLUMN IF NOT EXISTS phone text,
   ADD COLUMN IF NOT EXISTS telegram_id text,
   ADD COLUMN IF NOT EXISTS workout_split text,
+  ADD COLUMN IF NOT EXISTS program_key text,
   ADD COLUMN IF NOT EXISTS program_name text,
   ADD COLUMN IF NOT EXISTS duration_months integer DEFAULT 3,
   ADD COLUMN IF NOT EXISTS program_price integer DEFAULT 0,
@@ -22,6 +23,7 @@ ALTER TABLE IF EXISTS public.program_registrations
   ADD COLUMN IF NOT EXISTS photo_back text,
   ADD COLUMN IF NOT EXISTS photo_side text,
   ADD COLUMN IF NOT EXISTS payment_screenshot text,
+  ADD COLUMN IF NOT EXISTS intake_answers jsonb NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS approved_at timestamptz,
   ADD COLUMN IF NOT EXISTS ready_at timestamptz,
   ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
@@ -36,6 +38,9 @@ CREATE INDEX IF NOT EXISTS program_registrations_status_idx
 ALTER TABLE IF EXISTS public.profiles
   ADD COLUMN IF NOT EXISTS telegram_id text;
 
+ALTER TABLE IF EXISTS public.program_catalog
+  ADD COLUMN IF NOT EXISTS feedback_form_type text NOT NULL DEFAULT 'weekly';
+
 -- Program catalog edited by admin.
 CREATE TABLE IF NOT EXISTS public.program_catalog (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -46,6 +51,7 @@ CREATE TABLE IF NOT EXISTS public.program_catalog (
   accent text,
   durations jsonb NOT NULL DEFAULT '[]'::jsonb,
   intake_fields jsonb NOT NULL DEFAULT '[]'::jsonb,
+  feedback_form_type text NOT NULL DEFAULT 'weekly',
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -124,7 +130,7 @@ ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_devices ENABLE ROW LEVEL SECURITY;
 
 INSERT INTO public.program_catalog
-  (program_key, name, description, image_url, accent, durations, intake_fields, active)
+  (program_key, name, description, image_url, accent, durations, intake_fields, feedback_form_type, active)
 VALUES
   (
     'recomp',
@@ -134,6 +140,7 @@ VALUES
     '#7eb6ff',
     '[{"label":"1 month","months":1,"price":50000,"note":"Starter reset"},{"label":"3 months","months":3,"price":135000,"note":"Most common"},{"label":"6 months","months":6,"price":250000,"note":"Deep coaching"}]'::jsonb,
     '["Name","Weight","Height","Age","Front photo","Back photo","Side photo"]'::jsonb,
+    'weekly',
     true
   ),
   (
@@ -144,6 +151,7 @@ VALUES
     '#f5b84b',
     '[{"label":"1 month","months":1,"price":55000,"note":"Kickstart"},{"label":"3 months","months":3,"price":150000,"note":"Best result window"},{"label":"6 months","months":6,"price":280000,"note":"Long cut"}]'::jsonb,
     '["Name","Weight","Height","Age","Progress photos","Weekly feedback"]'::jsonb,
+    'weekly',
     true
   ),
   (
@@ -154,6 +162,7 @@ VALUES
     '#8bd67a',
     '[{"label":"1 month","months":1,"price":60000,"note":"Technique base"},{"label":"3 months","months":3,"price":165000,"note":"Hypertrophy block"},{"label":"6 months","months":6,"price":310000,"note":"Full bulk"}]'::jsonb,
     '["Name","Weight","Height","Age","Body photos","End feedback"]'::jsonb,
+    'end_of_program',
     true
   )
 ON CONFLICT (program_key) DO UPDATE SET
@@ -163,6 +172,7 @@ ON CONFLICT (program_key) DO UPDATE SET
   accent = EXCLUDED.accent,
   durations = EXCLUDED.durations,
   intake_fields = EXCLUDED.intake_fields,
+  feedback_form_type = EXCLUDED.feedback_form_type,
   active = EXCLUDED.active,
   updated_at = now();
 

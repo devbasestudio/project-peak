@@ -454,6 +454,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     phone: "",
     telegram_id: telegramId,
     workout_split: "Admin customized plan",
+    program_key: program.key,
     program_name: program.name,
     duration_months: duration.months,
     program_price: duration.price,

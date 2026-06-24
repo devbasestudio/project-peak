@@ -687,6 +687,16 @@ export async function POST(request: Request) {
       return await sendStartMenu(chatId, from, baseUrl);
     }
 
+    if (text === "/packages" || text === "/package" || text === "/buy") {
+      return await handlePackageMenu(chatId);
+    }
+
+    if (text === "/miniapp" || text === "/app") {
+      return sendMessageResponse(chatId, "Mini App ကို အောက်က button ကနေဖွင့်နိုင်ပါတယ်။", [
+        [{ text: "Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
+      ]);
+    }
+
     if (
       text === "/check-payment"
       || text === "/check_payment"
@@ -695,6 +705,18 @@ export async function POST(request: Request) {
       || text === "Payment အခြေအနေစစ်မယ်"
     ) {
       return await handleCheckPaymentStatus(chatId, from, baseUrl);
+    }
+
+    if (text === "/help") {
+      return sendMessageResponse(chatId, [
+        "<b>Project Peak bot command တွေပါ</b>",
+        "/start - Main menu ပြန်ဖွင့်မယ်",
+        "/packages - Package တွေကြည့်မယ်",
+        "/check_payment - Payment အခြေအနေစစ်မယ်",
+        "/miniapp - Mini App ဖွင့်မယ်",
+        "",
+        "Payment screenshot ပို့ချင်ရင် ဒီ chat ထဲကို photo အနေနဲ့တန်းပို့ပေးပါ။",
+      ].join("\n"), mainMenuRows(miniAppUrl(baseUrl, from)));
     }
 
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {

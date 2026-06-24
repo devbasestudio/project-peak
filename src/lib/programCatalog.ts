@@ -67,11 +67,40 @@ export function mergeProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
   });
 }
 
-export async function getPublicProjectPrograms(options: { fresh?: boolean } = {}): Promise<ProjectProgram[]> {
+export function mergeOnlyProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
+  const defaultsByKey = new Map(projectPrograms.map((program) => [program.key, program]));
+
+  return rows
+    .filter((row) => row.active !== false)
+    .map((row) => {
+      const program = defaultsByKey.get(row.program_key as ProjectProgram["key"]);
+      if (!program) return null;
+
+      return {
+        ...program,
+        name: row.name || program.name,
+        description: row.description || program.description,
+        image: row.image_url || program.image,
+        accent: row.accent || program.accent,
+        durations: validDurations(row.durations) || program.durations,
+        intakeFields: normalizeIntakeFields(row.intake_fields || program.intakeFields),
+        feedbackFormType:
+          row.feedback_form_type === "end_of_program" || row.feedback_form_type === "weekly"
+            ? (row.feedback_form_type as FeedbackFormType)
+            : program.feedbackFormType,
+      };
+    })
+    .filter(Boolean) as ProjectProgram[];
+}
+
+export async function getPublicProjectPrograms(
+  options: { fresh?: boolean; includeDefaults?: boolean } = {},
+): Promise<ProjectProgram[]> {
   if (options.fresh) noStore();
   if (!options.fresh && cachedPrograms && cachedPrograms.expiresAt > Date.now()) {
     return cachedPrograms.value;
   }
+  const includeDefaults = options.includeDefaults !== false;
 
   try {
     const supabase = createAdminClient();
@@ -80,14 +109,15 @@ export async function getPublicProjectPrograms(options: { fresh?: boolean } = {}
       .select("program_key, name, description, image_url, accent, durations, intake_fields, feedback_form_type, active")
       .eq("active", true);
 
-    if (error) return projectPrograms;
-    const programs = mergeProgramCatalogRows((data || []) as ProgramCatalogRow[]);
-    if (!options.fresh) {
+    if (error) return includeDefaults ? projectPrograms : [];
+    const rows = (data || []) as ProgramCatalogRow[];
+    const programs = includeDefaults ? mergeProgramCatalogRows(rows) : mergeOnlyProgramCatalogRows(rows);
+    if (!options.fresh && includeDefaults) {
       cachedPrograms = { value: programs, expiresAt: Date.now() + PROGRAM_CACHE_MS };
     }
     return programs;
   } catch {
-    return projectPrograms;
+    return includeDefaults ? projectPrograms : [];
   }
 }
 

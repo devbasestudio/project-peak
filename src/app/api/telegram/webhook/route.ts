@@ -8,7 +8,7 @@ import {
 } from "@/lib/adminAuth";
 import { approvePaymentRegistration, rejectPaymentRegistration } from "@/lib/paymentReview";
 import { getPublicProjectPrograms } from "@/lib/programCatalog";
-import { formatMmk, paymentMethods, projectPrograms, type ProjectProgram } from "@/lib/projectPeakConfig";
+import { formatMmk, paymentMethods, type ProjectProgram } from "@/lib/projectPeakConfig";
 import {
   answerCallbackQuery,
   getTelegramFileUrl,
@@ -228,7 +228,18 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, ms: number) {
 }
 
 async function getFastProjectPrograms() {
-  return withTimeout(getPublicProjectPrograms(), projectPrograms, 650);
+  return withTimeout(getPublicProjectPrograms({ includeDefaults: false }), [], 650);
+}
+
+function noPackagesResponse(chatId: string) {
+  return sendMessageResponse(
+    chatId,
+    [
+      "<b>Package မရှိသေးပါ</b>",
+      "အခုလောလောဆယ် admin ဘက်က package တွေ မတင်ရသေးပါ။",
+      "Package အသစ်တင်ပြီးမှ ဒီနေရာမှာ ပြန်ပေါ်လာပါမယ်။",
+    ].join("\n"),
+  );
 }
 
 function telegramImageFileType(fileUrl: string, headerContentType: string | null) {
@@ -326,6 +337,7 @@ async function sendStartMenu(chatId: string, from: TelegramUser | undefined, bas
 
 async function handlePackageMenu(chatId: string) {
   const programs = await getFastProjectPrograms();
+  if (!programs.length) return noPackagesResponse(chatId);
   return sendMessageResponse(
     chatId,
     packageSummary(programs),
@@ -335,7 +347,9 @@ async function handlePackageMenu(chatId: string) {
 
 async function handlePackageDetails(chatId: string, packageKey: string, baseUrl: string) {
   const programs = await getFastProjectPrograms();
-  const program = programs.find((item) => item.key === packageKey) || programs[0];
+  if (!programs.length) return noPackagesResponse(chatId);
+  const program = programs.find((item) => item.key === packageKey);
+  if (!program) return noPackagesResponse(chatId);
   return sendPhotoResponse(
     chatId,
     assetUrl(baseUrl, program.image),
@@ -454,8 +468,11 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   }
 
   const programs = await getFastProjectPrograms();
-  const program = programs.find((item) => item.key === packageKey) || programs[0];
+  if (!programs.length) return noPackagesResponse(chatId);
+  const program = programs.find((item) => item.key === packageKey);
+  if (!program) return noPackagesResponse(chatId);
   const duration = program.durations.find((item) => item.months === months) || program.durations[0];
+  if (!duration) return noPackagesResponse(chatId);
   const accountPromise = seedTelegramUser(from).catch(() => null);
   const supabase = createAdminClient();
 

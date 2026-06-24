@@ -133,7 +133,7 @@ export default async function WorkoutPage(props: {
 
   // Get user program type to fetch template
   const programs = await query('SELECT program_type FROM programs WHERE user_id = ?', [targetUserId]);
-  const programType = programs && programs.length > 0 ? programs[0].program_type : 'skinnyfat_recomp';
+  const programType = programs && programs.length > 0 ? programs[0].program_type : 'custom_plan';
 
   // Fetch workout for today
   let workouts = await query('SELECT * FROM workouts WHERE user_id = ? AND date = ?', [targetUserId, today]);

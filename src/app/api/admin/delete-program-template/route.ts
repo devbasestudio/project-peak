@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const { key } = await request.json();
     const programKey = String(key || "").trim();
     if (!programKey) {
-      return NextResponse.json({ error: "Program key is required" }, { status: 400 });
+      return NextResponse.json({ error: "ဖျက်မယ့် program ကိုရွေးပေးပါ။" }, { status: 400 });
     }
 
     const { count: registrationCount, error: countError } = await supabase

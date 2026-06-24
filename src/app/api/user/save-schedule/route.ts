@@ -84,7 +84,7 @@ export async function POST(request: Request) {
           macros_p: 150,
           macros_c: 180,
           macros_f: 50,
-          program_type: 'skinnyfat_recomp',
+          program_type: 'custom_plan',
           start_date: today,
         });
 

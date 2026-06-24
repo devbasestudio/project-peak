@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       macros_p: macros_p ? parseInt(macros_p, 10) : null,
       macros_c: macros_c ? parseInt(macros_c, 10) : null,
       macros_f: macros_f ? parseInt(macros_f, 10) : null,
-      program_type: program_type || 'skinnyfat_recomp',
+      program_type: program_type || 'custom_plan',
       start_date: today,
     });
 

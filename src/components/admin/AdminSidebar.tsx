@@ -68,13 +68,6 @@ export default function AdminSidebar({ username, pendingPayments }: AdminSidebar
 
   const footer = (
     <div className="mt-auto flex flex-col gap-1 border-t border-[#e6eae8] px-3 pt-3">
-      <Link
-        href="/miniapp"
-        target="_blank"
-        className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-[#5b6a67] no-underline transition-colors hover:bg-[#eef2f0] hover:text-[#1c2b29]"
-      >
-        <i className="ph ph-device-mobile text-lg" /> View mini app
-      </Link>
       <button
         type="button"
         onClick={logout}

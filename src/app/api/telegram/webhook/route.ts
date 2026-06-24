@@ -8,7 +8,13 @@ import {
 } from "@/lib/adminAuth";
 import { approvePaymentRegistration, rejectPaymentRegistration } from "@/lib/paymentReview";
 import { getPublicProjectPrograms } from "@/lib/programCatalog";
-import { formatMmk, paymentMethods, type ProjectProgram } from "@/lib/projectPeakConfig";
+import {
+  defaultIntakeFields,
+  formatMmk,
+  paymentMethods,
+  type IntakeField,
+  type ProjectProgram,
+} from "@/lib/projectPeakConfig";
 import {
   answerCallbackQuery,
   getTelegramFileUrl,
@@ -268,7 +274,7 @@ function telegramImageFileType(fileUrl: string, headerContentType: string | null
   return { contentType: "image/jpeg", ext: "jpg" };
 }
 
-async function uploadTelegramFile(fileUrl: string, telegramId: string) {
+async function uploadTelegramFile(fileUrl: string, telegramId: string, prefix = "telegram_payment") {
   const response = await fetch(fileUrl);
   if (!response.ok) {
     throw new Error("Could not download Telegram payment screenshot.");
@@ -276,7 +282,7 @@ async function uploadTelegramFile(fileUrl: string, telegramId: string) {
 
   const { contentType, ext } = telegramImageFileType(fileUrl, response.headers.get("content-type"));
   const buffer = Buffer.from(await response.arrayBuffer());
-  const filename = `telegram_payment_${telegramId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const filename = `${prefix}_${telegramId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const supabase = createAdminClient();
 
   const { error } = await supabase.storage
@@ -295,6 +301,158 @@ async function uploadTelegramFile(fileUrl: string, telegramId: string) {
   } = supabase.storage.from("registrations").getPublicUrl(filename);
 
   return publicUrl;
+}
+
+function normalizeIntakeAnswers(value: unknown): Record<string, any> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, any>) }
+    : {};
+}
+
+function isAnswered(field: IntakeField, answers: Record<string, any>) {
+  const answer = answers[field.id];
+  if (!answer) return false;
+  if (field.type === "photo") return Boolean(answer.fileUrl || answer.value);
+  return String(answer.value ?? "").trim().length > 0;
+}
+
+function nextIntakeField(fields: IntakeField[], answers: Record<string, any>) {
+  return fields.find((field) => !isAnswered(field, answers)) || null;
+}
+
+function photoColumnForField(field: IntakeField) {
+  if (field.photoSlot === "front" || field.id.toLowerCase().includes("front")) return "photo_front";
+  if (field.photoSlot === "back" || field.id.toLowerCase().includes("back")) return "photo_back";
+  if (field.photoSlot === "side" || field.id.toLowerCase().includes("side")) return "photo_side";
+  return "";
+}
+
+async function intakeFieldsForRegistration(registration: any) {
+  const programs = await getFastProjectPrograms();
+  const program = programs.find((item) => item.key === registration.program_key);
+  return program?.intakeFields?.length ? program.intakeFields : defaultIntakeFields();
+}
+
+function intakeQuestionText(field: IntakeField, index: number, total: number) {
+  const prompt = field.prompt || field.label;
+  const inputHint =
+    field.type === "photo"
+      ? "ပုံကို photo အနေနဲ့ ဒီ chat ထဲကိုပို့ပေးပါ။"
+      : field.type === "number"
+        ? "နံပါတ်နဲ့ပဲ ဖြေပေးပါနော်။"
+        : "စာနဲ့ဖြေပေးပါနော်။";
+
+  return [
+    `<b>Client info (${index + 1}/${total})</b>`,
+    escapeHtml(prompt),
+    "",
+    inputHint,
+  ].join("\n");
+}
+
+async function sendNextIntakeQuestion(chatId: string, registration: any) {
+  const fields = await intakeFieldsForRegistration(registration);
+  const answers = normalizeIntakeAnswers(registration.intake_answers);
+  const field = nextIntakeField(fields, answers);
+  if (!field) {
+    await sendTelegramMessageQuietly(
+      chatId,
+      "<b>အချက်အလက်တွေ အကုန်ရပါပြီ</b>\nAdmin က payment နဲ့ info တွေကိုစစ်ပြီး tracker ပြင်ပေးပါမယ်။ Ready ဖြစ်တာနဲ့ ဒီ bot ကနေပြန်ပို့ပါမယ်နော်။",
+    );
+    return true;
+  }
+
+  const index = fields.findIndex((item) => item.id === field.id);
+  await sendTelegramMessageQuietly(chatId, intakeQuestionText(field, index, fields.length));
+  return false;
+}
+
+async function openIntakeRegistration(supabase: any, telegramId: string) {
+  const { data, error } = await supabase
+    .from("program_registrations")
+    .select("id, telegram_id, program_key, program_name, payment_status, status, intake_answers")
+    .eq("telegram_id", telegramId)
+    .in("payment_status", ["pending", "approved"])
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  if (error) throw error;
+  for (const registration of data || []) {
+    const fields = await intakeFieldsForRegistration(registration);
+    const answers = normalizeIntakeAnswers(registration.intake_answers);
+    if (nextIntakeField(fields, answers)) return { registration, fields, answers };
+  }
+  return null;
+}
+
+async function handleIntakeReply(chatId: string, from: TelegramUser | undefined, message: TelegramMessage) {
+  const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
+  if (!telegramId) return false;
+
+  const supabase = createAdminClient();
+  const active = await openIntakeRegistration(supabase, telegramId);
+  if (!active) return false;
+
+  const field = nextIntakeField(active.fields, active.answers);
+  if (!field) return false;
+
+  const text = String(message.text || "").trim();
+  const nextAnswers = { ...active.answers };
+  const answer: Record<string, unknown> = {
+    label: field.label,
+    type: field.type,
+    answeredAt: new Date().toISOString(),
+  };
+  const patch: Record<string, unknown> = {};
+
+  if (field.type === "photo") {
+    const largestPhoto = message.photo?.slice().sort((a, b) => (b.file_size || 0) - (a.file_size || 0))[0];
+    const imageDocument = message.document?.mime_type?.startsWith("image/") ? message.document : null;
+    const fileId = largestPhoto?.file_id || imageDocument?.file_id || "";
+    if (!fileId) {
+      await sendTelegramMessageQuietly(chatId, "ဒီမေးခွန်းအတွက် ပုံတစ်ပုံ ပို့ပေးရမှာပါ။ Photo အနေနဲ့ပို့ပေးပါနော်။");
+      return true;
+    }
+    const fileUrl = await getTelegramFileUrl(fileId);
+    if (!fileUrl) throw new Error("Could not get Telegram file URL.");
+    const uploadedUrl = await uploadTelegramFile(fileUrl, telegramId, `intake_${field.id}`);
+    answer.fileUrl = uploadedUrl;
+    answer.value = uploadedUrl;
+    const photoColumn = photoColumnForField(field);
+    if (photoColumn) patch[photoColumn] = uploadedUrl;
+  } else {
+    if (!text) {
+      await sendTelegramMessageQuietly(chatId, "ဒီမေးခွန်းကို စာနဲ့ဖြေပေးပါနော်။");
+      return true;
+    }
+    if (field.type === "number") {
+      const numericValue = Number(text.replace(/,/g, ""));
+      if (!Number.isFinite(numericValue)) {
+        await sendTelegramMessageQuietly(chatId, "နံပါတ်အနေနဲ့ ပြန်ဖြေပေးပါနော်။ ဥပမာ 70");
+        return true;
+      }
+      answer.value = numericValue;
+      if (field.id.toLowerCase().includes("age")) patch.age = Math.round(numericValue);
+      if (field.id.toLowerCase().includes("weight")) patch.weight = numericValue;
+    } else {
+      answer.value = text;
+      if (field.id.toLowerCase().includes("height")) patch.height = text;
+      if (field.id.toLowerCase().includes("phone")) patch.phone = text;
+      if (field.id.toLowerCase().includes("email")) patch.email = text;
+    }
+  }
+
+  nextAnswers[field.id] = answer;
+  const { data: updatedRegistration, error } = await supabase
+    .from("program_registrations")
+    .update({ ...patch, intake_answers: nextAnswers })
+    .eq("id", active.registration.id)
+    .select("id, telegram_id, program_key, program_name, payment_status, status, intake_answers")
+    .maybeSingle();
+
+  if (error) throw error;
+  await sendNextIntakeQuestion(chatId, updatedRegistration || { ...active.registration, intake_answers: nextAnswers });
+  return true;
 }
 
 async function seedTelegramUser(from?: TelegramUser) {
@@ -617,10 +775,9 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
     chatId,
     adminNotice.ok === false
       ? "Payment screenshot ရပါပြီ။ Admin dashboard ထဲမှာ queue တက်ထားပါတယ်။ Admin ဆီ Telegram notification ပို့တာနည်းနည်း error ဖြစ်နိုင်လို့ ခဏကြာရင် /check-payment နဲ့ပြန်စစ်ပေးပါနော်။"
-      : "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီး tracker ready ဖြစ်တာနဲ့ Mini App ဖွင့်သုံးလို့ရပါမယ်။",
-    miniAppUrl(baseUrl, from),
-    { buttonText: "Mini App ဖွင့်မယ်" },
+      : "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။\n\nအခု tracker ပြင်ဖို့ လိုတဲ့ info လေးတွေကို ဒီ chat ထဲမှာ တစ်ခုချင်းမေးပါမယ်နော်။",
   );
+  await sendNextIntakeQuestion(chatId, { ...updatedRegistration, id: registration.id });
 }
 
 export async function GET(request: Request) {
@@ -718,6 +875,11 @@ export async function POST(request: Request) {
         "",
         "Payment screenshot ပို့ချင်ရင် ဒီ chat ထဲကို photo အနေနဲ့တန်းပို့ပေးပါ။",
       ].join("\n"), mainMenuRows(miniAppUrl(baseUrl, from)));
+    }
+
+    const handledIntakeReply = await handleIntakeReply(chatId, from, message || {});
+    if (handledIntakeReply) {
+      return NextResponse.json({ ok: true, handled: "intake-reply" });
     }
 
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {

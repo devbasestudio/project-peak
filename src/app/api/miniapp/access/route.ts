@@ -191,7 +191,7 @@ export async function POST(request: Request) {
       paymentStatus,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Mini App access check failed.";
+    const message = err instanceof Error ? err.message : "အခြေအနေစစ်တာ မအောင်မြင်သေးပါ။";
     return NextResponse.json({ status: "error", error: message }, { status: 500 });
   }
 }

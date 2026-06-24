@@ -1,4 +1,4 @@
-const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "https://t.me/fdasfdsafsda_bot";
+const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "";
 
 export default function LoginPage() {
   return (
@@ -13,13 +13,19 @@ export default function LoginPage() {
           Project Peak ကို website login နဲ့မသုံးတော့ပါ။ Telegram bot မှာ /start နှိပ်ပြီး
           Open Mini App button ကနေဝင်ပါ။
         </p>
-        <a
-          href={telegramBotUrl}
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ff6b35] px-5 py-4 text-sm font-black text-white no-underline"
-        >
-          <i className="ph ph-paper-plane-tilt text-lg" />
-          Open Telegram bot
-        </a>
+        {telegramBotUrl ? (
+          <a
+            href={telegramBotUrl}
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ff6b35] px-5 py-4 text-sm font-black text-white no-underline"
+          >
+            <i className="ph ph-paper-plane-tilt text-lg" />
+            Telegram bot ဖွင့်မယ်
+          </a>
+        ) : (
+          <p className="mt-6 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white/70">
+            Telegram bot link ကို admin ဘက်က မသတ်မှတ်ရသေးပါ။
+          </p>
+        )}
       </section>
     </main>
   );

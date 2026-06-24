@@ -33,6 +33,18 @@ type ActiveTab = "logs" | "progress" | "feedback" | "me";
 const SLEEP_SCORES: Record<string, number> = { Poor: 1, Light: 2, OK: 3, Deep: 4 };
 const SCORE_TO_SLEEP: Record<number, string> = { 1: "Poor", 2: "Light", 3: "OK", 4: "Deep" };
 
+function readableProgramLabel(value?: string | null) {
+  const text = String(value || "").trim();
+  if (!text) return "Not assigned";
+  const known: Record<string, string> = {
+    custom_plan: "Custom plan",
+    fat_loss: "Fat loss focus",
+    strength: "Strength focus",
+    muscle_gain: "Muscle gain focus",
+  };
+  return known[text] || text.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function DashboardClient({
   username,
   isAdminViewing,
@@ -367,7 +379,7 @@ export default function DashboardClient({
             <h2 className="text-lg font-extrabold">Me</h2>
             <div className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white">
               <InfoRow label="Name" value={username} />
-              <InfoRow label="Program" value={program?.program_type || "Not assigned"} />
+              <InfoRow label="Program" value={readableProgramLabel(program?.program_type)} />
               <InfoRow
                 label="Starting weight"
                 value={startingWeight ? `${startingWeight} kg` : "—"}

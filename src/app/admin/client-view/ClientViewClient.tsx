@@ -36,7 +36,7 @@ export default function ClientViewClient({
   const [macrosP, setMacrosP] = useState(program?.macros_p ?? 150);
   const [macrosC, setMacrosC] = useState(program?.macros_c ?? 200);
   const [macrosF, setMacrosF] = useState(program?.macros_f ?? 65);
-  const [programType, setProgramType] = useState(program?.program_type ?? "skinnyfat_recomp");
+  const [programType, setProgramType] = useState(program?.program_type ?? "custom_plan");
 
   const [updatingProgram, setUpdatingProgram] = useState(false);
   const [programSuccess, setProgramSuccess] = useState(false);
@@ -134,15 +134,16 @@ export default function ClientViewClient({
 
           <form onSubmit={handleUpdateProgram} className="mt-3 flex flex-col gap-3">
             <FieldLabel>
-              Program type
+              Workout template
               <select
                 className={inputClass}
                 value={programType}
                 onChange={(e) => setProgramType(e.target.value)}
               >
-                <option value="skinnyfat_recomp">Skinnyfat Recomp</option>
-                <option value="project_20">Project-20</option>
-                <option value="mass_method">Mass Method</option>
+                <option value="custom_plan">Custom plan</option>
+                <option value="fat_loss">Fat loss focus</option>
+                <option value="strength">Strength focus</option>
+                <option value="muscle_gain">Muscle gain focus</option>
               </select>
             </FieldLabel>
             <div className="grid grid-cols-2 gap-3">

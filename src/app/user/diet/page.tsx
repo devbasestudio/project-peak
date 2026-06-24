@@ -40,7 +40,7 @@ export default async function DietPage(props: {
   const macrosP = program?.macros_p ?? 150;
   const macrosC = program?.macros_c ?? 200;
   const macrosF = program?.macros_f ?? 60;
-  const programType = program?.program_type ?? 'skinnyfat_recomp';
+  const programType = program?.program_type ?? 'custom_plan';
 
   // Fetch dynamic nutrition items from database
   const nutritionItems = await query(

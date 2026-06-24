@@ -81,7 +81,7 @@ export default async function DashboardPage(props: {
   const schedule = schedules && schedules.length > 0 ? schedules[0] : null;
 
   // Fetch meal completion log counts & calories for today
-  const programType = program?.program_type || 'skinnyfat_recomp';
+  const programType = program?.program_type || 'custom_plan';
   const allNutritionItems = await query(
     'SELECT id, calories FROM nutrition_items WHERE program_type = ?',
     [programType]

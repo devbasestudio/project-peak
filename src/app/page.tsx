@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "https://t.me/fdasfdsafsda_bot";
+const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "";
 
 export default function Home() {
   return (
@@ -28,15 +28,21 @@ export default function Home() {
             Project Peak ကို Telegram Bot နဲ့ Mini App ထဲမှာပဲသုံးပါတယ်။ Package ဝယ်တာကို
             bot chat ထဲမှာလုပ်ပြီး admin ready ပို့မှ Mini App ကိုဖွင့်နိုင်ပါမယ်။
           </p>
-          <a
-            href={telegramBotUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-[#1c2b29] px-4 py-4 text-sm font-extrabold text-white no-underline"
-          >
-            <i className="ph ph-paper-plane-tilt text-lg" />
-            Open Telegram bot
-          </a>
+          {telegramBotUrl ? (
+            <a
+              href={telegramBotUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-[#1c2b29] px-4 py-4 text-sm font-extrabold text-white no-underline"
+            >
+              <i className="ph ph-paper-plane-tilt text-lg" />
+              Telegram bot ဖွင့်မယ်
+            </a>
+          ) : (
+            <p className="mt-5 rounded-2xl border border-[#f4d6a8] bg-[#fff7e8] px-4 py-3 text-sm font-bold text-[#9a5a12]">
+              Telegram bot link ကို admin ဘက်က မသတ်မှတ်ရသေးပါ။
+            </p>
+          )}
         </div>
       </section>
     </main>

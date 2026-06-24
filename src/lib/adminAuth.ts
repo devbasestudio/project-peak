@@ -218,18 +218,19 @@ export async function requireAdmin() {
   return { user, supabase, error: null, status: 200 };
 }
 
-export function toProgramType(programName = "") {
-  const lower = programName.toLowerCase();
-  if (lower.includes("project") || lower.includes("20")) return "project_20";
-  if (lower.includes("mass")) return "mass_method";
-  return "skinnyfat_recomp";
+export function toProgramType(programName = "", programKey = "") {
+  const source = normalizeTelegramLoginId(programKey || programName).toLowerCase();
+  const slug = source
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug || "custom_plan";
 }
 
 export function programDefaults(programType: string) {
-  if (programType === "project_20") {
+  if (programType === "fat_loss") {
     return { target_calories: 1500, macros_p: 140, macros_c: 120, macros_f: 45 };
   }
-  if (programType === "mass_method") {
+  if (programType === "muscle_gain" || programType === "strength") {
     return { target_calories: 3000, macros_p: 180, macros_c: 350, macros_f: 80 };
   }
   return { target_calories: 1800, macros_p: 150, macros_c: 180, macros_f: 50 };

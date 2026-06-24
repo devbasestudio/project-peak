@@ -118,7 +118,7 @@ async function repairApprovedRegistrationAccounts(registrations: any[]) {
         firstName: registration.name || "",
         email: registration.email || "",
       });
-      const programType = toProgramType(registration.program_name);
+      const programType = toProgramType(registration.program_name, registration.program_key);
       const durationMonths = Number(registration.duration_months || 3);
       await saveUserProgram(supabase, {
         user_id: account.userId,

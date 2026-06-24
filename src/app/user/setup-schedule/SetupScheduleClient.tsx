@@ -16,21 +16,22 @@ export default function SetupScheduleClient({
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Define splits per program
   const splitsMap: Record<string, string[]> = {
-    skinnyfat_recomp: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
-    project_20: ['Push', 'Pull', 'Legs', 'Full Body', 'Cardio'],
-    mass_method: ['Chest & Triceps', 'Back & Biceps', 'Shoulders & Arms', 'Legs'],
+    custom_plan: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
+    fat_loss: ['Push', 'Pull', 'Legs', 'Full Body', 'Cardio'],
+    strength: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
+    muscle_gain: ['Chest & Triceps', 'Back & Biceps', 'Shoulders & Arms', 'Legs'],
   };
 
   const programNameMap: Record<string, string> = {
-    skinnyfat_recomp: 'Skinnyfat Recomp',
-    project_20: 'Project-20',
-    mass_method: 'Mass Method',
+    custom_plan: 'Custom plan',
+    fat_loss: 'Fat loss focus',
+    strength: 'Strength focus',
+    muscle_gain: 'Muscle gain focus',
   };
 
-  const splits = splitsMap[programType] || splitsMap.skinnyfat_recomp;
-  const programName = programNameMap[programType] || 'Skinnyfat Recomp';
+  const splits = splitsMap[programType] || splitsMap.custom_plan;
+  const programName = programNameMap[programType] || programType.replace(/[_-]+/g, ' ');
 
   const daysOfWeek = [
     { label: 'Sunday', value: 0 },
@@ -48,14 +49,13 @@ export default function SetupScheduleClient({
     if (existing) {
       return existing.is_rest ? 'Rest' : existing.split_name;
     }
-    // standard default splits mapping for speed
-    if (programType === 'skinnyfat_recomp') {
+    if (programType === 'custom_plan' || programType === 'strength') {
       if (dayVal === 1) return 'Upper A';
       if (dayVal === 2) return 'Lower A';
       if (dayVal === 4) return 'Upper B';
       if (dayVal === 5) return 'Lower B';
       return 'Rest';
-    } else if (programType === 'project_20') {
+    } else if (programType === 'fat_loss') {
       if (dayVal === 1) return 'Push';
       if (dayVal === 2) return 'Pull';
       if (dayVal === 3) return 'Legs';
@@ -63,7 +63,6 @@ export default function SetupScheduleClient({
       if (dayVal === 6) return 'Cardio';
       return 'Rest';
     } else {
-      // mass_method
       if (dayVal === 1) return 'Chest & Triceps';
       if (dayVal === 2) return 'Back & Biceps';
       if (dayVal === 4) return 'Shoulders & Arms';

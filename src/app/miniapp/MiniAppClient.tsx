@@ -10,7 +10,7 @@ import {
   watchTelegramIdentity,
 } from "@/lib/telegramWebApp";
 
-const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "https://t.me/fdasfdsafsda_bot";
+const telegramBotUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || "";
 const ACCESS_CACHE_KEY = "project_peak_miniapp_access_cache";
 const ACCESS_CACHE_MS = 60_000;
 
@@ -63,8 +63,8 @@ function statusCopy(access: AccessState) {
   }
   if (access.status === "admin") {
     return {
-      title: "Opening admin dashboard",
-      body: "Admin Telegram ID ဖြစ်တာကြောင့် admin dashboard ကိုတန်းပို့နေပါတယ်။",
+      title: "Trainer dashboard ဖွင့်နေပါတယ်",
+      body: "Trainer account ဖြစ်တာကြောင့် dashboard ကိုတန်းပို့နေပါတယ်။",
       tone: "ready",
     };
   }
@@ -105,7 +105,7 @@ function statusCopy(access: AccessState) {
   }
   if (access.status === "error") {
     return {
-      title: "Access check failed",
+      title: "အခြေအနေစစ်တာ မအောင်မြင်သေးပါ",
       body: access.message || "ခဏနေ ပြန်စမ်းပါ။ မရသေးရင် admin ကိုပြောပေးပါ။",
       tone: "error",
     };
@@ -118,7 +118,7 @@ function statusCopy(access: AccessState) {
     };
   }
   return {
-    title: "Buy package in Telegram bot",
+    title: "Package ဝယ်ရန်လိုပါသေးတယ်",
     body: "Package ဝယ်တာကို Telegram bot chat ထဲမှာပဲလုပ်ပါ။ Admin approve/ready ဖြစ်ပြီးမှ Mini App ကိုသုံးလို့ရပါမယ်။",
     tone: "waiting",
   };
@@ -191,7 +191,7 @@ export default function MiniAppClient() {
         });
         const payload = await response.json();
         if (!response.ok) {
-          const message = payload.error || "Access check failed.";
+          const message = payload.error || "အခြေအနေစစ်တာ မအောင်မြင်သေးပါ။";
           if (response.status === 401 || response.status === 403) {
             setAccess({ status: "needs_telegram", message });
             return;
@@ -214,7 +214,7 @@ export default function MiniAppClient() {
         if (!disposed) {
           setAccess({
             status: "error",
-            message: err instanceof Error ? err.message : "Access check failed.",
+            message: err instanceof Error ? err.message : "အခြေအနေစစ်တာ မအောင်မြင်သေးပါ။",
           });
         }
       }
@@ -261,7 +261,7 @@ export default function MiniAppClient() {
               Project Peak Mini App
             </p>
             <h1 className="mt-1 text-2xl font-extrabold text-white sm:text-3xl">
-              Approved members only
+              Ready members only
             </h1>
             <p className="mt-2 max-w-md text-sm font-medium leading-relaxed text-white/82">
               Package ဝယ်တာကို Telegram bot chat ထဲမှာလုပ်ပါ။ ဒီ Mini App က ready ဖြစ်ပြီးသား
@@ -271,7 +271,7 @@ export default function MiniAppClient() {
         </header>
 
         <section className="mt-4 rounded-3xl border border-[#e0e7e4] bg-white p-4 shadow-sm sm:p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">Telegram identity</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">သင့် Telegram ID</p>
           {telegramIdentity ? (
             <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-[#f6f8f7] p-3">
               <div className="min-w-0">
@@ -322,13 +322,13 @@ export default function MiniAppClient() {
           </div>
 
           <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">
-            {access.status === "loading" ? "Checking access" : "Access status"}
+            {access.status === "loading" ? "စစ်နေပါတယ်" : "လက်ရှိအခြေအနေ"}
           </p>
           <h2 className="mt-1 text-2xl font-extrabold text-[#1c2b29]">{copy.title}</h2>
           <p className="mt-2 text-sm font-semibold leading-relaxed text-[#6b7a77]">{copy.body}</p>
           {access.programName && (
             <p className="mt-3 rounded-2xl bg-[#f6f8f7] px-4 py-3 text-sm font-bold text-[#1c2b29]">
-              Current package: {access.programName}
+              သင်ရွေးထားတဲ့ package: {access.programName}
             </p>
           )}
 
@@ -339,7 +339,7 @@ export default function MiniAppClient() {
                 className="flex items-center justify-center gap-2 rounded-2xl bg-[#1c2b29] px-4 py-4 text-sm font-extrabold text-white no-underline"
               >
                 <i className="ph ph-arrow-square-out text-lg" />
-                {access.status === "admin" ? "Opening admin dashboard..." : "Open my tracker"}
+                {access.status === "admin" ? "Trainer dashboard ဖွင့်နေပါတယ်..." : "Tracker ဖွင့်မယ်"}
               </a>
             )}
             <button
@@ -350,15 +350,21 @@ export default function MiniAppClient() {
               <i className="ph ph-arrow-clockwise text-lg" />
               ပြန်စစ်မယ်
             </button>
-            <a
-              href={telegramBotUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 rounded-2xl border border-[#dbe4e0] bg-white px-4 py-4 text-sm font-extrabold text-[#1c2b29] no-underline"
-            >
-              <i className="ph ph-paper-plane-tilt text-lg" />
-              Open Telegram bot
-            </a>
+            {telegramBotUrl ? (
+              <a
+                href={telegramBotUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-[#dbe4e0] bg-white px-4 py-4 text-sm font-extrabold text-[#1c2b29] no-underline"
+              >
+                <i className="ph ph-paper-plane-tilt text-lg" />
+                Telegram bot ဖွင့်မယ်
+              </a>
+            ) : (
+              <p className="rounded-2xl border border-[#f4d6a8] bg-[#fff7e8] px-4 py-3 text-sm font-bold text-[#9a5a12]">
+                Telegram bot link ကို admin ဘက်က မသတ်မှတ်ရသေးပါ။
+              </p>
+            )}
           </div>
         </section>
       </div>

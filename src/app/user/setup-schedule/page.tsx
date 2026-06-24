@@ -27,9 +27,8 @@ export default async function SetupSchedulePage(props: {
     redirect('/login');
   }
 
-  // Get program_type from programs table
   const programs = await query('SELECT program_type FROM programs WHERE user_id = ?', [targetUserId]);
-  const programType = programs && programs.length > 0 ? programs[0].program_type : 'skinnyfat_recomp';
+  const programType = programs && programs.length > 0 ? programs[0].program_type : 'custom_plan';
 
   // Get existing schedule if any
   const existingSchedule = await query(

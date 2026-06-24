@@ -129,76 +129,8 @@ ALTER TABLE public.feedback_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_devices ENABLE ROW LEVEL SECURITY;
 
-INSERT INTO public.program_catalog
-  (program_key, name, description, image_url, accent, durations, intake_fields, feedback_form_type, active)
-VALUES
-  (
-    'recomp',
-    'Skinnyfat Recomp Program',
-    'Fat loss and muscle gain program with customized daily tracker.',
-    '/user/Skinnyfat.jpg',
-    '#7eb6ff',
-    '[{"label":"1 month","months":1,"price":50000,"note":"Starter reset"},{"label":"3 months","months":3,"price":135000,"note":"Most common"},{"label":"6 months","months":6,"price":250000,"note":"Deep coaching"}]'::jsonb,
-    '[
-      {"id":"weight","label":"Weight","type":"number","required":true,"unit":"kg","prompt":"လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ? kg နဲ့ရေးပေးပါ။"},
-      {"id":"height","label":"Height","type":"text","required":true,"prompt":"အရပ် ဘယ်လောက်ရှိပါသလဲ? ဥပမာ 5ft 8in / 173cm"},
-      {"id":"age","label":"Age","type":"number","required":true,"unit":"years","prompt":"အသက် ဘယ်လောက်ရှိပါသလဲ?"},
-      {"id":"photo_front","label":"Front body photo","type":"photo","required":true,"photoSlot":"front","prompt":"ရှေ့ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"photo_back","label":"Back body photo","type":"photo","required":true,"photoSlot":"back","prompt":"နောက်ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"photo_side","label":"Side body photo","type":"photo","required":true,"photoSlot":"side","prompt":"ဘေးဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"goal_notes","label":"Goal / notes","type":"text","required":false,"prompt":"ဒီ program မှာ အဓိကဖြစ်ချင်တဲ့ goal ကိုရေးပေးပါ။"}
-    ]'::jsonb,
-    'weekly',
-    true
-  ),
-  (
-    'project20',
-    'Project-20 Program',
-    'Sustainable weight loss with daily adherence and weekly feedback.',
-    '/user/project 20.jpg',
-    '#f5b84b',
-    '[{"label":"1 month","months":1,"price":55000,"note":"Kickstart"},{"label":"3 months","months":3,"price":150000,"note":"Best result window"},{"label":"6 months","months":6,"price":280000,"note":"Long cut"}]'::jsonb,
-    '[
-      {"id":"weight","label":"Weight","type":"number","required":true,"unit":"kg","prompt":"လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ? kg နဲ့ရေးပေးပါ။"},
-      {"id":"height","label":"Height","type":"text","required":true,"prompt":"အရပ် ဘယ်လောက်ရှိပါသလဲ? ဥပမာ 5ft 8in / 173cm"},
-      {"id":"age","label":"Age","type":"number","required":true,"unit":"years","prompt":"အသက် ဘယ်လောက်ရှိပါသလဲ?"},
-      {"id":"photo_front","label":"Front body photo","type":"photo","required":true,"photoSlot":"front","prompt":"ရှေ့ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"photo_back","label":"Back body photo","type":"photo","required":true,"photoSlot":"back","prompt":"နောက်ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"photo_side","label":"Side body photo","type":"photo","required":true,"photoSlot":"side","prompt":"ဘေးဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"goal_notes","label":"Goal / notes","type":"text","required":false,"prompt":"ဒီ program မှာ အဓိကဖြစ်ချင်တဲ့ goal ကိုရေးပေးပါ။"}
-    ]'::jsonb,
-    'weekly',
-    true
-  ),
-  (
-    'mass',
-    'Mass Method Program',
-    'Hardgainer hypertrophy program with calorie surplus and recovery tracking.',
-    '/user/mass method.jpg',
-    '#8bd67a',
-    '[{"label":"1 month","months":1,"price":60000,"note":"Technique base"},{"label":"3 months","months":3,"price":165000,"note":"Hypertrophy block"},{"label":"6 months","months":6,"price":310000,"note":"Full bulk"}]'::jsonb,
-    '[
-      {"id":"weight","label":"Weight","type":"number","required":true,"unit":"kg","prompt":"လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ? kg နဲ့ရေးပေးပါ။"},
-      {"id":"height","label":"Height","type":"text","required":true,"prompt":"အရပ် ဘယ်လောက်ရှိပါသလဲ? ဥပမာ 5ft 8in / 173cm"},
-      {"id":"age","label":"Age","type":"number","required":true,"unit":"years","prompt":"အသက် ဘယ်လောက်ရှိပါသလဲ?"},
-      {"id":"photo_front","label":"Front body photo","type":"photo","required":true,"photoSlot":"front","prompt":"ရှေ့ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"photo_back","label":"Back body photo","type":"photo","required":true,"photoSlot":"back","prompt":"နောက်ဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"photo_side","label":"Side body photo","type":"photo","required":true,"photoSlot":"side","prompt":"ဘေးဘက် body photo တစ်ပုံ ပို့ပေးပါ။"},
-      {"id":"goal_notes","label":"Goal / notes","type":"text","required":false,"prompt":"Muscle gain အတွက် အဓိက goal ကိုရေးပေးပါ။"}
-    ]'::jsonb,
-    'end_of_program',
-    true
-  )
-ON CONFLICT (program_key) DO UPDATE SET
-  name = EXCLUDED.name,
-  description = EXCLUDED.description,
-  image_url = EXCLUDED.image_url,
-  accent = EXCLUDED.accent,
-  durations = EXCLUDED.durations,
-  intake_fields = EXCLUDED.intake_fields,
-  feedback_form_type = EXCLUDED.feedback_form_type,
-  active = EXCLUDED.active,
-  updated_at = now();
+-- Packages are intentionally not seeded here.
+-- Create the live package catalog from Admin -> Programs.
 
 INSERT INTO public.feedback_form_templates (name, cadence, fields, active)
 VALUES

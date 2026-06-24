@@ -41,13 +41,13 @@ export async function POST(request: Request) {
     const durations = normalizeDurations(body.durations || []);
 
     if (!name) {
-      return NextResponse.json({ error: "Program name is required" }, { status: 400 });
+      return NextResponse.json({ error: "Program name ထည့်ပေးပါ။" }, { status: 400 });
     }
     if (!programKey) {
-      return NextResponse.json({ error: "Program name must include letters or numbers" }, { status: 400 });
+      return NextResponse.json({ error: "Program name မှာ စာလုံး ဒါမှမဟုတ် နံပါတ် ပါအောင်ရေးပေးပါ။" }, { status: 400 });
     }
     if (!durations.length) {
-      return NextResponse.json({ error: "At least one pricing tier is required" }, { status: 400 });
+      return NextResponse.json({ error: "ဈေးနှုန်းတစ်ခုအနည်းဆုံး ထည့်ပေးပါ။" }, { status: 400 });
     }
 
     const row = {
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       persisted: true,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Program save failed";
+    const message = err instanceof Error ? err.message : "Program သိမ်းမရသေးပါ။";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

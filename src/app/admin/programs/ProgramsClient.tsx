@@ -63,6 +63,8 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
   const { state, pendingId, run } = useAdminAction();
   const [items, setItems] = useState<EditableProgram[]>(() => programs.map(cloneProgram));
   const [selected, setSelected] = useState(items[0]?.key || "");
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState("");
   const saving = pendingId === "program";
   const deleting = pendingId === "delete-program";
 
@@ -143,6 +145,27 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
   function removeField(fieldId: string) {
     if (!config) return;
     updateProgram({ intakeFields: config.intakeFields.filter((field) => field.id !== fieldId) });
+  }
+
+  async function uploadProgramImage(file: File | null) {
+    if (!file) return;
+    setImageUploading(true);
+    setImageUploadError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/upload-program-image", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Image upload failed");
+      updateProgram({ image: payload.url });
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : "Image upload failed");
+    } finally {
+      setImageUploading(false);
+    }
   }
 
   function saveCurrentProgram() {
@@ -260,15 +283,40 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
               />
             </FieldLabel>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_0.35fr]">
-              <FieldLabel>
-                Image URL
-                <input
-                  className={inputClass}
-                  value={config.image}
-                  placeholder="/user/example.jpg or https://..."
-                  onChange={(event) => updateProgram({ image: event.target.value })}
-                />
-              </FieldLabel>
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-semibold text-[#3a4744]">Program image</p>
+                <div className="flex flex-col gap-3 rounded-2xl border border-[#e6eae8] bg-[#f6f8f7] p-3 sm:flex-row sm:items-center">
+                  <div className="h-28 w-full overflow-hidden rounded-xl bg-[#dfe6e3] sm:w-44">
+                    <img
+                      src={config.image || "/img/hero_bg.jpg"}
+                      alt="Program"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-2">
+                    <label className={`${actionButtonLightClass} w-fit cursor-pointer`}>
+                      <i className="ph ph-upload-simple text-base" />
+                      {imageUploading ? "Uploading..." : "Upload image"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={imageUploading}
+                        onChange={(event) => {
+                          void uploadProgramImage(event.target.files?.[0] || null);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs font-semibold text-[#7a8783]">JPG, PNG, WEBP · max 8MB</p>
+                    {imageUploadError && (
+                      <p className="rounded-xl border border-[#f4c7bd] bg-[#fdeee9] px-3 py-2 text-xs font-bold text-[#c0432b]">
+                        {imageUploadError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
               <FieldLabel>
                 Accent color
                 <input

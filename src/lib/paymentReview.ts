@@ -42,7 +42,7 @@ export async function approvePaymentRegistration(supabase: any, registrationId: 
   }
 
   if (userId) {
-    const programType = toProgramType(registration.program_name);
+    const programType = toProgramType(registration.program_name, registration.program_key);
     const durationMonths = Number(registration.duration_months || 3);
     const today = new Date().toISOString().split("T")[0];
     await saveUserProgram(supabase, {

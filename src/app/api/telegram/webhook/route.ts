@@ -155,19 +155,20 @@ function packageCaption(program: ProjectProgram) {
   const prices = program.durations
     .map((duration) => `${durationLabel(duration.months)}: ${formatMmk(duration.price)}`)
     .join("\n");
-
-  return telegramCaption([
+  const lines = [
     `<b>${escapeHtml(program.name)}</b>`,
-    escapeHtml(program.headline),
+    program.description ? escapeHtml(program.description) : "",
     "",
-    `<b>ဘယ်သူတွေအတွက်သင့်တော်လဲ</b>\n${escapeHtml(program.bestFor)}`,
+    includes ? `<b>Package ထဲမှာပါတာတွေ</b>\n${includes}` : "",
     "",
-    `<b>Package ထဲမှာပါတာတွေ</b>\n${includes}`,
+    prices ? `<b>ဈေးနှုန်း</b>\n${prices}` : "ဈေးနှုန်း မထည့်ရသေးပါ။",
     "",
-    `<b>ဈေးနှုန်း</b>\n${prices}`,
-    "",
-    "အဆင်ပြေရင် အောက်က duration ကိုနှိပ်ပါ။ Payment QR ကို ဒီ chat ထဲမှာပဲ ချက်ချင်းပို့ပေးပါမယ်။",
-  ]);
+    prices
+      ? "အဆင်ပြေရင် အောက်က duration ကိုနှိပ်ပါ။ Payment QR ကို ဒီ chat ထဲမှာပဲ ချက်ချင်းပို့ပေးပါမယ်။"
+      : "Admin ဘက်က ဈေးနှုန်းထည့်ပြီး save လုပ်ပြီးမှ ဝယ်လို့ရပါမယ်။",
+  ].filter((line) => line !== "");
+
+  return telegramCaption(lines);
 }
 
 function paymentCaption(program: ProjectProgram, months: number, price: number, telegramId: string) {
@@ -228,7 +229,7 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, ms: number) {
 }
 
 async function getFastProjectPrograms() {
-  return withTimeout(getPublicProjectPrograms({ includeDefaults: false }), [], 650);
+  return withTimeout(getPublicProjectPrograms(), [], 650);
 }
 
 function noPackagesResponse(chatId: string) {

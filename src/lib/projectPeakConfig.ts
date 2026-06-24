@@ -1,4 +1,4 @@
-export type ProgramKey = "recomp" | "project20" | "mass";
+export type ProgramKey = string;
 
 export type ProgramDuration = {
   label: string;
@@ -56,87 +56,6 @@ export type TrackerSection = {
   fields: TrackerField[];
 };
 
-export const projectPrograms: ProjectProgram[] = [
-  {
-    key: "recomp",
-    name: "Skinnyfat Recomp Program",
-    shortName: "Recomp",
-    headline: "Soft body ကနေ lean defined shape ဆီသွားမယ်",
-    description:
-      "Fat loss နဲ့ muscle gain ကို တပြိုင်နက်တည်း build လုပ်ချင်တဲ့ client တွေအတွက် habit, nutrition, training tracker ပါတဲ့ program.",
-    bestFor: "Weight ကအရမ်းမများပေမယ့် belly fat, weak muscle tone, shape မထွက်သေးတဲ့သူတွေ",
-    image: "/user/Skinnyfat.jpg",
-    accent: "#7eb6ff",
-    durations: [
-      { label: "1 month", months: 1, price: 50000, note: "Starter reset" },
-      { label: "3 months", months: 3, price: 135000, note: "Most common" },
-      { label: "6 months", months: 6, price: 250000, note: "Deep coaching" },
-    ],
-    includes: [
-      { icon: "ph-barbell", title: "Customized Workout", description: "အပတ်စဉ် overload တက်သွားအောင် admin က split နဲ့ volume ကိုချိန်ပေးမယ်။" },
-      { icon: "ph-bowl-food", title: "Macro Guide", description: "Protein target, meal timing, calorie range တွေကို daily tracker နဲ့လိုက်ကြည့်မယ်။" },
-      { icon: "ph-chart-line-up", title: "Daily Tracker", description: "Weight, sleep, water, meals, steps, win/struggle notes တွေကို compact dashboard မှာမှတ်မယ်။" },
-      { icon: "ph-chat-circle-text", title: "Weekly Feedback", description: "Progress photo, average weight, energy feedback ပေါ်မူတည်ပြီး plan adjust လုပ်မယ်။" },
-    ],
-    outcomes: ["Body shape ပိုတင်းလာခြင်း", "Belly fat လျော့ပြီး muscle tone တက်ခြင်း", "Training consistency တည်ဆောက်ခြင်း"],
-    process: ["Payment submit", "Admin approval", "Custom tracker setup", "Daily logging + weekly feedback"],
-    intakeFields: defaultIntakeFields(),
-    feedbackFormType: "weekly",
-  },
-  {
-    key: "project20",
-    name: "Project-20 Program",
-    shortName: "Project 20",
-    headline: "Fat loss ကို structured system နဲ့ချမယ်",
-    description:
-      "Weight loss ကို aggressive ဖြစ်ပေမယ့် sustainable ဖြစ်အောင် daily adherence နဲ့ weekly feedback ပေါင်းထားတဲ့ plan.",
-    bestFor: "Weight လျှော့ချင်ပြီး diet ပြတ်တောက်လွယ်တာကို tracker နဲ့ထိန်းချင်တဲ့သူတွေ",
-    image: "/user/project 20.jpg",
-    accent: "#f5b84b",
-    durations: [
-      { label: "1 month", months: 1, price: 55000, note: "Kickstart" },
-      { label: "3 months", months: 3, price: 150000, note: "Best result window" },
-      { label: "6 months", months: 6, price: 280000, note: "Long cut" },
-    ],
-    includes: [
-      { icon: "ph-fire", title: "Fat-loss Strategy", description: "Calorie deficit ကို performance မကျအောင် strength/cardio mix နဲ့တည်ဆောက်မယ်။" },
-      { icon: "ph-fork-knife", title: "Meal Adherence", description: "Meal completion, protein, calories ကိုအလွယ်တကူ check လုပ်နိုင်မယ်။" },
-      { icon: "ph-camera", title: "Progress Photos", description: "Weekly photos နဲ့ measurement trend တွေကို admin ကပြန်ကြည့်ပေးမယ်။" },
-      { icon: "ph-target", title: "Weekly Adjustment", description: "Plateau ဖြစ်လာရင် steps, calories, cardio volume ကိုပြန်ချိန်မယ်။" },
-    ],
-    outcomes: ["Weight trend လျော့လာခြင်း", "Meal consistency တိုးလာခြင်း", "Energy မကျဘဲ cut လုပ်နိုင်ခြင်း"],
-    process: ["Choose duration", "Upload payment proof", "Admin builds deficit plan", "Track meals + weekly check-in"],
-    intakeFields: defaultIntakeFields(),
-    feedbackFormType: "weekly",
-  },
-  {
-    key: "mass",
-    name: "Mass Method Program",
-    shortName: "Mass Method",
-    headline: "Hardgainer တွေအတွက် muscle gain system",
-    description:
-      "Hardgainer clients တွေအတွက် calorie surplus, progressive overload, recovery habit တွေကို compact tracker နဲ့ထိန်းတဲ့ program.",
-    bestFor: "Weight တက်ခက်၊ muscle တက်ချင်ပြီး food/training consistency လိုတဲ့သူတွေ",
-    image: "/user/mass method.jpg",
-    accent: "#8bd67a",
-    durations: [
-      { label: "1 month", months: 1, price: 60000, note: "Technique base" },
-      { label: "3 months", months: 3, price: 165000, note: "Hypertrophy block" },
-      { label: "6 months", months: 6, price: 310000, note: "Full bulk" },
-    ],
-    includes: [
-      { icon: "ph-barbell", title: "Hypertrophy Plan", description: "Compound lifts နဲ့ accessory work ကို volume တိုးသွားအောင်စီစဉ်မယ်။" },
-      { icon: "ph-bowl-steam", title: "Surplus Nutrition", description: "Calorie surplus ကိုအလွန်အကျွံ fat မတက်အောင် controlled range နဲ့လုပ်မယ်။" },
-      { icon: "ph-moon", title: "Recovery Tracking", description: "Sleep, water, phone-off, steps ကို recovery quality အတွက်လိုက်ကြည့်မယ်။" },
-      { icon: "ph-chart-bar", title: "Strength Progress", description: "Workout log နဲ့ weight trend ပေါ်မူတည်ပြီး sets/reps တိုးသွားမယ်။" },
-    ],
-    outcomes: ["Muscle size တိုးလာခြင်း", "Strength progression မြင်ရခြင်း", "Food habit တည်ဆောက်နိုင်ခြင်း"],
-    process: ["Select package", "Submit intake photos", "Admin sets bulk tracker", "Daily log + progressive workouts"],
-    intakeFields: defaultIntakeFields(),
-    feedbackFormType: "end_of_program",
-  },
-];
-
 export function defaultIntakeFields(): IntakeField[] {
   return [
     { id: "weight", label: "Weight", type: "number", required: true, unit: "kg", prompt: "လက်ရှိ ကိုယ်အလေးချိန် ဘယ်လောက်ရှိပါသလဲ?" },
@@ -183,10 +102,6 @@ export function normalizeIntakeFields(value: unknown): IntakeField[] {
     })
     .filter(Boolean) as IntakeField[];
   return fields.length ? fields : defaultIntakeFields();
-}
-
-export function getProjectProgram(key: string | undefined) {
-  return projectPrograms.find((program) => program.key === key) || projectPrograms[0];
 }
 
 export const paymentMethods = [

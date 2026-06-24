@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import {
+  defaultIntakeFields,
   normalizeIntakeFields,
-  projectPrograms,
   type FeedbackFormType,
   type ProgramDuration,
   type ProjectProgram,
@@ -44,64 +44,47 @@ function validDurations(value: unknown): ProgramDuration[] | null {
   return durations.length ? durations : null;
 }
 
+function shortNameFromName(name: string) {
+  return name.replace(/\s+Program$/i, "").trim() || name;
+}
+
+export function programFromCatalogRow(row: ProgramCatalogRow): ProjectProgram {
+  const name = String(row.name || row.program_key || "Untitled program").trim();
+  const description = String(row.description || "").trim();
+  const feedbackFormType: FeedbackFormType =
+    row.feedback_form_type === "end_of_program" ? "end_of_program" : "weekly";
+
+  return {
+    key: String(row.program_key || "").trim(),
+    name,
+    shortName: shortNameFromName(name),
+    headline: description || name,
+    description,
+    bestFor: description,
+    image: row.image_url || "/img/hero_bg.jpg",
+    accent: row.accent || "#ff6b35",
+    durations: validDurations(row.durations) || [],
+    includes: [],
+    outcomes: [],
+    process: [],
+    intakeFields: normalizeIntakeFields(row.intake_fields || defaultIntakeFields()),
+    feedbackFormType,
+  };
+}
+
 export function mergeProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
-  const byKey = new Map(rows.map((row) => [row.program_key, row]));
-
-  return projectPrograms.map((program) => {
-    const row = byKey.get(program.key);
-    if (!row || row.active === false) return program;
-
-    return {
-      ...program,
-      name: row.name || program.name,
-      description: row.description || program.description,
-      image: row.image_url || program.image,
-      accent: row.accent || program.accent,
-      durations: validDurations(row.durations) || program.durations,
-      intakeFields: normalizeIntakeFields(row.intake_fields || program.intakeFields),
-      feedbackFormType:
-        row.feedback_form_type === "end_of_program" || row.feedback_form_type === "weekly"
-          ? (row.feedback_form_type as FeedbackFormType)
-          : program.feedbackFormType,
-    };
-  });
-}
-
-export function mergeOnlyProgramCatalogRows(rows: ProgramCatalogRow[] = []) {
-  const defaultsByKey = new Map(projectPrograms.map((program) => [program.key, program]));
-
   return rows
-    .filter((row) => row.active !== false)
-    .map((row) => {
-      const program = defaultsByKey.get(row.program_key as ProjectProgram["key"]);
-      if (!program) return null;
-
-      return {
-        ...program,
-        name: row.name || program.name,
-        description: row.description || program.description,
-        image: row.image_url || program.image,
-        accent: row.accent || program.accent,
-        durations: validDurations(row.durations) || program.durations,
-        intakeFields: normalizeIntakeFields(row.intake_fields || program.intakeFields),
-        feedbackFormType:
-          row.feedback_form_type === "end_of_program" || row.feedback_form_type === "weekly"
-            ? (row.feedback_form_type as FeedbackFormType)
-            : program.feedbackFormType,
-      };
-    })
-    .filter(Boolean) as ProjectProgram[];
+    .filter((row) => row.active !== false && row.program_key)
+    .map(programFromCatalogRow);
 }
 
-export async function getPublicProjectPrograms(
-  options: { fresh?: boolean; includeDefaults?: boolean } = {},
-): Promise<ProjectProgram[]> {
+export const mergeOnlyProgramCatalogRows = mergeProgramCatalogRows;
+
+export async function getPublicProjectPrograms(options: { fresh?: boolean } = {}): Promise<ProjectProgram[]> {
   if (options.fresh) noStore();
   if (!options.fresh && cachedPrograms && cachedPrograms.expiresAt > Date.now()) {
     return cachedPrograms.value;
   }
-  const includeDefaults = options.includeDefaults !== false;
-
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -109,19 +92,19 @@ export async function getPublicProjectPrograms(
       .select("program_key, name, description, image_url, accent, durations, intake_fields, feedback_form_type, active")
       .eq("active", true);
 
-    if (error) return includeDefaults ? projectPrograms : [];
+    if (error) return [];
     const rows = (data || []) as ProgramCatalogRow[];
-    const programs = includeDefaults ? mergeProgramCatalogRows(rows) : mergeOnlyProgramCatalogRows(rows);
-    if (!options.fresh && includeDefaults) {
+    const programs = mergeProgramCatalogRows(rows);
+    if (!options.fresh) {
       cachedPrograms = { value: programs, expiresAt: Date.now() + PROGRAM_CACHE_MS };
     }
     return programs;
   } catch {
-    return includeDefaults ? projectPrograms : [];
+    return [];
   }
 }
 
-export async function getPublicProjectProgram(key: string | undefined): Promise<ProjectProgram> {
+export async function getPublicProjectProgram(key: string | undefined): Promise<ProjectProgram | null> {
   const programs = await getPublicProjectPrograms();
-  return programs.find((program) => program.key === key) || programs[0];
+  return programs.find((program) => program.key === key) || null;
 }

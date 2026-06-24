@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { projectPrograms } from "@/lib/projectPeakConfig";
 import { Card, CardTitle, FieldLabel, PageHeader, inputClass } from "@/components/admin/ui";
 import {
   Toast,
@@ -26,6 +25,11 @@ type FeedbackTemplate = {
   cadence: string;
   fields: FeedbackField[];
   active: boolean;
+};
+
+type ProgramOption = {
+  key: string;
+  name: string;
 };
 
 function normalizeField(field: unknown, index: number): FeedbackField {
@@ -59,11 +63,17 @@ function fieldSummary(fields: FeedbackField[]) {
   return fields.map((field) => field.label).filter(Boolean).join(" · ") || "No fields yet";
 }
 
-export default function FeedbackClient({ templates: initialTemplates }: { templates: FeedbackTemplate[] }) {
+export default function FeedbackClient({
+  templates: initialTemplates,
+  programs,
+}: {
+  templates: FeedbackTemplate[];
+  programs: ProgramOption[];
+}) {
   const { state: broadcastState, pendingId, run } = useAdminAction();
   const [templates, setTemplates] = useState(() => normalizeTemplates(initialTemplates));
   const [selectedId, setSelectedId] = useState(String(templates[0]?.id || ""));
-  const [program, setProgram] = useState(projectPrograms[0].name);
+  const [program, setProgram] = useState(programs[0]?.name || "");
   const [templateName, setTemplateName] = useState(templates[0]?.name || "");
   const [saveState, setSaveState] = useState<AdminActionState>(null);
   const [saving, setSaving] = useState(false);
@@ -336,11 +346,11 @@ export default function FeedbackClient({ templates: initialTemplates }: { templa
               value={program}
               onChange={(event) => setProgram(event.target.value)}
             >
-              {projectPrograms.map((p) => (
+              {programs.length ? programs.map((p) => (
                 <option key={p.key} value={p.name}>
                   {p.name}
                 </option>
-              ))}
+              )) : <option value="">No programs yet</option>}
             </select>
           </FieldLabel>
           <FieldLabel>
@@ -360,7 +370,7 @@ export default function FeedbackClient({ templates: initialTemplates }: { templa
         </div>
         <button
           type="button"
-          disabled={broadcasting || !templateName}
+          disabled={broadcasting || !templateName || !program}
           className={`${actionButtonClass} self-start`}
           onClick={() =>
             run("broadcast", "Feedback broadcast queued", () =>

@@ -242,24 +242,14 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
       {config && (
         <>
           <Card className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_0.7fr]">
-              <FieldLabel>
-                Program name
-                <input
-                  className={inputClass}
-                  value={config.name}
-                  onChange={(event) => updateProgram({ name: event.target.value })}
-                />
-              </FieldLabel>
-              <FieldLabel>
-                Program key
-                <input
-                  className={inputClass}
-                  value={config.isNew ? slugify(config.name) : config.key}
-                  disabled
-                />
-              </FieldLabel>
-            </div>
+            <FieldLabel>
+              Program name
+              <input
+                className={inputClass}
+                value={config.name}
+                onChange={(event) => updateProgram({ name: event.target.value })}
+              />
+            </FieldLabel>
             <FieldLabel>
               Description
               <textarea

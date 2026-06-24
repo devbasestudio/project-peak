@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Program name is required" }, { status: 400 });
     }
     if (!programKey) {
-      return NextResponse.json({ error: "Program key is required" }, { status: 400 });
+      return NextResponse.json({ error: "Program name must include letters or numbers" }, { status: 400 });
     }
     if (!durations.length) {
       return NextResponse.json({ error: "At least one pricing tier is required" }, { status: 400 });

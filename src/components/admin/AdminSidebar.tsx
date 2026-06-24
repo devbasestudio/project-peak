@@ -27,7 +27,6 @@ export default function AdminSidebar({ username, pendingPayments }: AdminSidebar
     { href: "/admin/programs", icon: "ph-package", label: "Programs" },
     { href: "/admin/trackers", icon: "ph-layout", label: "Trackers" },
     { href: "/admin/feedback", icon: "ph-clipboard-text", label: "Feedback" },
-    { href: "/admin/devices", icon: "ph-devices", label: "Devices" },
   ];
 
   function isActive(href: string) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getClients, getRecentCheckins, getRegistrations, isPendingRegistration } from "@/lib/adminData";
 import { Card, CardTitle, EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
+import BroadcastPanel, { type BroadcastPackageOption } from "./BroadcastPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,30 @@ const quickLinks = [
   { href: "/admin/programs", icon: "ph-package", title: "Programs", desc: "Edit catalog & pricing" },
   { href: "/admin/trackers", icon: "ph-layout", title: "Trackers", desc: "Build custom daily trackers" },
   { href: "/admin/feedback", icon: "ph-clipboard-text", title: "Feedback", desc: "Forms & broadcasts" },
-  { href: "/admin/devices", icon: "ph-devices", title: "Devices", desc: "Reset device sessions" },
 ];
+
+function broadcastPackages(registrations: any[]): BroadcastPackageOption[] {
+  const byKey = new Map<string, BroadcastPackageOption & { telegramIds: Set<string> }>();
+
+  for (const registration of registrations) {
+    const telegramId = String(registration.telegram_id || "").trim();
+    const key = String(registration.program_key || "").trim();
+    if (!telegramId || !key) continue;
+
+    const label = String(registration.program_name || key).trim();
+    const current = byKey.get(key);
+    if (!current) {
+      byKey.set(key, { key, label, count: 1, telegramIds: new Set([telegramId]) });
+    } else {
+      current.telegramIds.add(telegramId);
+      current.count = current.telegramIds.size;
+    }
+  }
+
+  return Array.from(byKey.values())
+    .map((item) => ({ key: item.key, label: item.label, count: item.count }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
 
 export default async function AdminOverviewPage() {
   const [clients, registrations, recentCheckins] = await Promise.all([
@@ -22,6 +45,7 @@ export default async function AdminOverviewPage() {
 
   const pending = registrations.filter(isPendingRegistration);
   const needsFeedback = recentCheckins.filter((c) => !c.admin_feedback).length;
+  const packageOptions = broadcastPackages(registrations);
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,6 +81,8 @@ export default async function AdminOverviewPage() {
           ))}
         </div>
       </Card>
+
+      <BroadcastPanel packages={packageOptions} />
 
       <Card>
         <CardTitle icon="ph-chart-line-up" title="Recent check-ins" meta="Latest 8" />

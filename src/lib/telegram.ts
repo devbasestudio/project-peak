@@ -255,3 +255,22 @@ export async function broadcastFeedbackMessage(telegramIds: string[], templateNa
   }
   return { ok: true, count: results.length, results };
 }
+
+export async function broadcastAdminMessage(telegramIds: string[], message: string, appUrl: string) {
+  const cleanMessage = String(message || "").trim();
+  if (!cleanMessage) return { ok: false, count: 0, results: [] };
+
+  const results = [];
+  const uniqueTelegramIds = Array.from(new Set(telegramIds.map((id) => String(id || "").trim()).filter(Boolean)));
+  for (const telegramId of uniqueTelegramIds) {
+    results.push(
+      await sendTelegramMessage(
+        telegramId,
+        `<b>Project Peak မှ message ပါ</b>\n${escapeTelegramHtml(cleanMessage)}`,
+        `${appUrl}/miniapp`,
+        { buttonText: "Mini App ဖွင့်မယ်" },
+      ),
+    );
+  }
+  return { ok: true, count: results.length, results };
+}

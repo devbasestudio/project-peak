@@ -70,8 +70,8 @@ export async function approvePaymentRegistration(supabase: any, registrationId: 
   try {
     await supabase.from("admin_notifications").insert({
       type: "payment_approved",
-      title: "Payment approved",
-      body: `${registration.name || "Client"} payment approved. Build custom tracker next.`,
+      title: "Payment approve လုပ်ပြီးပါပြီ",
+      body: `${registration.name || "Client"} အတွက် tracker/program ကိုဆက်ပြင်ပေးပါ။`,
       data: { registrationId: registration.id, userId: userId || registration.user_id },
       read: false,
     });
@@ -99,7 +99,7 @@ export async function rejectPaymentRegistration(supabase: any, registrationId: s
     .update({
       status: "pending",
       payment_status: "rejected",
-      notes: `${registration.notes || ""}\nPayment rejected by admin.`.trim(),
+      notes: `${registration.notes || ""}\nPayment screenshot ကို admin က reject လုပ်ထားသည်။`.trim(),
     })
     .eq("id", registration.id);
 
@@ -108,8 +108,8 @@ export async function rejectPaymentRegistration(supabase: any, registrationId: s
   try {
     await supabase.from("admin_notifications").insert({
       type: "payment_rejected",
-      title: "Payment rejected",
-      body: `${registration.name || "Client"} payment was rejected.`,
+      title: "Payment screenshot reject လုပ်ပြီးပါပြီ",
+      body: `${registration.name || "Client"} ကို screenshot ပြန်တင်ဖို့ message ပို့ထားပါတယ်။`,
       data: { registrationId: registration.id, userId: registration.user_id },
       read: false,
     });

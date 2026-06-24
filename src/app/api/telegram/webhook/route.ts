@@ -97,11 +97,11 @@ function telegramCaption(lines: string[]) {
 function durationRows(program: ProjectProgram): TelegramInlineButton[][] {
   const rows = program.durations.map((duration) => [
     {
-      text: `${duration.label} | ${formatMmk(duration.price)}`,
+      text: `${durationLabel(duration.months)} | ${formatMmk(duration.price)}`,
       callback_data: `buy:${program.key}:${duration.months}`,
     },
   ]);
-  rows.push([{ text: "Package အားလုံးပြန်ကြည့်မယ်", callback_data: "buy" }]);
+  rows.push([{ text: "Package အားလုံး ပြန်ကြည့်မယ်", callback_data: "buy" }]);
   return rows;
 }
 
@@ -116,10 +116,23 @@ function packageRows(programs: ProjectProgram[]): TelegramInlineButton[][] {
 
 function mainMenuRows(appUrl: string): TelegramInlineButton[][] {
   return [
-    [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
-    [{ text: "Payment status စစ်မယ်", callback_data: "check_payment" }],
+    [{ text: "Package တွေကြည့်မယ်", callback_data: "buy" }],
+    [{ text: "Payment အခြေအနေစစ်မယ်", callback_data: "check_payment" }],
     [{ text: "Mini App ဖွင့်မယ်", web_app: { url: appUrl } }],
   ];
+}
+
+function durationLabel(months: number) {
+  return months === 1 ? "၁ လ" : `${months} လ`;
+}
+
+function paymentStatusLabel(status: string) {
+  if (status === "awaiting_payment") return "ငွေလွှဲ screenshot စောင့်နေသည်";
+  if (status === "pending") return "Admin စစ်နေသည်";
+  if (status === "approved") return "Payment approve ဖြစ်ပြီး tracker ပြင်နေသည်";
+  if (status === "ready") return "သုံးရန်အဆင်သင့်";
+  if (status === "rejected") return "Screenshot ပြန်တင်ရန်လိုသည်";
+  return status || "စစ်ဆေးနေသည်";
 }
 
 function packageSummary(programs: ProjectProgram[]) {
@@ -129,9 +142,9 @@ function packageSummary(programs: ProjectProgram[]) {
   });
 
   return [
-    "<b>Project Peak Packages</b>",
-    "Package တစ်ခုကိုရွေးပါ။",
-    "ရွေးပြီးမှ photo, detail, price နဲ့ duration buttons ကိုပြပေးပါမယ်။",
+    "<b>Project Peak package တွေပါ</b>",
+    "အရင်ဆုံး ကိုယ်စိတ်ဝင်စားတဲ့ package ကိုရွေးကြည့်ပါ။",
+    "ရွေးပြီးမှ အသေးစိတ်၊ ပုံ၊ ဈေးနှုန်းနဲ့ ဝယ်လို့ရတဲ့ duration တွေကို သီးသန့်ပြပေးပါမယ်။",
     "",
     ...lines,
   ].join("\n");
@@ -140,36 +153,36 @@ function packageSummary(programs: ProjectProgram[]) {
 function packageCaption(program: ProjectProgram) {
   const includes = program.includes.slice(0, 3).map((item) => `• ${escapeHtml(item.title)}`).join("\n");
   const prices = program.durations
-    .map((duration) => `${escapeHtml(duration.label)}: ${formatMmk(duration.price)}`)
+    .map((duration) => `${durationLabel(duration.months)}: ${formatMmk(duration.price)}`)
     .join("\n");
 
   return telegramCaption([
     `<b>${escapeHtml(program.name)}</b>`,
     escapeHtml(program.headline),
     "",
-    `<b>သင့်တော်တဲ့သူ</b>\n${escapeHtml(program.bestFor)}`,
+    `<b>ဘယ်သူတွေအတွက်သင့်တော်လဲ</b>\n${escapeHtml(program.bestFor)}`,
     "",
-    `<b>ပါဝင်တာတွေ</b>\n${includes}`,
+    `<b>Package ထဲမှာပါတာတွေ</b>\n${includes}`,
     "",
     `<b>ဈေးနှုန်း</b>\n${prices}`,
     "",
-    "ဝယ်မယ်ဆိုရင် အောက်က duration ကိုနှိပ်ပါ။ Payment QR ကိုချက်ချင်းပို့ပေးပါမယ်။",
+    "အဆင်ပြေရင် အောက်က duration ကိုနှိပ်ပါ။ Payment QR ကို ဒီ chat ထဲမှာပဲ ချက်ချင်းပို့ပေးပါမယ်။",
   ]);
 }
 
 function paymentCaption(program: ProjectProgram, months: number, price: number, telegramId: string) {
   const paymentMethod = paymentMethods[0];
   return [
-    "<b>Payment Detail</b>",
+    "<b>Payment လုပ်ရန်အသေးစိတ်</b>",
     `Package: ${escapeHtml(program.name)}`,
-    `Duration: ${months} month${months > 1 ? "s" : ""}`,
-    `Amount: ${formatMmk(price)}`,
-    `Pay with: ${escapeHtml(paymentMethod.label)}`,
+    `Duration: ${durationLabel(months)}`,
+    `ကျသင့်ငွေ: ${formatMmk(price)}`,
+    `ငွေလွှဲမည့်နည်းလမ်း: ${escapeHtml(paymentMethod.label)}`,
     "",
-    `Telegram ID: <code>${telegramId}</code>`,
+    `သင့် Telegram ID: <code>${telegramId}</code>`,
     "",
-    "Payment လုပ်ပြီးရင် screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပေးပါ။",
-    "Admin စစ်ပြီး approve လုပ်ပြီးမှ သင့်အတွက် tracker ကိုဖွင့်ပေးပါမယ်။",
+    "ငွေလွှဲပြီးသွားရင် screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပေးပါ။",
+    "Admin စစ်ပြီး approve လုပ်ပြီးတာနဲ့ သင့်အတွက် tracker ကိုပြင်ပေးပါမယ်။ Ready ဖြစ်ရင် Mini App သုံးလို့ရပါပြီ။",
   ].join("\n");
 }
 
@@ -300,10 +313,12 @@ async function sendStartMenu(chatId: string, from: TelegramUser | undefined, bas
 
   const text = [
     "<b>Project Peak မှကြိုဆိုပါတယ်</b>",
-    telegramId ? `သင့် Telegram ID: <code>${telegramId}</code>` : "",
+    telegramId ? `သင့် Telegram ID က <code>${telegramId}</code> ပါ။` : "",
     "",
-    "ဒီ chat ထဲမှာ package ရွေးပြီး payment လုပ်နိုင်ပါတယ်။",
-    "Admin approve ပြီး tracker ready ဖြစ်မှ Mini App ကိုသုံးလို့ရပါမယ်။",
+    "ဒီ bot chat ထဲမှာ package ကြည့်တာ၊ package ဝယ်တာ၊ payment screenshot ပို့တာ အကုန်လုပ်နိုင်ပါတယ်။",
+    "Payment approve ပြီး tracker ready ဖြစ်မှ Mini App ကိုဖွင့်သုံးလို့ရပါမယ်။",
+    "",
+    "စမယ်ဆိုရင် Package တွေကြည့်မယ် ကိုနှိပ်လိုက်ပါ။",
   ].filter(Boolean).join("\n");
 
   return sendMessageResponse(chatId, text, mainMenuRows(appUrl));
@@ -333,10 +348,10 @@ function paymentStatusCopy(registration: any, appUrl: string): { text: string; r
   if (!registration) {
     return {
       text: [
-        "<b>Payment status</b>",
-        "Package ရွေးထားတာမတွေ့သေးပါ။ Package ကြည့်မယ် ကိုနှိပ်ပြီး duration ရွေးပါ။",
+        "<b>Payment အခြေအနေ</b>",
+        "အခုထိ package ရွေးထားတာ မတွေ့သေးပါ။ Package တွေကြည့်မယ် ကိုနှိပ်ပြီး ကိုယ်ကြိုက်တဲ့ duration ကိုရွေးပေးပါနော်။",
       ].join("\n"),
-      rows: [[{ text: "Package ကြည့်မယ်", callback_data: "buy" }]],
+      rows: [[{ text: "Package တွေကြည့်မယ်", callback_data: "buy" }]],
     };
   }
 
@@ -345,26 +360,26 @@ function paymentStatusCopy(registration: any, appUrl: string): { text: string; r
   let body = "";
 
   if (paymentStatus === "awaiting_payment") {
-    body = "Payment screenshot မရသေးပါ။ QR နဲ့ငွေလွှဲပြီး screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပါ။";
+    body = "Payment screenshot မရသေးပါ။ QR နဲ့ငွေလွှဲပြီး screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပေးပါ။";
   } else if (paymentStatus === "pending") {
-    body = "Payment screenshot ရပါပြီ။ Admin review လုပ်နေပါတယ်။";
+    body = "Payment screenshot ရထားပါပြီ။ Admin ကစစ်နေပါတယ်။ စစ်ပြီးတာနဲ့ ဒီ bot ကနေပြန်ပို့ပေးပါမယ်။";
   } else if (paymentStatus === "approved") {
-    body = "Payment approve ဖြစ်ပါပြီ။ Admin က custom tracker ပြင်နေပါတယ်။ Ready ဖြစ်တာနဲ့ bot ကနေပြန်ပို့ပါမယ်။";
+    body = "Payment approve ဖြစ်ပါပြီ။ Admin က သင့်အတွက် custom tracker ပြင်နေပါတယ်။ Ready ဖြစ်တာနဲ့ ဒီ bot ကနေပြန်ပို့ပါမယ်။";
   } else if (paymentStatus === "ready") {
-    body = "Tracker ready ဖြစ်ပါပြီ။ Mini App ကိုဖွင့်ပြီးစသုံးနိုင်ပါပြီ။";
-    rows.push([{ text: "Open Mini App", web_app: { url: appUrl } }]);
+    body = "Tracker ready ဖြစ်ပါပြီ။ Mini App ကိုဖွင့်ပြီး စသုံးနိုင်ပါပြီ။";
+    rows.push([{ text: "Mini App ဖွင့်မယ်", web_app: { url: appUrl } }]);
   } else if (paymentStatus === "rejected") {
-    body = "Payment screenshot ကို admin reject လုပ်ထားပါတယ်။ မှန်တဲ့ screenshot ကိုပြန်ပို့ပါ သို့မဟုတ် package/duration ပြန်ရွေးပါ။";
+    body = "Payment screenshot ကို admin က reject လုပ်ထားပါတယ်။ Screenshot မှားနေလား၊ မရှင်းလား ဖြစ်နိုင်ပါတယ်။ မှန်တဲ့ screenshot ကို ဒီ chat ထဲကိုပြန်ပို့ပါ။";
     rows.push([{ text: "Package ပြန်ရွေးမယ်", callback_data: "buy" }]);
   } else {
-    body = "Status စစ်နေပါတယ်။ မရသေးရင် /start ပြန်နှိပ်ပါ။";
+    body = "Status စစ်နေပါတယ်။ မရသေးရင် /start ပြန်နှိပ်ပြီး ပြန်စစ်ပေးပါ။";
   }
 
   return {
     text: [
-      "<b>Payment status</b>",
+      "<b>Payment အခြေအနေ</b>",
       `Package: ${escapeHtml(registration.program_name || "Project Peak")}`,
-      `Status: <b>${escapeHtml(paymentStatus.replace(/_/g, " ") || "pending")}</b>`,
+      `လက်ရှိအခြေအနေ: <b>${escapeHtml(paymentStatusLabel(paymentStatus))}</b>`,
       "",
       body,
     ].join("\n"),
@@ -375,7 +390,7 @@ function paymentStatusCopy(registration: any, appUrl: string): { text: string; r
 async function handleCheckPaymentStatus(chatId: string, from: TelegramUser | undefined, baseUrl: string) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
-    return sendMessageResponse(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပါ။");
+    return sendMessageResponse(chatId, "သင့် Telegram ID ကိုမဖတ်နိုင်သေးပါ။ /start ကိုတစ်ခါပြန်နှိပ်ပေးပါနော်။");
   }
 
   const supabase = createAdminClient();
@@ -396,12 +411,12 @@ async function handleCheckPaymentStatus(chatId: string, from: TelegramUser | und
 async function handleAdminPaymentAction(chatId: string, from: TelegramUser | undefined, data: string, baseUrl: string) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!isAdminTelegramId(telegramId)) {
-    return sendMessageResponse(chatId, "Admin only action ဖြစ်ပါတယ်။");
+    return sendMessageResponse(chatId, "ဒီ action က admin account တွေအတွက်ပဲ ဖြစ်ပါတယ်။");
   }
 
   const [, action, registrationId] = data.split(":");
   if (!registrationId) {
-    return sendMessageResponse(chatId, "Registration ID မတွေ့ပါ။");
+    return sendMessageResponse(chatId, "Registration ID မတွေ့ပါ။ Admin dashboard ထဲကနေပြန်စစ်ပေးပါ။");
   }
 
   const supabase = createAdminClient();
@@ -409,12 +424,12 @@ async function handleAdminPaymentAction(chatId: string, from: TelegramUser | und
     const registration = await approvePaymentRegistration(supabase, registrationId);
     await sendTelegramMessageQuietly(
       String(registration.telegram_id || ""),
-      "<b>Payment approved</b>\nAdmin က payment ကို approve လုပ်ပြီးပါပြီ။ Tracker ပြင်ပြီး ready ဖြစ်တာနဲ့ Mini App ဖွင့်နိုင်ပါမယ်။",
+      "<b>Payment approve ဖြစ်ပါပြီ</b>\nAdmin က payment ကိုစစ်ပြီး approve လုပ်ပေးထားပါတယ်။ Tracker ပြင်ပြီး ready ဖြစ်တာနဲ့ Mini App ဖွင့်သုံးလို့ရပါမယ်။",
       miniAppUrl(baseUrl, { id: registration.telegram_id }),
-      { buttonText: "Open Mini App" },
+      { buttonText: "Mini App ဖွင့်မယ်" },
     );
-    return sendMessageResponse(chatId, "Payment approved လုပ်ပြီးပါပြီ။ Tracker ပြင်ပြီး Send ready လုပ်ပါ။", [
-      [{ text: "Open Mini App", web_app: { url: miniAppUrl(baseUrl, from) } }],
+    return sendMessageResponse(chatId, "Payment approve လုပ်ပြီးပါပြီ။ Tracker/program ကိုစစ်ပြီး Send ready လုပ်ပေးပါ။", [
+      [{ text: "Admin Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
     ]);
   }
 
@@ -422,12 +437,12 @@ async function handleAdminPaymentAction(chatId: string, from: TelegramUser | und
     const registration = await rejectPaymentRegistration(supabase, registrationId);
     await sendTelegramMessageQuietly(
       String(registration.telegram_id || ""),
-      "<b>Payment screenshot rejected</b>\nScreenshot မရှင်းတာ/မကိုက်တာကြောင့် admin က reject လုပ်ထားပါတယ်။ မှန်တဲ့ screenshot ကို ဒီ chat ထဲကိုပြန်ပို့ပါ။",
+      "<b>Payment screenshot ပြန်တင်ပေးပါဦးနော်</b>\nScreenshot မရှင်းတာ ဒါမှမဟုတ် payment detail မကိုက်တာကြောင့် admin က reject လုပ်ထားပါတယ်။ မှန်တဲ့ screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပြန်ပို့ပေးပါ။",
     );
-    return sendMessageResponse(chatId, "Payment screenshot ကို reject လုပ်ပြီးပါပြီ။ User ကိုပြန်ပို့ထားပါတယ်။");
+    return sendMessageResponse(chatId, "Payment screenshot ကို reject လုပ်ပြီးပါပြီ။ User ဆီကို ပြန်တင်ဖို့ message ပို့ထားပါတယ်။");
   }
 
-  return sendMessageResponse(chatId, "Unknown admin action.");
+  return sendMessageResponse(chatId, "ဒီ admin action ကို system မသိသေးပါ။ Dashboard ထဲကနေပြန်လုပ်ပေးပါ။");
 }
 
 async function handleDurationSelection(chatId: string, from: TelegramUser | undefined, data: string, baseUrl: string) {
@@ -435,7 +450,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   const months = Number(monthValue);
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
-    return sendMessageResponse(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပါ။");
+    return sendMessageResponse(chatId, "သင့် Telegram ID ကိုမဖတ်နိုင်သေးပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပေးပါနော်။");
   }
 
   const programs = await getFastProjectPrograms();
@@ -453,7 +468,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     email: "",
     phone: "",
     telegram_id: telegramId,
-    workout_split: "Admin customized plan",
+    workout_split: "Admin ကပြင်ပေးမည့် custom plan",
     program_key: program.key,
     program_name: program.name,
     duration_months: duration.months,
@@ -461,7 +476,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     payment_method: paymentMethods[0].label,
     status: "pending",
     payment_status: "awaiting_payment",
-    notes: "Created from Telegram bot checkout.",
+    notes: "Telegram bot checkout ကနေ create လုပ်ထားသည်။",
   };
 
   const { data: existingRegistration, error: lookupError } = await supabase
@@ -504,7 +519,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
 async function handlePaymentScreenshot(chatId: string, from: TelegramUser | undefined, message: TelegramMessage, baseUrl: string) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
-    await sendTelegramMessageQuietly(chatId, "Telegram ID မတွေ့ပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပါ။");
+    await sendTelegramMessageQuietly(chatId, "သင့် Telegram ID ကိုမဖတ်နိုင်သေးပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပေးပါနော်။");
     return;
   }
 
@@ -513,7 +528,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   const fileId = largestPhoto?.file_id || imageDocument?.file_id || "";
 
   if (!fileId) {
-    await sendTelegramMessageQuietly(chatId, "Payment screenshot ကို photo/image file အနေနဲ့ ပို့ပေးပါ။");
+    await sendTelegramMessageQuietly(chatId, "Payment screenshot ကို photo ဒါမှမဟုတ် image file အနေနဲ့ ပို့ပေးပါနော်။");
     return;
   }
 
@@ -532,7 +547,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   if (!registration) {
     await sendTelegramMessageQuietly(
       chatId,
-      "Payment စောင့်နေတဲ့ package မတွေ့ပါ။ Buy Package ကိုနှိပ်ပြီး package/duration အရင်ရွေးပါ။",
+      "Payment စောင့်နေတဲ့ package မတွေ့သေးပါ။ Package တွေကြည့်မယ် ကိုနှိပ်ပြီး package/duration အရင်ရွေးပေးပါနော်။",
     );
     return;
   }
@@ -571,8 +586,8 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   try {
     await supabase.from("admin_notifications").insert({
       type: "payment_submitted",
-      title: "Payment submitted",
-      body: `${registration.name || "Client"} sent a payment screenshot.`,
+      title: "Payment screenshot ရောက်ပြီ",
+      body: `${registration.name || "Client"} က payment screenshot ပို့ထားပါတယ်။`,
       data: { registrationId: registration.id, telegramId, adminNotice },
       read: false,
     });
@@ -583,10 +598,10 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
   await sendTelegramMessageQuietly(
     chatId,
     adminNotice.ok === false
-      ? "Payment screenshot ရပါပြီ။ Admin dashboard ထဲမှာ queue တက်ထားပါတယ်။ Admin notification ပို့တာတော့ error ဖြစ်နိုင်လို့ ခဏကြာရင် /check-payment နဲ့ပြန်စစ်ပါ။"
-      : "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီးတာနဲ့ tracker ready ဖြစ်ရင် Mini App ဖွင့်နိုင်ပါမယ်။",
+      ? "Payment screenshot ရပါပြီ။ Admin dashboard ထဲမှာ queue တက်ထားပါတယ်။ Admin ဆီ Telegram notification ပို့တာနည်းနည်း error ဖြစ်နိုင်လို့ ခဏကြာရင် /check-payment နဲ့ပြန်စစ်ပေးပါနော်။"
+      : "Payment screenshot ရပါပြီ။ Admin ဆီကို image နဲ့တန်းပို့ထားပါတယ်။ စစ်ပြီး approve လုပ်ပြီး tracker ready ဖြစ်တာနဲ့ Mini App ဖွင့်သုံးလို့ရပါမယ်။",
     miniAppUrl(baseUrl, from),
-    { buttonText: "Open Mini App" },
+    { buttonText: "Mini App ဖွင့်မယ်" },
   );
 }
 
@@ -655,7 +670,13 @@ export async function POST(request: Request) {
       return await sendStartMenu(chatId, from, baseUrl);
     }
 
-    if (text === "/check-payment" || text === "/check_payment" || text === "Payment status") {
+    if (
+      text === "/check-payment"
+      || text === "/check_payment"
+      || text === "Payment status"
+      || text === "Payment status စစ်မယ်"
+      || text === "Payment အခြေအနေစစ်မယ်"
+    ) {
       return await handleCheckPaymentStatus(chatId, from, baseUrl);
     }
 
@@ -664,9 +685,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, handled: "payment-screenshot" });
     }
 
-    return sendMessageResponse(chatId, "ဘာလုပ်ချင်ပါသလဲ?", [
-      [{ text: "Package ကြည့်မယ်", callback_data: "buy" }],
-      [{ text: "Payment status စစ်မယ်", callback_data: "check_payment" }],
+    return sendMessageResponse(chatId, "ဘာလုပ်ချင်ပါသလဲ။ အောက်က menu ထဲကနေရွေးလိုက်ပါနော်။", [
+      [{ text: "Package တွေကြည့်မယ်", callback_data: "buy" }],
+      [{ text: "Payment အခြေအနေစစ်မယ်", callback_data: "check_payment" }],
       [{ text: "Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
     ]);
   } catch (err) {

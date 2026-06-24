@@ -47,6 +47,19 @@ function identityFromUrl(): TelegramIdentity | null {
   return { id, username, displayName };
 }
 
+function identityFromInitData(): TelegramIdentity | null {
+  const initData = readTelegramInitData();
+  if (!initData) return null;
+
+  try {
+    const params = new URLSearchParams(initData);
+    const user = JSON.parse(params.get("user") || "{}") as TelegramWebAppUser;
+    return identityFromUser(user);
+  } catch {
+    return null;
+  }
+}
+
 function identityFromStorage(): TelegramIdentity | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -71,7 +84,8 @@ function rememberIdentity(identity: TelegramIdentity | null) {
 export function readTelegramIdentity(): TelegramIdentity | null {
   if (typeof window === "undefined") return null;
   const user = (window as any).Telegram?.WebApp?.initDataUnsafe?.user as TelegramWebAppUser | undefined;
-  const identity = identityFromUser(user) || identityFromUrl() || identityFromStorage();
+  const verifiedIdentity = identityFromUser(user) || identityFromInitData() || identityFromUrl();
+  const identity = verifiedIdentity || (process.env.NODE_ENV === "production" ? null : identityFromStorage());
   rememberIdentity(identity);
   return identity;
 }
@@ -102,9 +116,9 @@ export function watchTelegramIdentity(onChange: (identity: TelegramIdentity | nu
     const identity = readTelegramIdentity();
     onChange(identity);
 
-    if (!identity && attempts < 12) {
+    if (!identity && attempts < 30) {
       attempts += 1;
-      window.setTimeout(tick, 250);
+      window.setTimeout(tick, 200);
     }
   };
 

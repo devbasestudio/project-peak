@@ -87,13 +87,22 @@ export async function POST(request: Request) {
 
     if (!cleanTelegramId) {
       return NextResponse.json(
-        { error: "Open Project Peak from the Telegram bot Mini App button." },
+        {
+          status: "needs_telegram",
+          error: "Telegram bot chat ထဲက Mini App button နဲ့ပြန်ဖွင့်ပေးပါ။",
+        },
         { status: 401 },
       );
     }
 
     if (verifiedTelegramUser?.id && telegramId && String(telegramId) !== verifiedTelegramUser.id) {
-      return NextResponse.json({ error: "Telegram session mismatch." }, { status: 403 });
+      return NextResponse.json(
+        {
+          status: "needs_telegram",
+          error: "Telegram session မကိုက်သေးပါ။ Bot ထဲက Mini App button နဲ့ပြန်ဖွင့်ပေးပါ။",
+        },
+        { status: 403 },
+      );
     }
 
     const origin = new URL(request.url).origin;
@@ -165,7 +174,7 @@ export async function POST(request: Request) {
 
     if (!email) {
       return NextResponse.json(
-        { status: "error", error: "Ready account has no login email yet. Please contact admin." },
+        { status: "error", error: "Ready account အတွက် login ပြင်ဆင်မှုလိုနေပါတယ်။ Admin ကိုပြောပေးပါ။" },
         { status: 409 },
       );
     }

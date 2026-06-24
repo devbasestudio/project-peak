@@ -15,7 +15,18 @@ const ACCESS_CACHE_KEY = "project_peak_miniapp_access_cache";
 const ACCESS_CACHE_MS = 60_000;
 
 type AccessState = {
-  status: "idle" | "loading" | "admin" | "ready" | "none" | "awaiting_payment" | "pending" | "approved" | "rejected" | "error";
+  status:
+    | "idle"
+    | "loading"
+    | "admin"
+    | "ready"
+    | "none"
+    | "awaiting_payment"
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "needs_telegram"
+    | "error";
   message?: string;
   actionLink?: string;
   programName?: string;
@@ -27,7 +38,7 @@ function wait(ms: number) {
 }
 
 async function waitForTelegramInitData() {
-  for (let attempt = 0; attempt < 16; attempt += 1) {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
     const initData = readTelegramInitData();
     if (initData) return initData;
     await wait(200);
@@ -36,6 +47,20 @@ async function waitForTelegramInitData() {
 }
 
 function statusCopy(access: AccessState) {
+  if (access.status === "loading") {
+    return {
+      title: "Access စစ်နေပါတယ်",
+      body: "Telegram account နဲ့ payment/ready status ကိုစစ်နေပါတယ်။ ခဏလေးစောင့်ပေးပါနော်။",
+      tone: "waiting",
+    };
+  }
+  if (access.status === "idle") {
+    return {
+      title: "Telegram account စောင့်နေပါတယ်",
+      body: "Telegram Mini App data ကိုဖတ်နေပါတယ်။ မပြောင်းလဲရင် bot chat ထဲက Mini App button နဲ့ပြန်ဖွင့်ပေးပါ။",
+      tone: "waiting",
+    };
+  }
   if (access.status === "admin") {
     return {
       title: "Opening admin dashboard",
@@ -85,6 +110,13 @@ function statusCopy(access: AccessState) {
       tone: "error",
     };
   }
+  if (access.status === "needs_telegram") {
+    return {
+      title: "Telegram Mini App ကနေပြန်ဖွင့်ပါ",
+      body: access.message || "Telegram bot chat ထဲက Mini App button နဲ့ဖွင့်မှ account ကိုသေချာစစ်နိုင်ပါမယ်။",
+      tone: "waiting",
+    };
+  }
   return {
     title: "Buy package in Telegram bot",
     body: "Package ဝယ်တာကို Telegram bot chat ထဲမှာပဲလုပ်ပါ။ Admin approve/ready ဖြစ်ပြီးမှ Mini App ကိုသုံးလို့ရပါမယ်။",
@@ -120,6 +152,7 @@ export default function MiniAppClient() {
   const [telegramIdentity, setTelegramIdentity] = useState<TelegramIdentity | null>(null);
   const [access, setAccess] = useState<AccessState>({ status: "idle" });
   const [copiedTelegramId, setCopiedTelegramId] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     return watchTelegramIdentity(setTelegramIdentity);
@@ -135,7 +168,13 @@ export default function MiniAppClient() {
         const initData = await waitForTelegramInitData();
         const launchSignature = readTelegramLaunchSignature();
         if (!initData && !launchSignature.launchSig && process.env.NODE_ENV === "production") {
-          throw new Error("Telegram bot ထဲက Open Mini App button နဲ့ပြန်ဖွင့်ပါ။");
+          if (!cached) {
+            setAccess({
+              status: "needs_telegram",
+              message: "Telegram session ကို verify လုပ်လို့မရသေးပါ။ Bot chat ထဲက Mini App button နဲ့ပြန်ဖွင့်ပေးပါနော်။",
+            });
+          }
+          return;
         }
 
         const response = await fetch("/api/miniapp/access", {
@@ -152,7 +191,12 @@ export default function MiniAppClient() {
         });
         const payload = await response.json();
         if (!response.ok) {
-          throw new Error(payload.error || "Access check failed.");
+          const message = payload.error || "Access check failed.";
+          if (response.status === 401 || response.status === 403) {
+            setAccess({ status: "needs_telegram", message });
+            return;
+          }
+          throw new Error(message);
         }
         if (disposed) return;
         setAccess(payload);
@@ -185,7 +229,7 @@ export default function MiniAppClient() {
     return () => {
       disposed = true;
     };
-  }, [telegramIdentity]);
+  }, [telegramIdentity, retryKey]);
 
   async function handleCopyTelegramId() {
     if (!telegramIdentity?.id) return;
@@ -298,6 +342,14 @@ export default function MiniAppClient() {
                 {access.status === "admin" ? "Opening admin dashboard..." : "Open my tracker"}
               </a>
             )}
+            <button
+              type="button"
+              onClick={() => setRetryKey((value) => value + 1)}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-[#dbe4e0] bg-[#f6f8f7] px-4 py-4 text-sm font-extrabold text-[#1c2b29]"
+            >
+              <i className="ph ph-arrow-clockwise text-lg" />
+              ပြန်စစ်မယ်
+            </button>
             <a
               href={telegramBotUrl}
               target="_blank"

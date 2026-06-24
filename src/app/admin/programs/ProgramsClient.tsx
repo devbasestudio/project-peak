@@ -282,7 +282,7 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
                 onChange={(event) => updateProgram({ description: event.target.value })}
               />
             </FieldLabel>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_0.35fr]">
+            <div>
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-semibold text-[#3a4744]">Program image</p>
                 <div className="flex flex-col gap-3 rounded-2xl border border-[#e6eae8] bg-[#f6f8f7] p-3 sm:flex-row sm:items-center">
@@ -317,14 +317,6 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
                   </div>
                 </div>
               </div>
-              <FieldLabel>
-                Accent color
-                <input
-                  className={inputClass}
-                  value={config.accent}
-                  onChange={(event) => updateProgram({ accent: event.target.value })}
-                />
-              </FieldLabel>
             </div>
 
             <div>

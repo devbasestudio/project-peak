@@ -151,7 +151,7 @@ export async function getTelegramFileUrl(fileId: string) {
   return filePath ? `https://api.telegram.org/file/bot${token}/${filePath}` : "";
 }
 
-export async function notifyAdminsPayment(registration: any, appUrl: string) {
+export async function notifyAdminsPayment(registration: any) {
   const { adminIds, enabled } = telegramConfig();
   if (!enabled) return { ok: false, skipped: true };
 
@@ -163,7 +163,6 @@ export async function notifyAdminsPayment(registration: any, appUrl: string) {
           { text: "Reject လုပ်မယ်", callback_data: `admin:reject:${registrationId}` },
         ]
       : [],
-    [{ text: "Admin Mini App ဖွင့်မယ်", web_app: { url: `${appUrl}/miniapp` } }],
   ].filter((row) => row.length);
   const caption = [
     "<b>Payment screenshot အသစ်ရောက်ပါတယ်</b>",
@@ -208,7 +207,7 @@ export async function notifyAdminsPayment(registration: any, appUrl: string) {
   return { ok: true, results };
 }
 
-export async function notifyAdminsApproval(registration: any, appUrl: string) {
+export async function notifyAdminsApproval(registration: any) {
   const { adminIds, enabled } = telegramConfig();
   if (!enabled) return { ok: false, skipped: true };
 
@@ -221,11 +220,7 @@ export async function notifyAdminsApproval(registration: any, appUrl: string) {
 
   const results = [];
   for (const adminId of adminIds) {
-    results.push(
-      await sendTelegramButtons(adminId, text, [
-        [{ text: "Admin Mini App ဖွင့်မယ်", web_app: { url: `${appUrl}/miniapp` } }],
-      ]),
-    );
+    results.push(await sendTelegramMessage(adminId, text));
   }
   return { ok: true, results };
 }

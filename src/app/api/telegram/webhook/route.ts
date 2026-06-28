@@ -616,9 +616,7 @@ async function handleAdminPaymentAction(chatId: string, from: TelegramUser | und
       miniAppUrl(baseUrl, { id: registration.telegram_id }),
       { buttonText: "Mini App ဖွင့်မယ်" },
     );
-    return sendMessageResponse(chatId, "Payment approve လုပ်ပြီးပါပြီ။ Tracker/program ကိုစစ်ပြီး Send ready လုပ်ပေးပါ။", [
-      [{ text: "Admin Mini App ဖွင့်မယ်", web_app: { url: miniAppUrl(baseUrl, from) } }],
-    ]);
+    return sendMessageResponse(chatId, "Payment approve လုပ်ပြီးပါပြီ။ Tracker/program ကို admin dashboard ထဲကနေစစ်ပြီး Send ready လုပ်ပေးပါ။");
   }
 
   if (action === "reject") {
@@ -707,7 +705,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   return sendPhotoResponse(chatId, qrUrl, caption);
 }
 
-async function handlePaymentScreenshot(chatId: string, from: TelegramUser | undefined, message: TelegramMessage, baseUrl: string) {
+async function handlePaymentScreenshot(chatId: string, from: TelegramUser | undefined, message: TelegramMessage) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
     await sendTelegramMessageQuietly(chatId, "သင့် Telegram ID ကိုမဖတ်နိုင်သေးပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပေးပါနော်။");
@@ -768,7 +766,6 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
 
   const adminNotice = await notifyAdminsPayment(
     { ...updatedRegistration, id: registration.id },
-    baseUrl,
   ).catch((err) => ({
     ok: false,
     error: err instanceof Error ? err.message : "Admin notification failed",
@@ -898,7 +895,7 @@ export async function POST(request: Request) {
     }
 
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {
-      await handlePaymentScreenshot(chatId, from, message, baseUrl);
+      await handlePaymentScreenshot(chatId, from, message);
       return NextResponse.json({ ok: true, handled: "payment-screenshot" });
     }
 

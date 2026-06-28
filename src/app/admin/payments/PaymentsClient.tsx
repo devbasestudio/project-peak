@@ -28,11 +28,58 @@ function receiptUrl(path: unknown) {
   return value.startsWith("http") ? value : `/${value.replace(/^\/+/, "")}`;
 }
 
+function intakeRows(registration: any) {
+  const answers =
+    registration?.intake_answers && typeof registration.intake_answers === "object"
+      ? registration.intake_answers
+      : {};
+  const rows = Object.entries(answers).map(([key, raw]) => {
+    const answer = raw && typeof raw === "object" ? (raw as Record<string, any>) : { value: raw };
+    return {
+      key,
+      label: String(answer.label || key).replace(/_/g, " "),
+      type: String(answer.type || ""),
+      value: answer.value ?? answer.fileUrl ?? "",
+      fileUrl: answer.fileUrl || (String(answer.type || "") === "photo" ? answer.value : ""),
+    };
+  });
+
+  const existingKeys = new Set(rows.map((row) => row.key));
+  [
+    { key: "age", label: "Age", value: registration.age },
+    { key: "height", label: "Height", value: registration.height },
+    { key: "weight", label: "Weight", value: registration.weight },
+    { key: "phone", label: "Phone", value: registration.phone },
+    { key: "email", label: "Email", value: registration.email },
+  ].forEach((item) => {
+    if (!existingKeys.has(item.key) && item.value !== null && item.value !== undefined && String(item.value).trim()) {
+      rows.push({ ...item, type: "text", fileUrl: "" });
+    }
+  });
+
+  return rows.filter((row) => String(row.value || row.fileUrl || "").trim());
+}
+
+function intakePhotos(registration: any) {
+  return [
+    { label: "Front photo", url: registration.photo_front },
+    { label: "Back photo", url: registration.photo_back },
+    { label: "Side photo", url: registration.photo_side },
+  ]
+    .map((photo) => ({ ...photo, url: receiptUrl(photo.url) }))
+    .filter((photo) => photo.url);
+}
+
+function hasClientInfo(registration: any) {
+  return intakeRows(registration).length > 0 || intakePhotos(registration).length > 0;
+}
+
 export default function PaymentsClient({ registrations }: { registrations: any[] }) {
   const router = useRouter();
   const { state, pendingId, run } = useAdminAction();
   const [filter, setFilter] = useState<"pending" | "all">("pending");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [clientInfo, setClientInfo] = useState<any | null>(null);
 
   const list = useMemo(() => {
     if (filter === "pending") return registrations.filter((r) => isPending(r.payment_status) && r.payment_screenshot);
@@ -115,6 +162,15 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
+                    {hasClientInfo(reg) && (
+                      <button
+                        type="button"
+                        onClick={() => setClientInfo(reg)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#e6eae8] bg-white px-3 py-2 text-sm font-semibold text-[#1c2b29] no-underline transition hover:bg-[#f6f8f7]"
+                      >
+                        <i className="ph ph-user-list text-base" /> Client info
+                      </button>
+                    )}
                     {receipt && (
                       <button
                         type="button"
@@ -167,6 +223,82 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {clientInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#10211f]/80 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Client intake info"
+          onClick={() => setClientInfo(null)}
+        >
+          <div
+            className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#e6eae8] px-4 py-3">
+              <div>
+                <strong className="block text-sm font-bold text-[#1c2b29]">
+                  {clientInfo.name || clientInfo.username || "Client"} info
+                </strong>
+                <span className="text-xs font-semibold text-[#6b7a77]">
+                  {clientInfo.program_name || "Package"} {clientInfo.telegram_id ? `· TG ${clientInfo.telegram_id}` : ""}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setClientInfo(null)}
+                className="grid h-9 w-9 place-items-center rounded-full bg-[#eef2f0] text-[#1c2b29] transition hover:bg-[#e3e9e6]"
+                aria-label="Close client info"
+              >
+                <i className="ph ph-x text-lg" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-[#f6f8f7] p-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {intakeRows(clientInfo)
+                  .filter((row) => row.type !== "photo")
+                  .map((row) => (
+                    <div key={row.key} className="rounded-2xl border border-[#e6eae8] bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">{row.label}</p>
+                      <p className="mt-1 break-words text-sm font-bold text-[#1c2b29]">{String(row.value)}</p>
+                    </div>
+                  ))}
+              </div>
+
+              {(intakePhotos(clientInfo).length > 0 || intakeRows(clientInfo).some((row) => row.type === "photo")) && (
+                <div className="mt-4">
+                  <h3 className="mb-2 text-sm font-extrabold text-[#1c2b29]">Photos</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {[
+                      ...intakePhotos(clientInfo),
+                      ...intakeRows(clientInfo)
+                        .filter((row) => row.type === "photo" && row.fileUrl)
+                        .map((row) => ({ label: row.label, url: receiptUrl(row.fileUrl) })),
+                    ].map((photo, index) => (
+                      <button
+                        key={`${photo.label}-${index}`}
+                        type="button"
+                        onClick={() => setPreviewUrl(photo.url)}
+                        className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white p-2 text-left"
+                      >
+                        <img src={photo.url} alt={photo.label} className="h-44 w-full rounded-xl object-cover" />
+                        <span className="mt-2 block text-xs font-bold text-[#1c2b29]">{photo.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {intakeRows(clientInfo).length === 0 && intakePhotos(clientInfo).length === 0 && (
+                <p className="rounded-2xl border border-[#e6eae8] bg-white p-5 text-sm font-semibold text-[#6b7a77]">
+                  Client info မဖြည့်ရသေးပါ။
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

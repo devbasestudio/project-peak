@@ -159,11 +159,14 @@ function packageSummary(programs: ProjectProgram[]) {
 function packageCaption(program: ProjectProgram) {
   const includes = program.includes.slice(0, 3).map((item) => `• ${escapeHtml(item.title)}`).join("\n");
   const prices = program.durations
-    .map((duration) => `${durationLabel(duration.months)}: ${formatMmk(duration.price)}`)
+    .map((duration) => {
+      const note = duration.note ? ` - ${escapeHtml(duration.note)}` : "";
+      return `${durationLabel(duration.months)}: ${formatMmk(duration.price)}${note}`;
+    })
     .join("\n");
   const lines = [
     `<b>${escapeHtml(program.name)}</b>`,
-    program.description ? escapeHtml(program.description) : "",
+    program.description ? `<i>${escapeHtml(program.description)}</i>` : "",
     "",
     includes ? `<b>Package ထဲမှာပါတာတွေ</b>\n${includes}` : "",
     "",
@@ -235,7 +238,7 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, ms: number) {
 }
 
 async function getFastProjectPrograms() {
-  return withTimeout(getPublicProjectPrograms(), [], 650);
+  return withTimeout(getPublicProjectPrograms({ fresh: true }), [], 900);
 }
 
 function noPackagesResponse(chatId: string) {

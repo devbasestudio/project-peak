@@ -48,6 +48,11 @@ function readableProgramLabel(value?: string | null) {
   return known[text] || text.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function programDisplayName(program: any) {
+  const name = String(program?.program_name || program?.name || "").trim();
+  return name || readableProgramLabel(program?.program_type);
+}
+
 export default function DashboardClient({
   username,
   isAdminViewing,
@@ -104,7 +109,11 @@ export default function DashboardClient({
   const weight = Number.parseFloat(weightInput);
   const hasWeight = Number.isFinite(weight) && weight > 0;
   const bodyWeight = hasWeight ? Math.round(weight * 10) / 10 : null;
-  const weekLabel = program?.duration_weeks ? `${program.duration_weeks}-week program` : "Your program";
+  const assignedProgramName = programDisplayName(program);
+  const assignedWeeks = Number(program?.duration_weeks || 0);
+  const programHeaderLabel = assignedWeeks
+    ? `${assignedProgramName} (${assignedWeeks} Week Program)`
+    : assignedProgramName;
   const hasWorkoutSplit = Boolean(schedule?.split_name && !schedule?.is_rest);
   const workoutName = schedule?.is_rest ? "Recovery Day" : schedule?.split_name || "Workout not set";
   const mealTarget = Math.max(totalMealsCount || 0, 0);
@@ -453,7 +462,10 @@ export default function DashboardClient({
         <header className="flex items-center justify-between py-2">
           <div>
             <p className="text-[0.7rem] font-bold uppercase tracking-wide text-[#9aa8a4]">
-              Project Peak · {weekLabel}
+              Project Peak
+            </p>
+            <p className="text-[0.72rem] font-extrabold uppercase tracking-wide text-[#6b7a77]">
+              {programHeaderLabel}
             </p>
             <h1 className="text-2xl font-extrabold tracking-tight">Hi, {firstName}</h1>
           </div>
@@ -555,7 +567,7 @@ export default function DashboardClient({
             <h2 className="text-lg font-extrabold">Me</h2>
             <div className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white">
               <InfoRow label="Name" value={username} />
-              <InfoRow label="Program" value={readableProgramLabel(program?.program_type)} />
+              <InfoRow label="Program" value={programHeaderLabel} />
               <InfoRow
                 label="Starting weight"
                 value={startingWeight ? `${startingWeight} kg` : "—"}

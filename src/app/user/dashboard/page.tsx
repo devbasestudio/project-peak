@@ -99,7 +99,27 @@ export default async function DashboardPage(props: {
 
   // Get program details
   const programs = await query('SELECT * FROM programs WHERE user_id = ?', [targetUserId]);
-  const program = programs && programs.length > 0 ? programs[0] : null;
+  const baseProgram = programs && programs.length > 0 ? programs[0] : null;
+  const { data: latestRegistration } = await supabase
+    .from("program_registrations")
+    .select("program_name, duration_months")
+    .eq("user_id", targetUserId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const registrationWeeks = Number(latestRegistration?.duration_months || 0) * 4;
+  const program = baseProgram
+    ? {
+        ...baseProgram,
+        program_name: latestRegistration?.program_name || baseProgram.program_name,
+        duration_weeks: baseProgram.duration_weeks || registrationWeeks || null,
+      }
+    : latestRegistration
+      ? {
+          program_name: latestRegistration.program_name,
+          duration_weeks: registrationWeeks || null,
+        }
+      : null;
 
   // Get quote
   const quotes = await query('SELECT quote FROM motivational_quotes WHERE user_id = ?', [targetUserId]);

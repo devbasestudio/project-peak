@@ -691,7 +691,12 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   return sendPhotoResponse(chatId, qrUrl, caption);
 }
 
-async function handlePaymentScreenshot(chatId: string, from: TelegramUser | undefined, message: TelegramMessage) {
+async function handlePaymentScreenshot(
+  chatId: string,
+  from: TelegramUser | undefined,
+  message: TelegramMessage,
+  baseUrl: string,
+) {
   const telegramId = normalizeTelegramLoginId(String(from?.id || "")).replace(/^@/, "");
   if (!telegramId) {
     await sendTelegramMessageQuietly(chatId, "သင့် Telegram ID ကိုမဖတ်နိုင်သေးပါ။ /start ပြန်နှိပ်ပြီး package ပြန်ရွေးပေးပါနော်။");
@@ -752,6 +757,7 @@ async function handlePaymentScreenshot(chatId: string, from: TelegramUser | unde
 
   const adminNotice = await notifyAdminsPayment(
     { ...updatedRegistration, id: registration.id },
+    baseUrl,
   ).catch((err) => ({
     ok: false,
     error: err instanceof Error ? err.message : "Admin notification failed",
@@ -881,7 +887,7 @@ export async function POST(request: Request) {
     }
 
     if (message?.photo?.length || message?.document?.mime_type?.startsWith("image/")) {
-      await handlePaymentScreenshot(chatId, from, message);
+      await handlePaymentScreenshot(chatId, from, message, baseUrl);
       return NextResponse.json({ ok: true, handled: "payment-screenshot" });
     }
 

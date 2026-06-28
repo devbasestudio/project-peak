@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
+import { defaultTrackerTemplate, type TrackerField } from "@/lib/projectPeakConfig";
 
 const TRACKER_FIELD_TYPES = new Set(["number", "time", "select", "checkbox", "counter", "text"]);
 const TRACKER_SECTION_TITLES = new Set(["Morning", "Mid-day", "Night"]);
@@ -32,36 +33,57 @@ function normalizeSections(value: unknown) {
       const fields = Array.isArray(raw.fields) ? raw.fields : [];
       if (!TRACKER_SECTION_TITLES.has(title)) return null;
 
+      const normalizedFields = fields
+        .map((field, fieldIndex) => {
+          if (!field || typeof field !== "object") return null;
+          const item = field as Record<string, unknown>;
+          const label = String(item.label || "").trim();
+          const type = String(item.type || "text");
+          if (!label || !TRACKER_FIELD_TYPES.has(type)) return null;
+
+          return {
+            id: cleanId(item.id, `field_${sectionIndex}_${fieldIndex}`),
+            label,
+            type,
+            icon: String(item.icon || DEFAULT_ICON_BY_TYPE[type]).trim() || DEFAULT_ICON_BY_TYPE[type],
+            fixed: Boolean(item.fixed),
+            ...(type === "select"
+              ? {
+                  options: Array.isArray(item.options)
+                    ? item.options.map((option) => String(option).trim()).filter(Boolean)
+                    : [],
+                }
+              : {}),
+          };
+        })
+        .filter(Boolean) as TrackerField[];
+
       return {
         title,
         icon: String(raw.icon || "ph-list-checks").trim() || "ph-list-checks",
-        fields: fields
-          .map((field, fieldIndex) => {
-            if (!field || typeof field !== "object") return null;
-            const item = field as Record<string, unknown>;
-            const label = String(item.label || "").trim();
-            const type = String(item.type || "text");
-            if (!label || !TRACKER_FIELD_TYPES.has(type)) return null;
-
-            return {
-              id: cleanId(item.id, `field_${sectionIndex}_${fieldIndex}`),
-              label,
-              type,
-              icon: String(item.icon || DEFAULT_ICON_BY_TYPE[type]).trim() || DEFAULT_ICON_BY_TYPE[type],
-              fixed: Boolean(item.fixed),
-              ...(type === "select"
-                ? {
-                    options: Array.isArray(item.options)
-                      ? item.options.map((option) => String(option).trim()).filter(Boolean)
-                      : [],
-                  }
-                : {}),
-            };
-          })
-          .filter(Boolean),
+        fields: protectBaseFields(title, normalizedFields),
       };
     })
     .filter(Boolean);
+}
+
+function protectBaseFields(title: string, fields: TrackerField[]) {
+  const defaultSection = defaultTrackerTemplate.find((section) => section.title === title);
+  const requiredBaseFields = defaultSection?.fields.filter((field) => field.fixed) || [];
+  if (!requiredBaseFields.length) return fields;
+
+  const fieldsById = new Map(fields.map((field) => [field.id, field]));
+  const protectedBaseFields = requiredBaseFields.map((baseField) => {
+    const incoming = fieldsById.get(baseField.id);
+    fieldsById.delete(baseField.id);
+    return {
+      ...baseField,
+      label: incoming?.label || baseField.label,
+      fixed: true,
+    };
+  });
+
+  return [...protectedBaseFields, ...Array.from(fieldsById.values())];
 }
 
 export async function POST(request: Request) {

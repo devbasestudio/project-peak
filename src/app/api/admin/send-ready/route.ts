@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     const { data: registration, error: registrationError } = await supabase
       .from("program_registrations")
-      .select("id, telegram_id, email, payment_status")
+      .select("id, telegram_id, email, payment_status, ready_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -24,7 +24,8 @@ export async function POST(request: Request) {
     if (!registration) {
       return NextResponse.json({ error: "Registration not found for this client." }, { status: 404 });
     }
-    if (String(registration.payment_status || "").toLowerCase() !== "approved") {
+    const paymentStatus = String(registration.payment_status || "").toLowerCase();
+    if (paymentStatus !== "approved" && paymentStatus !== "ready") {
       return NextResponse.json({ error: "Payment must be approved before sending ready access." }, { status: 409 });
     }
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       .update({
         status: "approved",
         payment_status: "ready",
-        ready_at: new Date().toISOString(),
+        ready_at: registration.ready_at || new Date().toISOString(),
       })
       .eq("id", registration.id);
 

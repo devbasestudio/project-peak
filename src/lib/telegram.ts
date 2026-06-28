@@ -202,18 +202,19 @@ export async function getTelegramFileUrl(fileId: string) {
   return filePath ? `https://api.telegram.org/file/bot${token}/${filePath}` : "";
 }
 
-export async function notifyAdminsPayment(registration: any) {
+export async function notifyAdminsPayment(registration: any, appUrl?: string) {
   const { adminIds, enabled } = telegramConfig();
   if (!enabled) return { ok: false, skipped: true };
 
   const registrationId = String(registration.id || "");
-  const reviewRows: TelegramInlineButton[][] = [
+  const reviewRows = (adminId: string): TelegramInlineButton[][] => [
     registrationId
       ? [
           { text: "Payment approve လုပ်မယ်", callback_data: `admin:approve:${registrationId}` },
           { text: "Reject လုပ်မယ်", callback_data: `admin:reject:${registrationId}` },
         ]
       : [],
+    appUrl ? [{ text: "Admin dashboard ဖွင့်မယ်", web_app: { url: createTelegramMiniAppUrl(appUrl, { id: adminId }) } }] : [],
   ].filter((row) => row.length);
   const caption = [
     "<b>Payment screenshot အသစ်ရောက်ပါတယ်</b>",
@@ -233,7 +234,7 @@ export async function notifyAdminsPayment(registration: any) {
         adminId,
         registration.payment_screenshot,
         caption,
-        reviewRows,
+        reviewRows(adminId),
       ).catch((err) => ({
         ok: false,
         error: err instanceof Error ? err.message : "Telegram photo failed",
@@ -251,14 +252,14 @@ export async function notifyAdminsPayment(registration: any) {
         registration.payment_screenshot
           ? `${caption}\n\nScreenshot link: ${registration.payment_screenshot}`
           : caption,
-        reviewRows,
+        reviewRows(adminId),
       ),
     );
   }
   return { ok: true, results };
 }
 
-export async function notifyAdminsApproval(registration: any) {
+export async function notifyAdminsApproval(registration: any, appUrl?: string) {
   const { adminIds, enabled } = telegramConfig();
   if (!enabled) return { ok: false, skipped: true };
 
@@ -271,7 +272,14 @@ export async function notifyAdminsApproval(registration: any) {
 
   const results = [];
   for (const adminId of adminIds) {
-    results.push(await sendTelegramMessage(adminId, text));
+    results.push(
+      await sendTelegramMessage(
+        adminId,
+        text,
+        appUrl ? createTelegramMiniAppUrl(appUrl, { id: adminId }) : undefined,
+        { buttonText: "Admin dashboard ဖွင့်မယ်" },
+      ),
+    );
   }
   return { ok: true, results };
 }

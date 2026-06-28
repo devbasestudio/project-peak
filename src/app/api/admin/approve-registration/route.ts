@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/adminAuth";
+import { appBaseUrl, requireAdmin } from "@/lib/adminAuth";
 import { approvePaymentRegistration } from "@/lib/paymentReview";
 import { notifyAdminsApproval } from "@/lib/telegram";
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     const registration = await approvePaymentRegistration(supabase, registrationId);
-    await notifyAdminsApproval(registration).catch(() => null);
+    await notifyAdminsApproval(registration, appBaseUrl(request)).catch(() => null);
 
     return NextResponse.json({ success: true, persistedStatus: true });
   } catch (err) {

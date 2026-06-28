@@ -207,16 +207,22 @@ export default function TrackersClient({
                         />
                         <button
                           type="button"
-                          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#f0d3cc] bg-white text-[#c0432b] transition hover:bg-[#fdeee9]"
+                          disabled={field.fixed}
+                          className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg border bg-white transition ${
+                            field.fixed
+                              ? "cursor-not-allowed border-[#dbe4e0] text-[#9aa8a4]"
+                              : "border-[#f0d3cc] text-[#c0432b] hover:bg-[#fdeee9]"
+                          }`}
                           onClick={() => removeField(sectionIndex, fieldIndex)}
-                          aria-label={`Remove ${field.label}`}
+                          aria-label={field.fixed ? `${field.label} is a protected base field` : `Remove ${field.label}`}
                         >
-                          <i className="ph ph-trash text-base" />
+                          <i className={`ph ${field.fixed ? "ph-lock" : "ph-trash"} text-base`} />
                         </button>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
                         <select
-                          className={`${inputClass} py-2`}
+                          className={`${inputClass} py-2 ${field.fixed ? "cursor-not-allowed bg-[#eef2f0] text-[#6b7a77]" : ""}`}
+                          disabled={field.fixed}
                           value={field.type}
                           onChange={(e) =>
                             updateField(sectionIndex, fieldIndex, {

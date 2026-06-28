@@ -50,7 +50,6 @@ function intakeRows(registration: any) {
     { key: "height", label: "Height", value: registration.height },
     { key: "weight", label: "Weight", value: registration.weight },
     { key: "phone", label: "Phone", value: registration.phone },
-    { key: "email", label: "Email", value: registration.email },
   ].forEach((item) => {
     if (!existingKeys.has(item.key) && item.value !== null && item.value !== undefined && String(item.value).trim()) {
       rows.push({ ...item, type: "text", fileUrl: "" });
@@ -61,13 +60,33 @@ function intakeRows(registration: any) {
 }
 
 function intakePhotos(registration: any) {
-  return [
+  const answers =
+    registration?.intake_answers && typeof registration.intake_answers === "object"
+      ? registration.intake_answers
+      : {};
+  const photos = [
     { label: "Front photo", url: registration.photo_front },
     { label: "Back photo", url: registration.photo_back },
     { label: "Side photo", url: registration.photo_side },
+    ...Object.entries(answers)
+      .map(([key, raw]) => {
+        const answer = raw && typeof raw === "object" ? (raw as Record<string, any>) : null;
+        if (!answer || String(answer.type || "") !== "photo") return null;
+        return {
+          label: String(answer.label || key).replace(/\bbody\b/gi, "").replace(/\s+/g, " ").trim(),
+          url: answer.fileUrl || answer.value,
+        };
+      })
+      .filter(Boolean) as Array<{ label: string; url: string }>,
   ]
     .map((photo) => ({ ...photo, url: receiptUrl(photo.url) }))
     .filter((photo) => photo.url);
+
+  const byUrl = new Map<string, { label: string; url: string }>();
+  for (const photo of photos) {
+    if (!byUrl.has(photo.url)) byUrl.set(photo.url, photo);
+  }
+  return Array.from(byUrl.values());
 }
 
 function hasClientInfo(registration: any) {
@@ -259,7 +278,7 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
             <div className="min-h-0 flex-1 overflow-auto bg-[#f6f8f7] p-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {intakeRows(clientInfo)
-                  .filter((row) => row.type !== "photo")
+                  .filter((row) => row.type !== "photo" && row.key !== "email")
                   .map((row) => (
                     <div key={row.key} className="rounded-2xl border border-[#e6eae8] bg-white p-4">
                       <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">{row.label}</p>
@@ -268,16 +287,11 @@ export default function PaymentsClient({ registrations }: { registrations: any[]
                   ))}
               </div>
 
-              {(intakePhotos(clientInfo).length > 0 || intakeRows(clientInfo).some((row) => row.type === "photo")) && (
+              {intakePhotos(clientInfo).length > 0 && (
                 <div className="mt-4">
                   <h3 className="mb-2 text-sm font-extrabold text-[#1c2b29]">Photos</h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    {[
-                      ...intakePhotos(clientInfo),
-                      ...intakeRows(clientInfo)
-                        .filter((row) => row.type === "photo" && row.fileUrl)
-                        .map((row) => ({ label: row.label, url: receiptUrl(row.fileUrl) })),
-                    ].map((photo, index) => (
+                    {intakePhotos(clientInfo).map((photo, index) => (
                       <button
                         key={`${photo.label}-${index}`}
                         type="button"

@@ -73,9 +73,10 @@ export default function DashboardClient({
   );
 
   const startingWeight = profile?.starting_weight ? Number(profile.starting_weight) : null;
-  const [weight, setWeight] = useState(() =>
-    Number(todayLog?.body_weight ?? yesterdayWeight ?? startingWeight ?? 0),
-  );
+  const [weightInput, setWeightInput] = useState(() => {
+    const initialWeight = Number(todayLog?.body_weight ?? yesterdayWeight ?? startingWeight ?? 0);
+    return initialWeight > 0 ? initialWeight.toFixed(1) : "";
+  });
   const [steps, setSteps] = useState(() => Number(todayLog?.steps ?? 0));
   const [water, setWater] = useState(() =>
     Number(todayLog?.water_liters ?? (todayLog?.water_3l ? 3 : 0)),
@@ -90,7 +91,9 @@ export default function DashboardClient({
   const [homePrompt, setHomePrompt] = useState(true);
   const [deviceMessage, setDeviceMessage] = useState("");
 
-  const hasWeight = weight > 0;
+  const weight = Number.parseFloat(weightInput);
+  const hasWeight = Number.isFinite(weight) && weight > 0;
+  const bodyWeight = hasWeight ? Math.round(weight * 10) / 10 : null;
   const weekLabel = program?.duration_weeks ? `${program.duration_weeks}-week program` : "Your program";
   const workoutName = schedule?.is_rest ? "Recovery Day" : schedule?.split_name || "No split set";
   const mealTarget = Math.max(totalMealsCount || 0, 0);
@@ -131,7 +134,7 @@ export default function DashboardClient({
         body: JSON.stringify({
           userId: targetUserId,
           date: todayStr,
-          bodyWeight: weight,
+          bodyWeight,
           steps,
           sleepScore: sleep ? SLEEP_SCORES[sleep] : null,
           water3l: water >= 3,
@@ -148,6 +151,21 @@ export default function DashboardClient({
   }
 
   const firstName = username?.split(" ")[0] || "there";
+
+  function updateWeightInput(value: string) {
+    if (value === "" || /^\d{0,3}(\.\d?)?$/.test(value)) {
+      setWeightInput(value);
+    }
+  }
+
+  function stepWeight(delta: number) {
+    setWeightInput((current) => {
+      const parsed = Number.parseFloat(current);
+      const base = Number.isFinite(parsed) ? parsed : 0;
+      const next = Math.max(0, Math.round((base + delta) * 10) / 10);
+      return next > 0 ? next.toFixed(1) : "";
+    });
+  }
 
   return (
     <main className="min-h-screen bg-[#f6f8f7] pb-24 text-[#1c2b29]">
@@ -179,15 +197,25 @@ export default function DashboardClient({
                 <div className="flex items-center gap-2">
                   <StepBtn
                     icon="ph-minus"
-                    onClick={() => setWeight((v) => Math.round((v - 0.1) * 10) / 10)}
+                    onClick={() => stepWeight(-0.1)}
                   />
-                  <strong className="min-w-[64px] text-center text-lg font-extrabold">
-                    {hasWeight ? weight.toFixed(1) : "—"}
-                    <small className="ml-0.5 text-xs font-semibold text-[#9aa8a4]">kg</small>
-                  </strong>
+                  <label className="flex min-w-[82px] items-center justify-center gap-1 rounded-lg border border-[#d8dedb] bg-white px-2 py-1">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.1"
+                      value={weightInput}
+                      onChange={(e) => updateWeightInput(e.target.value)}
+                      placeholder="—"
+                      aria-label="Weight in kg"
+                      className="w-12 bg-transparent text-center text-lg font-extrabold text-[#1c2b29] outline-none"
+                    />
+                    <span className="text-xs font-semibold text-[#9aa8a4]">kg</span>
+                  </label>
                   <StepBtn
                     icon="ph-plus"
-                    onClick={() => setWeight((v) => Math.round((v + 0.1) * 10) / 10)}
+                    onClick={() => stepWeight(0.1)}
                   />
                   <button
                     type="button"

@@ -105,8 +105,7 @@ function durationDisplayLabel(duration: ProjectProgram["durations"][number]) {
 }
 
 function durationButtonText(duration: ProjectProgram["durations"][number]) {
-  const note = String(duration.note || "").trim().replace(/\s+/g, " ");
-  const text = `${durationDisplayLabel(duration)} | ${formatMmk(duration.price)}${note ? ` · ${note}` : ""}`;
+  const text = `${durationDisplayLabel(duration)} | ${formatMmk(duration.price)}`;
   return text.length > 62 ? `${text.slice(0, 59)}...` : text;
 }
 
@@ -172,11 +171,11 @@ function packageCaption(program: ProjectProgram) {
     .map((duration) => {
       const note = String(duration.note || "").trim();
       return [
-        `• <b>${escapeHtml(durationDisplayLabel(duration))}</b>: ${formatMmk(duration.price)}`,
-        note ? `  <i>${escapeHtml(note)}</i>` : "",
+        `<b>${escapeHtml(durationDisplayLabel(duration))}</b>`,
+        `${formatMmk(duration.price)}${note ? `\n<i>${escapeHtml(note)}</i>` : ""}`,
       ].filter(Boolean).join("\n");
     })
-    .join("\n");
+    .join("\n\n");
   const lines = [
     `<b>${escapeHtml(program.name)}</b>`,
     program.description ? `<i>${escapeHtml(program.description)}</i>` : "",

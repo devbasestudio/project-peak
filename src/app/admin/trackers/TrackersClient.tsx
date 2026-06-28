@@ -24,15 +24,6 @@ const defaultIconByType: Record<TrackerFieldType, string> = {
   text: "ph-note-pencil",
   time: "ph-clock",
 };
-const typeOptions: Array<{ type: TrackerFieldType; icon: string; label: string }> = [
-  { type: "checkbox", icon: "ph-check-square", label: "Done" },
-  { type: "photo", icon: "ph-camera", label: "Photo" },
-  { type: "number", icon: "ph-hash", label: "Number" },
-  { type: "counter", icon: "ph-plus-circle", label: "Counter" },
-  { type: "time", icon: "ph-clock", label: "Time" },
-  { type: "select", icon: "ph-list-checks", label: "Choice" },
-  { type: "text", icon: "ph-note-pencil", label: "Text" },
-];
 const iconOptions = [
   { label: "Check", value: "ph-check-square" },
   { label: "Target", value: "ph-target" },
@@ -245,35 +236,30 @@ export default function TrackersClient({
                         </button>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                        <div className="grid grid-cols-7 gap-1 rounded-xl border border-[#d8dedb] bg-white p-2">
-                          {typeOptions.map((option) => (
-                            <button
-                              key={option.type}
-                              type="button"
-                              disabled={field.fixed}
-                              title={option.label}
-                              onClick={() =>
-                                updateField(sectionIndex, fieldIndex, {
-                                  type: option.type,
-                                  icon:
-                                    option.type === "photo" || field.icon === defaultIconByType[field.type]
-                                      ? defaultIconByType[option.type]
-                                      : field.icon || defaultIconByType[option.type],
-                                })
-                              }
-                              className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
-                                field.type === option.type
-                                  ? "border-[#1c2b29] bg-[#1c2b29] text-white"
-                                  : field.fixed
-                                    ? "cursor-not-allowed border-[#e6eae8] bg-[#eef2f0] text-[#9aa8a4]"
-                                    : "border-[#e6eae8] bg-[#f6f8f7] text-[#5b6a67] hover:border-[#9aa8a4]"
-                              }`}
-                              aria-label={`${field.label} ${option.label} type`}
-                            >
-                              <i className={`ph ${option.icon} text-lg`} />
-                            </button>
+                        <select
+                          className={`${inputClass} py-2 ${
+                            field.fixed ? "cursor-not-allowed bg-[#eef2f0] text-[#6b7a77]" : ""
+                          }`}
+                          disabled={field.fixed}
+                          value={field.type}
+                          onChange={(e) => {
+                            const nextType = e.target.value as TrackerFieldType;
+                            updateField(sectionIndex, fieldIndex, {
+                              type: nextType,
+                              icon:
+                                nextType === "photo" || field.icon === defaultIconByType[field.type]
+                                  ? defaultIconByType[nextType]
+                                  : field.icon || defaultIconByType[nextType],
+                            });
+                          }}
+                          aria-label={`${field.label} field type`}
+                        >
+                          {fieldTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
                           ))}
-                        </div>
+                        </select>
                         {!field.fixed && (
                           <div className="grid grid-cols-6 gap-1 rounded-xl border border-[#d8dedb] bg-white p-2">
                             {iconOptions.map((option) => (

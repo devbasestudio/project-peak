@@ -1,8 +1,18 @@
+import { createHmac } from "node:crypto";
+
 type TelegramPayload = Record<string, unknown>;
 
 type TelegramButtonOptions = {
   buttonText?: string;
   webApp?: boolean;
+};
+
+type TelegramMiniAppIdentity = {
+  id?: string | number | null;
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  displayName?: string | null;
 };
 
 export type TelegramInlineButton = {
@@ -20,6 +30,47 @@ function telegramConfig() {
     .filter(Boolean);
 
   return { token, adminIds, enabled: Boolean(token && adminIds.length) };
+}
+
+function cleanBaseMiniAppUrl(baseUrl: string) {
+  const cleanBase = String(baseUrl || "").replace(/\/+$/, "");
+  if (!cleanBase) return "";
+  return cleanBase.endsWith("/miniapp") ? cleanBase : `${cleanBase}/miniapp`;
+}
+
+function miniAppDisplayName(identity?: TelegramMiniAppIdentity) {
+  return [identity?.first_name, identity?.last_name].filter(Boolean).join(" ").trim()
+    || String(identity?.displayName || "").trim()
+    || String(identity?.username || "").trim()
+    || (identity?.id ? `Telegram ${identity.id}` : "Telegram user");
+}
+
+function signLaunchParams(telegramId: string, timestamp: string) {
+  const secret = process.env.TELEGRAM_BOT_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!secret) return "";
+  return createHmac("sha256", secret)
+    .update(`${telegramId}:${timestamp}`)
+    .digest("hex");
+}
+
+export function createTelegramMiniAppUrl(baseUrl: string, identity?: TelegramMiniAppIdentity) {
+  const appUrl = cleanBaseMiniAppUrl(baseUrl);
+  if (!appUrl) return "";
+  if (!identity?.id) return appUrl;
+
+  const telegramId = String(identity.id).trim().replace(/^@/, "");
+  if (!telegramId) return appUrl;
+
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const params = new URLSearchParams({
+    tg_id: telegramId,
+    tg_ts: timestamp,
+    tg_sig: signLaunchParams(telegramId, timestamp),
+  });
+  if (identity.username) params.set("tg_username", String(identity.username));
+  const name = miniAppDisplayName(identity);
+  if (name) params.set("tg_name", name);
+  return `${appUrl}?${params.toString()}`;
 }
 
 function escapeTelegramHtml(value: unknown) {
@@ -226,12 +277,13 @@ export async function notifyAdminsApproval(registration: any) {
 }
 
 export async function notifyClientReady(telegramId: string, appUrl: string) {
+  const miniAppLink = createTelegramMiniAppUrl(appUrl, { id: telegramId });
   const text = [
     "<b>Project Peak tracker ready ဖြစ်ပါပြီ</b>",
     "Payment approve ပြီး သင့်အတွက် daily tracker ကိုပြင်ပေးထားပါတယ်။",
     "အောက်က button ကနေ Telegram Mini App ကိုဖွင့်ပြီး စသုံးလို့ရပါပြီ။",
   ].join("\n");
-  return sendTelegramMessage(telegramId, text, `${appUrl}/miniapp`, {
+  return sendTelegramMessage(telegramId, text, miniAppLink, {
     buttonText: "Mini App ဖွင့်မယ်",
   });
 }
@@ -243,7 +295,7 @@ export async function broadcastFeedbackMessage(telegramIds: string[], templateNa
       await sendTelegramMessage(
         telegramId,
         `<b>${escapeTelegramHtml(templateName)}</b>\nဒီတစ်ခေါက် feedback form လေး ဖြည့်ပေးပါဦး။ သင့် progress ကိုပိုကောင်းအောင် ပြန်ညှိပေးဖို့ပါ။`,
-        `${appUrl}/miniapp`,
+        createTelegramMiniAppUrl(appUrl, { id: telegramId }),
         { buttonText: "Feedback ဖြည့်မယ်" },
       ),
     );
@@ -262,7 +314,7 @@ export async function broadcastAdminMessage(telegramIds: string[], message: stri
       await sendTelegramMessage(
         telegramId,
         `<b>Project Peak မှ message ပါ</b>\n${escapeTelegramHtml(cleanMessage)}`,
-        `${appUrl}/miniapp`,
+        createTelegramMiniAppUrl(appUrl, { id: telegramId }),
         { buttonText: "Mini App ဖွင့်မယ်" },
       ),
     );

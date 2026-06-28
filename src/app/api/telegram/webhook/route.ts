@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createHmac } from "node:crypto";
 import {
   appBaseUrl,
   ensureTelegramUserAccount,
@@ -17,6 +16,7 @@ import {
 } from "@/lib/projectPeakConfig";
 import {
   answerCallbackQuery,
+  createTelegramMiniAppUrl,
   getTelegramFileUrl,
   getTelegramRuntimeStatus,
   notifyAdminsPayment,
@@ -58,27 +58,13 @@ function userDisplayName(from?: TelegramUser) {
     || (from?.id ? `Telegram ${from.id}` : "Telegram user");
 }
 
-function signLaunchParams(telegramId: string, timestamp: string) {
-  const secret = process.env.TELEGRAM_BOT_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!secret) return "";
-  return createHmac("sha256", secret)
-    .update(`${telegramId}:${timestamp}`)
-    .digest("hex");
-}
-
 function miniAppUrl(baseUrl: string, from?: TelegramUser) {
-  const appUrl = `${baseUrl}/miniapp`;
-  if (!from?.id) return appUrl;
-  const telegramId = String(from.id);
-  const timestamp = String(Math.floor(Date.now() / 1000));
-  const params = new URLSearchParams({
-    tg_id: telegramId,
-    tg_ts: timestamp,
-    tg_sig: signLaunchParams(telegramId, timestamp),
-    ...(from.username ? { tg_username: String(from.username) } : {}),
-    ...(userDisplayName(from) ? { tg_name: userDisplayName(from) } : {}),
+  return createTelegramMiniAppUrl(baseUrl, {
+    id: from?.id,
+    username: from?.username,
+    first_name: from?.first_name,
+    last_name: from?.last_name,
   });
-  return `${appUrl}?${params.toString()}`;
 }
 
 function assetUrl(baseUrl: string, path: string) {

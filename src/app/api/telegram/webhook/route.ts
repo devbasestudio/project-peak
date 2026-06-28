@@ -100,10 +100,20 @@ function telegramCaption(lines: string[]) {
   return caption.length > 1000 ? `${caption.slice(0, 997)}...` : caption;
 }
 
+function durationDisplayLabel(duration: ProjectProgram["durations"][number]) {
+  return String(duration.label || "").trim() || durationLabel(duration.months);
+}
+
+function durationButtonText(duration: ProjectProgram["durations"][number]) {
+  const note = String(duration.note || "").trim().replace(/\s+/g, " ");
+  const text = `${durationDisplayLabel(duration)} | ${formatMmk(duration.price)}${note ? ` · ${note}` : ""}`;
+  return text.length > 62 ? `${text.slice(0, 59)}...` : text;
+}
+
 function durationRows(program: ProjectProgram): TelegramInlineButton[][] {
   const rows = program.durations.map((duration) => [
     {
-      text: `${durationLabel(duration.months)} | ${formatMmk(duration.price)}`,
+      text: durationButtonText(duration),
       callback_data: `buy:${program.key}:${duration.months}`,
     },
   ]);
@@ -160,8 +170,11 @@ function packageCaption(program: ProjectProgram) {
   const includes = program.includes.slice(0, 3).map((item) => `• ${escapeHtml(item.title)}`).join("\n");
   const prices = program.durations
     .map((duration) => {
-      const note = duration.note ? ` - ${escapeHtml(duration.note)}` : "";
-      return `${durationLabel(duration.months)}: ${formatMmk(duration.price)}${note}`;
+      const note = String(duration.note || "").trim();
+      return [
+        `• <b>${escapeHtml(durationDisplayLabel(duration))}</b>: ${formatMmk(duration.price)}`,
+        note ? `  <i>${escapeHtml(note)}</i>` : "",
+      ].filter(Boolean).join("\n");
     })
     .join("\n");
   const lines = [

@@ -102,7 +102,7 @@ export default async function DashboardPage(props: {
   const baseProgram = programs && programs.length > 0 ? programs[0] : null;
   const { data: latestRegistration } = await supabase
     .from("program_registrations")
-    .select("program_name, duration_months")
+    .select("name, age, height, weight, email, phone, telegram_id, program_name, duration_months, photo_front, photo_back, photo_side, intake_answers")
     .eq("user_id", targetUserId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -261,6 +261,8 @@ export default async function DashboardPage(props: {
       streak={streak}
       initialTab={searchParams.tab}
       trackerSections={normalizeTrackerSections(customTrackerTemplate?.sections)}
+      clientInfo={latestRegistration || null}
+      recentDailyLogs={allTrackers.slice(0, 7)}
     />
   );
 }

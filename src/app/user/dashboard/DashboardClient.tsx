@@ -28,6 +28,8 @@ interface DashboardClientProps {
   streak: number;
   initialTab?: string;
   trackerSections: TrackerSection[];
+  clientInfo: any;
+  recentDailyLogs: any[];
 }
 
 type ActiveTab = "logs" | "progress" | "feedback" | "me";
@@ -53,6 +55,26 @@ function programDisplayName(program: any) {
   return name || readableProgramLabel(program?.program_type);
 }
 
+function dailyFilledCount(log: any) {
+  const trackerValues = log?.tracker_values && typeof log.tracker_values === "object" ? log.tracker_values : {};
+  const customCount = Object.values(trackerValues).filter((value) => {
+    if (value === null || value === undefined || value === false) return false;
+    if (typeof value === "string") return value.trim().length > 0;
+    return true;
+  }).length;
+  return [
+    log?.body_weight,
+    log?.steps,
+    log?.sleep_score,
+    log?.water_liters || log?.water_3l,
+    log?.omega_3,
+    log?.wake_time,
+    log?.phone_off_time,
+    log?.one_win,
+    log?.one_struggle,
+  ].filter(Boolean).length + customCount;
+}
+
 export default function DashboardClient({
   username,
   isAdminViewing,
@@ -76,6 +98,8 @@ export default function DashboardClient({
   streak,
   initialTab,
   trackerSections,
+  clientInfo,
+  recentDailyLogs,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>(
     initialTab === "progress" || initialTab === "feedback" || initialTab === "me" ? initialTab : "logs",
@@ -101,6 +125,15 @@ export default function DashboardClient({
   const [trackerValues, setTrackerValues] = useState<Record<string, TrackerValue>>(() =>
     todayLog?.tracker_values && typeof todayLog.tracker_values === "object" ? todayLog.tracker_values : {},
   );
+  const [profileDraft, setProfileDraft] = useState(() => ({
+    age: String(profile?.age ?? clientInfo?.age ?? ""),
+    height: String(profile?.height_cm ?? clientInfo?.height ?? ""),
+    weight: String(profile?.starting_weight ?? clientInfo?.weight ?? ""),
+    bodyFat: String(profile?.body_fat_percent ?? ""),
+    goal: String(profile?.desired_body_text ?? clientInfo?.intake_answers?.goal ?? clientInfo?.intake_answers?.notes ?? ""),
+  }));
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [pendingAction, setPendingAction] = useState("");
   const [homePrompt, setHomePrompt] = useState(true);
@@ -218,6 +251,34 @@ export default function DashboardClient({
       setDeviceMessage(err instanceof Error ? err.message : "Photo upload failed.");
       setSaving(false);
       setPendingAction("");
+    }
+  }
+
+  async function saveProfileInline() {
+    setSaving(true);
+    setProfileMessage("");
+    try {
+      const response = await fetch("/api/user/save-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: targetUserId,
+          age: profileDraft.age,
+          height: profileDraft.height,
+          weight: profileDraft.weight,
+          bodyFat: profileDraft.bodyFat,
+          desiredBodyText: profileDraft.goal,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Profile save failed.");
+      setEditingProfile(false);
+      setProfileMessage("Profile သိမ်းပြီးပါပြီ။");
+      if (profileDraft.weight) setWeightInput(Number(profileDraft.weight).toFixed(1));
+    } catch (err) {
+      setProfileMessage(err instanceof Error ? err.message : "Profile save failed.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -529,6 +590,30 @@ export default function DashboardClient({
                 </>
               )}
             </div>
+            <div className="rounded-2xl border border-[#e6eae8] bg-white p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">
+                Recent daily logs
+              </p>
+              {recentDailyLogs.length === 0 ? (
+                <p className="py-4 text-center text-sm text-[#9aa8a4]">Daily log ဖြည့်ပြီးရင် ဒီမှာ progress ပေါ်လာပါမယ်။</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {recentDailyLogs.map((log) => (
+                    <div key={log.date} className="rounded-xl bg-[#f6f8f7] p-3">
+                      <div className="flex items-center justify-between">
+                        <strong className="text-sm text-[#1c2b29]">{String(log.date).split("T")[0]}</strong>
+                        <span className="text-xs font-bold text-[#9aa8a4]">{dailyFilledCount(log)} filled</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-3 gap-1.5 text-center text-xs font-bold text-[#6b7a77]">
+                        <span className="rounded-lg bg-white px-2 py-1">{log.body_weight ? `${log.body_weight}kg` : "No weight"}</span>
+                        <span className="rounded-lg bg-white px-2 py-1">{log.steps ? `${log.steps} steps` : "No steps"}</span>
+                        <span className="rounded-lg bg-white px-2 py-1">{log.water_liters ? `${log.water_liters}L` : log.water_3l ? "3L" : "No water"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <p className="rounded-2xl bg-[#eef2f0] px-4 py-3 text-sm italic text-[#3a4744]">
               “{initialQuote}”
             </p>
@@ -538,24 +623,12 @@ export default function DashboardClient({
         {activeTab === "feedback" && (
           <div className="mt-3 flex flex-col gap-3">
             <h2 className="text-lg font-extrabold">Feedback</h2>
-            <a
-              href={`/user/check-in${clientQuery}`}
-              className="flex items-start gap-3 rounded-2xl border border-[#e6eae8] bg-white p-4 no-underline text-[#1c2b29]"
-            >
+            <div className="flex items-start gap-3 rounded-2xl border border-[#e6eae8] bg-white p-4 text-[#1c2b29]">
               <i className="ph ph-chat-circle-text mt-0.5 text-xl text-[#ff6b35]" />
               <span className="flex flex-col">
-                <strong className="text-sm font-bold">Weekly Check-in</strong>
+                <strong className="text-sm font-bold">Feedback request</strong>
                 <span className="text-xs text-[#6b7a77]">
-                  Submit progress photo, average weight, energy and struggle notes.
-                </span>
-              </span>
-            </a>
-            <div className="flex items-start gap-3 rounded-2xl border border-[#e6eae8] bg-[#f6f8f7] p-4 opacity-70">
-              <i className="ph ph-lock mt-0.5 text-xl text-[#9aa8a4]" />
-              <span className="flex flex-col">
-                <strong className="text-sm font-bold">End Program Review</strong>
-                <span className="text-xs text-[#6b7a77]">
-                  Unlocks at the end of your current program.
+                  Coach က Telegram bot ကနေ feedback form ပို့တဲ့အခါ ဒီနေရာမှာဖြည့်လို့ရအောင် ဖွင့်ပေးပါမယ်။
                 </span>
               </span>
             </div>
@@ -568,35 +641,64 @@ export default function DashboardClient({
             <div className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white">
               <InfoRow label="Name" value={username} />
               <InfoRow label="Program" value={programHeaderLabel} />
-              <InfoRow
-                label="Starting weight"
-                value={startingWeight ? `${startingWeight} kg` : "—"}
-              />
-              <InfoRow label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : "—"} />
-              <InfoRow label="Device limit" value="2 devices" last />
+              <InfoRow label="Telegram ID" value={String(clientInfo?.telegram_id || "—")} />
+              <InfoRow label="Phone" value={String(clientInfo?.phone || "—")} />
+              <InfoRow label="Age" value={profileDraft.age ? `${profileDraft.age}` : "—"} />
+              <InfoRow label="Starting weight" value={profileDraft.weight ? `${profileDraft.weight} kg` : "—"} />
+              <InfoRow label="Height" value={profileDraft.height ? `${profileDraft.height} cm` : "—"} />
+              <InfoRow label="Goal" value={profileDraft.goal || "—"} last />
             </div>
-            <a
-              href={`/user/setup-profile?mode=edit${clientQuery ? `&${clientQuery.replace(/^\?/, "")}` : ""}`}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-[#1c2b29] py-2.5 text-sm font-bold text-white no-underline"
-            >
-              <i className="ph ph-pencil-simple text-base" />
-              Edit profile
-            </a>
-            <button
-              type="button"
-              onClick={async () => {
-                setDeviceMessage("");
-                const response = await fetch("/api/user/reset-devices", { method: "POST" });
-                setDeviceMessage(
-                  response.ok
-                    ? "Device sessions reset. Reload on the device you want to keep."
-                    : "Device reset failed.",
-                );
-              }}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-[#e6eae8] bg-white py-2.5 text-sm font-bold text-[#1c2b29]"
-            >
-              <i className="ph ph-arrows-clockwise text-base" /> Request device reset
-            </button>
+            {(clientInfo?.photo_front || clientInfo?.photo_back || clientInfo?.photo_side) && (
+              <div className="grid grid-cols-3 gap-2">
+                <ProfilePhoto label="Front" src={clientInfo?.photo_front} />
+                <ProfilePhoto label="Back" src={clientInfo?.photo_back} />
+                <ProfilePhoto label="Side" src={clientInfo?.photo_side} />
+              </div>
+            )}
+            {editingProfile && (
+              <div className="rounded-2xl border border-[#e6eae8] bg-white p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <ProfileInput label="Age" value={profileDraft.age} onChange={(age) => setProfileDraft((p) => ({ ...p, age }))} />
+                  <ProfileInput label="Height" value={profileDraft.height} onChange={(height) => setProfileDraft((p) => ({ ...p, height }))} />
+                  <ProfileInput label="Weight" value={profileDraft.weight} onChange={(weight) => setProfileDraft((p) => ({ ...p, weight }))} />
+                  <ProfileInput label="Body fat %" value={profileDraft.bodyFat} onChange={(bodyFat) => setProfileDraft((p) => ({ ...p, bodyFat }))} />
+                </div>
+                <label className="mt-2 flex flex-col gap-1 text-xs font-bold text-[#6b7a77]">
+                  Goal / notes
+                  <textarea
+                    rows={3}
+                    value={profileDraft.goal}
+                    onChange={(e) => setProfileDraft((p) => ({ ...p, goal: e.target.value }))}
+                    className="rounded-xl border border-[#d8dedb] px-3 py-2 text-sm font-semibold text-[#1c2b29] outline-none focus:border-[#1c2b29]"
+                  />
+                </label>
+              </div>
+            )}
+            {profileMessage && (
+              <div className="rounded-xl border border-[#e6eae8] bg-white px-3 py-2 text-xs font-bold text-[#6b7a77]">
+                {profileMessage}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => (editingProfile ? saveProfileInline() : setEditingProfile(true))}
+                disabled={saving}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-[#1c2b29] py-2.5 text-sm font-bold text-white"
+              >
+                <i className={`ph ${editingProfile ? "ph-floppy-disk" : "ph-pencil-simple"} text-base`} />
+                {editingProfile ? "Save" : "Edit profile"}
+              </button>
+              {editingProfile && (
+                <button
+                  type="button"
+                  onClick={() => setEditingProfile(false)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[#e6eae8] bg-white py-2.5 text-sm font-bold text-[#1c2b29]"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -766,7 +868,37 @@ function InfoRow({ label, value, last }: { label: string; value: string; last?: 
       }`}
     >
       <span className="text-sm font-semibold text-[#6b7a77]">{label}</span>
-      <span className="text-sm font-bold capitalize">{value}</span>
+      <span className="max-w-[58%] text-right text-sm font-bold capitalize">{value}</span>
+    </div>
+  );
+}
+
+function ProfileInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs font-bold text-[#6b7a77]">
+      {label}
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-xl border border-[#d8dedb] px-3 py-2 text-sm font-semibold text-[#1c2b29] outline-none focus:border-[#1c2b29]"
+      />
+    </label>
+  );
+}
+
+function ProfilePhoto({ label, src }: { label: string; src?: string | null }) {
+  if (!src) {
+    return (
+      <div className="grid aspect-square place-items-center rounded-2xl border border-[#e6eae8] bg-white text-xs font-bold text-[#9aa8a4]">
+        {label}
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#e6eae8] bg-white">
+      <img src={src} alt={`${label} body photo`} className="aspect-square w-full object-cover" />
+      <div className="px-2 py-1 text-center text-xs font-bold text-[#6b7a77]">{label}</div>
     </div>
   );
 }

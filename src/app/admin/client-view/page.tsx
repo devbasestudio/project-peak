@@ -44,6 +44,21 @@ export default async function ClientViewPage(props: {
     .eq('user_id', clientId)
     .order('week_number', { ascending: false });
 
+  const { data: dailyLogs } = await supabase
+    .from('daily_trackers')
+    .select('*')
+    .eq('user_id', clientId)
+    .order('date', { ascending: false })
+    .limit(14);
+
+  const { data: registration } = await supabase
+    .from('program_registrations')
+    .select('name, age, height, weight, phone, telegram_id, program_name, photo_front, photo_back, photo_side, intake_answers')
+    .eq('user_id', clientId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const selectedWeek = searchParams.week ? parseInt(searchParams.week, 10) : null;
 
   return (
@@ -51,9 +66,10 @@ export default async function ClientViewPage(props: {
       client={clientProfile}
       program={program}
       checkins={checkins || []}
+      dailyLogs={dailyLogs || []}
+      registration={registration || null}
       selectedWeek={selectedWeek}
       clientId={clientId}
     />
   );
 }
-

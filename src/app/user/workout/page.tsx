@@ -4,6 +4,7 @@ import { resolveUserRouteTarget } from '@/lib/adminView';
 import { redirect } from 'next/navigation';
 import WorkoutClient from './WorkoutClient';
 import Link from 'next/link';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +49,7 @@ export default async function WorkoutPage(props: {
 
   // Check if today is a rest day (no split, split_name is Rest, or is_rest is true)
   const requestedSplit = String(searchParams.split || "").trim();
-  const splitName = schedule?.split_name || requestedSplit || "Upper - Push";
+  const splitName = requestedSplit || schedule?.split_name || "Upper - Push";
   const isRestDay = schedule?.is_rest === 1 || schedule?.split_name === 'Rest';
 
   if (isRestDay) {
@@ -134,13 +135,19 @@ export default async function WorkoutPage(props: {
   // Get user program type to fetch template
   const programs = await query('SELECT program_type FROM programs WHERE user_id = ?', [targetUserId]);
   const programType = programs && programs.length > 0 ? programs[0].program_type : 'custom_plan';
+  const supabase = createAdminClient();
+  const templates = await query(
+    'SELECT * FROM exercise_library WHERE program_type = ? AND split_name = ? ORDER BY sort_order ASC, id ASC',
+    [programType, splitName]
+  );
 
   // Fetch workout for today
   let workouts = await query('SELECT * FROM workouts WHERE user_id = ? AND date = ?', [targetUserId, today]);
-  let workout = workouts && workouts.length > 0 ? workouts[0] : null;
+  let workout = workouts && workouts.length > 0
+    ? workouts.find((item: any) => item.split_name === splitName) || (!requestedSplit ? workouts[0] : null)
+    : null;
 
-  if (!workout) {
-    // Automatically create a workout split for today matching templates from exercise_library
+  if (!workout && templates && templates.length > 0) {
     const insertResult = await query(
       'INSERT INTO workouts (user_id, date, split_name) VALUES (?, ?, ?)',
       [targetUserId, today, splitName]
@@ -148,33 +155,11 @@ export default async function WorkoutPage(props: {
     const workoutId = insertResult.insertId;
 
     if (workoutId) {
-      const templates = await query(
-        'SELECT * FROM exercise_library WHERE program_type = ? AND split_name = ? ORDER BY sort_order ASC, id ASC',
-        [programType, splitName]
-      );
-
-      if (templates && templates.length > 0) {
-        for (const ex of templates) {
-          await query(
-            'INSERT INTO workout_exercises (workout_id, exercise_name, target_sets, target_reps) VALUES (?, ?, ?, ?)',
-            [workoutId, ex.exercise_name, ex.sets_default, ex.reps_default]
-          );
-        }
-      } else {
-        // Fallback exercises
-        const fallbackExercises = [
-          { name: 'Barbell Bench Press', sets: 3, reps: '8-10' },
-          { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12' },
-          { name: 'Overhead Press', sets: 3, reps: '8-10' },
-          { name: 'Tricep Pushdown', sets: 3, reps: '12-15' }
-        ];
-
-        for (const ex of fallbackExercises) {
-          await query(
-            'INSERT INTO workout_exercises (workout_id, exercise_name, target_sets, target_reps) VALUES (?, ?, ?, ?)',
-            [workoutId, ex.name, ex.sets, ex.reps]
-          );
-        }
+      for (const ex of templates) {
+        await query(
+          'INSERT INTO workout_exercises (workout_id, exercise_name, target_sets, target_reps) VALUES (?, ?, ?, ?)',
+          [workoutId, ex.exercise_name, ex.sets_default, ex.reps_default]
+        );
       }
 
       // Fetch the newly created workout
@@ -185,29 +170,46 @@ export default async function WorkoutPage(props: {
 
   let exercises: any[] = [];
   let mappedExercises: any[] = [];
-  if (workout) {
+  if (workout && templates && templates.length > 0) {
+    exercises = await query('SELECT * FROM workout_exercises WHERE workout_id = ? ORDER BY id ASC', [workout.id]);
+    const existingNames = new Set(exercises.map((ex: any) => String(ex.exercise_name).toLowerCase()));
+    for (const template of templates) {
+      if (!existingNames.has(String(template.exercise_name).toLowerCase())) {
+        await query(
+          'INSERT INTO workout_exercises (workout_id, exercise_name, target_sets, target_reps) VALUES (?, ?, ?, ?)',
+          [workout.id, template.exercise_name, template.sets_default, template.reps_default]
+        );
+      }
+    }
     exercises = await query('SELECT * FROM workout_exercises WHERE workout_id = ? ORDER BY id ASC', [workout.id]);
 
-    // Load templates to get original library IDs
-    const templates = await query(
-      'SELECT * FROM exercise_library WHERE program_type = ? AND split_name = ? ORDER BY sort_order ASC, id ASC',
-      [programType, splitName]
-    );
-
-    mappedExercises = exercises.map((ex: any, idx: number) => {
-      const template = templates[idx] || null;
-      return {
-        ...ex,
-        original_exercise_id: template ? template.id : null,
-        muscle_group: template ? template.muscle_group : null,
-      };
-    });
+    mappedExercises = templates
+      .map((template: any) => {
+        const ex = exercises.find((item: any) => String(item.exercise_name).toLowerCase() === String(template.exercise_name).toLowerCase());
+        if (!ex) return null;
+        return {
+          ...ex,
+          target_sets: ex.target_sets || template.sets_default,
+          target_reps: ex.target_reps || template.reps_default,
+          original_exercise_id: template.id,
+          muscle_group: template.muscle_group,
+        };
+      })
+      .filter(Boolean) as any[];
+  } else if (workout && (!templates || templates.length === 0)) {
+    await supabase
+      .from('workouts')
+      .update({ split_name: splitName })
+      .eq('id', workout.id)
+      .eq('user_id', targetUserId);
+    mappedExercises = [];
   }
 
   // Fetch all library exercises for swap options
-  const allLibraryExercises = await query(
-    'SELECT id, exercise_name, muscle_group, sets_default, reps_default FROM exercise_library ORDER BY exercise_name ASC'
-  );
+  const { data: allLibraryExercises } = await supabase
+    .from('exercise_library')
+    .select('id, exercise_name, muscle_group, sets_default, reps_default, rest_seconds')
+    .order('exercise_name', { ascending: true });
 
   // Fetch historical logs for user's completed sessions
   const historicalLogs = await query(
@@ -237,7 +239,6 @@ export default async function WorkoutPage(props: {
       targetUserId={targetUserId}
       isAdminViewing={isAdminViewing}
       clientQuery={clientQuery}
-      today={today}
       workout={workout}
       exercises={mappedExercises}
       allLibraryExercises={allLibraryExercises || []}

@@ -10,22 +10,25 @@ interface ClientViewClientProps {
   client: any;
   program: any;
   checkins: any[];
+  dailyLogs: any[];
+  registration: any;
   selectedWeek: number | null;
   clientId: string;
 }
 
 const accessLinks = [
   { href: "dashboard", icon: "ph-squares-four", label: "Dashboard" },
-  { href: "daily-log", icon: "ph-calendar-check", label: "Daily Log" },
-  { href: "workout", icon: "ph-barbell", label: "Workout" },
-  { href: "diet", icon: "ph-fork-knife", label: "Diet Plan" },
-  { href: "check-in", icon: "ph-clipboard-text", label: "Weekly Check-in" },
+  { href: "dashboard?tab=progress", icon: "ph-chart-line-up", label: "Progress" },
+  { href: "dashboard?tab=feedback", icon: "ph-chat-circle-text", label: "Feedback" },
+  { href: "dashboard?tab=me", icon: "ph-user", label: "Profile" },
 ];
 
 export default function ClientViewClient({
   client,
   program,
   checkins,
+  dailyLogs,
+  registration,
   selectedWeek,
   clientId,
 }: ClientViewClientProps) {
@@ -171,7 +174,7 @@ export default function ClientViewClient({
               {accessLinks.map((link) => (
                 <Link
                   key={link.href}
-                  href={`/user/${link.href}?client_id=${clientId}`}
+                  href={`/user/${link.href}${link.href.includes("?") ? "&" : "?"}client_id=${clientId}`}
                   className="flex items-center justify-center gap-1.5 rounded-xl border border-[#e6eae8] px-3 py-2.5 text-sm font-semibold text-[#1c2b29] no-underline transition hover:border-[#cdd6d2] hover:bg-[#f6f8f7]"
                 >
                   <i className={`ph ${link.icon} text-base text-[#ff6b35]`} /> {link.label}
@@ -179,6 +182,73 @@ export default function ClientViewClient({
               ))}
             </div>
           </Card>
+
+          <Card>
+            <CardTitle icon="ph-identification-card" title="Client info" meta={registration?.program_name || "Current"} />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Metric label="Telegram" value={registration?.telegram_id || "—"} />
+              <Metric label="Phone" value={registration?.phone || "—"} />
+              <Metric label="Age" value={registration?.age ? String(registration.age) : "—"} />
+              <Metric label="Weight" value={registration?.weight ? `${registration.weight} kg` : "—"} />
+              <Metric label="Height" value={registration?.height || "—"} />
+              <Metric label="Goal" value={readAnswer(registration?.intake_answers, "goal") || "—"} />
+            </div>
+            {(registration?.photo_front || registration?.photo_back || registration?.photo_side) && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <ClientPhoto label="Front" src={registration?.photo_front} />
+                <ClientPhoto label="Back" src={registration?.photo_back} />
+                <ClientPhoto label="Side" src={registration?.photo_side} />
+              </div>
+            )}
+          </Card>
+
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-[#1c2b29]">
+              <i className="ph ph-calendar-check text-lg text-[#ff6b35]" /> Daily logs
+            </h2>
+            {dailyLogs.length === 0 ? (
+              <Card>
+                <p className="py-4 text-center text-sm text-[#9aa8a4]">No daily logs yet.</p>
+              </Card>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {dailyLogs.map((log) => (
+                  <Card key={`${log.user_id}-${log.date}`}>
+                    <div className="flex items-center justify-between border-b border-[#eef2f0] pb-3">
+                      <h3 className="text-base font-bold text-[#1c2b29]">{formatDate(log.date)}</h3>
+                      <span className="text-xs font-bold text-[#9aa8a4]">{dailyCompletionLabel(log)}</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <Metric label="Weight" value={log.body_weight ? `${log.body_weight} kg` : "—"} />
+                      <Metric label="Steps" value={log.steps ? String(log.steps) : "—"} />
+                      <Metric label="Sleep" value={sleepLabel(log.sleep_score)} />
+                      <Metric label="Water" value={log.water_liters ? `${log.water_liters} L` : log.water_3l ? "3 L" : "—"} />
+                      <Metric label="Wake" value={log.wake_time || "—"} />
+                      <Metric label="Phone off" value={log.phone_off_time || "—"} />
+                      <Metric label="Omega 3" value={log.omega_3 ? "Done" : "—"} />
+                      <Metric label="Meal" value={log.meal_plan_adhered ? "Done" : "—"} />
+                    </div>
+                    {(log.one_win || log.one_struggle) && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        <Note label="One win" value={log.one_win} tone="good" />
+                        <Note label="One struggle" value={log.one_struggle} tone="warn" />
+                      </div>
+                    )}
+                    {log.tracker_values && Object.keys(log.tracker_values).length > 0 && (
+                      <div className="mt-3 rounded-xl border border-[#e6eae8] bg-[#f6f8f7] p-3">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">Custom tracker values</p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {Object.entries(log.tracker_values).map(([key, value]) => (
+                            <CustomValue key={key} label={key} value={value} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Weekly check-ins */}
           <div>
@@ -316,7 +386,76 @@ function Metric({ label, value }: { label: string; value: string }) {
       <span className="text-[0.66rem] font-semibold uppercase tracking-wide text-[#9aa8a4]">
         {label}
       </span>
-      <div className="mt-0.5 text-lg font-extrabold text-[#1c2b29]">{value}</div>
+      <div className="mt-0.5 break-words text-lg font-extrabold text-[#1c2b29]">{value}</div>
+    </div>
+  );
+}
+
+function readAnswer(answers: unknown, key: string) {
+  if (!answers || typeof answers !== "object" || Array.isArray(answers)) return "";
+  const record = answers as Record<string, unknown>;
+  const value = record[key] ?? record[`client_${key}`] ?? record.notes;
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function sleepLabel(score: unknown) {
+  const map: Record<number, string> = { 1: "Poor", 2: "Light", 3: "OK", 4: "Deep" };
+  const value = Number(score || 0);
+  return map[value] || "—";
+}
+
+function formatDate(value: string) {
+  if (!value) return "Unknown date";
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function dailyCompletionLabel(log: any) {
+  const trackerValues = log.tracker_values && typeof log.tracker_values === "object" ? log.tracker_values : {};
+  const customCount = Object.values(trackerValues).filter((value) => {
+    if (value === null || value === undefined || value === false) return false;
+    if (typeof value === "string") return value.trim().length > 0;
+    return true;
+  }).length;
+  const baseCount = [
+    log.body_weight,
+    log.steps,
+    log.sleep_score,
+    log.water_liters || log.water_3l,
+    log.omega_3,
+    log.wake_time,
+    log.phone_off_time,
+    log.one_win,
+    log.one_struggle,
+  ].filter(Boolean).length;
+  return `${baseCount + customCount} filled`;
+}
+
+function ClientPhoto({ label, src }: { label: string; src?: string | null }) {
+  if (!src) return null;
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" className="overflow-hidden rounded-xl border border-[#e6eae8] bg-white no-underline">
+      <img src={src} alt={`${label} body photo`} className="aspect-square w-full object-cover" />
+      <div className="px-2 py-1 text-center text-xs font-bold text-[#6b7a77]">{label}</div>
+    </a>
+  );
+}
+
+function CustomValue({ label, value }: { label: string; value: unknown }) {
+  const isImage = typeof value === "string" && /^https?:\/\//.test(value) && /\.(png|jpe?g|webp|gif)(\?|$)/i.test(value);
+  return (
+    <div className="rounded-lg bg-white p-2">
+      <span className="block text-[0.66rem] font-bold uppercase tracking-wide text-[#9aa8a4]">
+        {label.replace(/[_-]+/g, " ")}
+      </span>
+      {isImage ? (
+        <a href={value} target="_blank" rel="noopener noreferrer" className="mt-1 block overflow-hidden rounded-lg">
+          <img src={value} alt={label} className="h-24 w-full object-cover" />
+        </a>
+      ) : (
+        <strong className="mt-0.5 block break-words text-sm text-[#1c2b29]">
+          {value === true ? "Done" : value === false || value === null || value === undefined || value === "" ? "—" : String(value)}
+        </strong>
+      )}
     </div>
   );
 }

@@ -34,7 +34,6 @@ interface WorkoutClientProps {
   targetUserId: string;
   isAdminViewing: boolean;
   clientQuery: string;
-  today: string;
   workout: any;
   exercises: Exercise[];
   allLibraryExercises: LibraryExercise[];
@@ -45,7 +44,6 @@ export default function WorkoutClient({
   targetUserId,
   isAdminViewing,
   clientQuery,
-  today,
   workout,
   exercises: initialExercises,
   allLibraryExercises,
@@ -149,7 +147,7 @@ export default function WorkoutClient({
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.5);
-    } catch (e) {
+    } catch {
       // Web Audio API blocked or not supported
     }
   };
@@ -267,7 +265,7 @@ export default function WorkoutClient({
       } else {
         alert("Failed to swap exercise.");
       }
-    } catch (e) {
+    } catch {
       alert("Network error swapping exercise.");
     } finally {
       setSwapping(false);
@@ -313,7 +311,7 @@ export default function WorkoutClient({
         const data = await res.json();
         alert(data.error || 'Failed to save workout.');
       }
-    } catch (err) {
+    } catch {
       alert('Network error saving workout.');
     } finally {
       setSaving(false);
@@ -333,6 +331,43 @@ export default function WorkoutClient({
   };
 
   const prevLogs = currentEx ? getPrevLogs(currentEx.exercise_name) : null;
+
+  if (!workout || workoutExercises.length === 0) {
+    return (
+      <div className="app-page">
+        <div className="app-container">
+          <div className="card" style={{ borderRadius: '24px', padding: '1.5rem', textAlign: 'center' }}>
+            <div style={{ display: 'inline-grid', placeItems: 'center', width: 56, height: 56, borderRadius: 18, background: '#fff4ee', color: '#ff6b35', marginBottom: '1rem' }}>
+              <i className="ph ph-barbell" style={{ fontSize: '1.8rem' }} />
+            </div>
+            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#1c2b29' }}>
+              Workout မထည့်ရသေးပါ
+            </h2>
+            <p style={{ margin: '0.7rem 0 1.2rem', color: '#6b7a77', fontWeight: 600, lineHeight: 1.5 }}>
+              ဒီ split အတွက် exercise တွေကို coach/admin ဘက်က ထည့်ပေးပြီးမှ ဒီနေရာမှာ လေ့ကျင့်ခန်း log ဖြည့်လို့ရပါမယ်။
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push(`/user/dashboard${clientQuery}`)}
+              style={{
+                width: '100%',
+                border: 'none',
+                borderRadius: '14px',
+                background: '#1c2b29',
+                color: '#fff',
+                padding: '0.85rem',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+              }}
+            >
+              Dashboard ပြန်သွားမယ်
+            </button>
+          </div>
+        </div>
+        <BottomNav active="home" clientQuery={clientQuery} />
+      </div>
+    );
+  }
 
   return (
     <div className="app-page">
@@ -430,79 +465,78 @@ export default function WorkoutClient({
                 Target: {currentEx.target_sets} Sets x {currentEx.target_reps} Reps
               </div>
 
-              {/* Interactive Sets Table */}
-              <div style={{ width: '100%', overflowX: 'auto', marginBottom: '1.5rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #e6eae8' }}>
-                      <th style={{ padding: '0.5rem 0.2rem', fontSize: '0.72rem', color: '#83928f', fontWeight: 800 }}>SET</th>
-                      <th style={{ padding: '0.5rem 0.2rem', fontSize: '0.72rem', color: '#83928f', fontWeight: 800 }}>PREVIOUS</th>
-                      <th style={{ padding: '0.5rem 0.2rem', fontSize: '0.72rem', color: '#83928f', fontWeight: 800 }}>WEIGHT (KG)</th>
-                      <th style={{ padding: '0.5rem 0.2rem', fontSize: '0.72rem', color: '#83928f', fontWeight: 800 }}>REPS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.from({ length: currentEx.setCount }).map((_, setIdx) => {
-                      const prevWeight = prevLogs?.wArr[setIdx] || '';
-                      const prevRep = prevLogs?.rArr[setIdx] || '';
-                      const prevText = prevWeight && prevRep ? `${prevWeight}kg x ${prevRep}` : '—';
+              {/* Set inputs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <p style={{ margin: 0, color: '#6b7a77', fontSize: '0.84rem', fontWeight: 700, lineHeight: 1.45 }}>
+                  Set တစ်ခုချင်းစီမှာ သုံးခဲ့တဲ့ kg နဲ့ reps ကိုပဲ ဖြည့်ပါ။ မလုပ်ဖြစ်တဲ့ set ကိုချန်ထားလို့ရပါတယ်။
+                </p>
+                {Array.from({ length: currentEx.setCount }).map((_, setIdx) => {
+                  const prevWeight = prevLogs?.wArr[setIdx] || '';
+                  const prevRep = prevLogs?.rArr[setIdx] || '';
+                  const prevText = prevWeight && prevRep ? `ယခင်: ${prevWeight}kg x ${prevRep}` : 'ယခင် log မရှိသေးပါ';
 
-                      return (
-                        <tr key={setIdx} style={{ borderBottom: '1px solid #f5f7f5' }}>
-                          {/* Set number */}
-                          <td style={{ padding: '0.8rem 0.2rem', fontWeight: 800, fontSize: '0.9rem', color: '#1c2b29' }}>
-                            {setIdx + 1}
-                          </td>
-                          {/* Previous performance */}
-                          <td style={{ padding: '0.8rem 0.2rem', fontSize: '0.8rem', color: '#83928f', fontWeight: 600 }}>
-                            {prevText}
-                          </td>
-                          {/* Weight input */}
-                          <td style={{ padding: '0.5rem 0.2rem' }}>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="0.0"
-                              value={currentEx.weights[setIdx] || ''}
-                              onChange={(e) => handleSetValChange(activeIndex, setIdx, 'weights', e.target.value)}
-                              style={{
-                                width: '70px',
-                                background: '#f5f7f5',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '8px',
-                                padding: '0.4rem',
-                                color: '#1c2b29',
-                                textAlign: 'center',
-                                fontWeight: 700,
-                                fontSize: '0.9rem',
-                              }}
-                            />
-                          </td>
-                          {/* Reps input */}
-                          <td style={{ padding: '0.5rem 0.2rem' }}>
-                            <input
-                              type="number"
-                              placeholder="0"
-                              value={currentEx.reps[setIdx] || ''}
-                              onChange={(e) => handleSetValChange(activeIndex, setIdx, 'reps', e.target.value)}
-                              style={{
-                                width: '55px',
-                                background: '#f5f7f5',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '8px',
-                                padding: '0.4rem',
-                                color: '#1c2b29',
-                                textAlign: 'center',
-                                fontWeight: 700,
-                                fontSize: '0.9rem',
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                  return (
+                    <div
+                      key={setIdx}
+                      style={{
+                        border: '1px solid #e6eae8',
+                        borderRadius: '16px',
+                        background: '#f8faf9',
+                        padding: '0.8rem',
+                        display: 'grid',
+                        gridTemplateColumns: '72px 1fr 1fr',
+                        gap: '0.6rem',
+                        alignItems: 'end',
+                      }}
+                    >
+                      <div>
+                        <strong style={{ display: 'block', color: '#1c2b29', fontSize: '0.95rem' }}>Set {setIdx + 1}</strong>
+                        <span style={{ color: '#83928f', fontSize: '0.68rem', fontWeight: 700 }}>{prevText}</span>
+                      </div>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.68rem', fontWeight: 800, color: '#83928f' }}>
+                        Weight kg
+                        <input
+                          type="number"
+                          step="any"
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={currentEx.weights[setIdx] || ''}
+                          onChange={(e) => handleSetValChange(activeIndex, setIdx, 'weights', e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '10px',
+                            padding: '0.55rem',
+                            color: '#1c2b29',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                          }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.68rem', fontWeight: 800, color: '#83928f' }}>
+                        Reps
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={currentEx.reps[setIdx] || ''}
+                          onChange={(e) => handleSetValChange(activeIndex, setIdx, 'reps', e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '10px',
+                            padding: '0.55rem',
+                            color: '#1c2b29',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                          }}
+                        />
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Add set button */}

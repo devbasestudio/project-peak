@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       targetUserId = body.userId;
     }
 
-    if (!height || !weight || !age || !bodyFat) {
+    if (!height || !weight || !age) {
       return NextResponse.json({ error: 'အချက်အလက်အားလုံး ပြည့်စုံစွာ ဖြည့်သွင်းပေးပါ' }, { status: 400 });
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         height_cm: parseFloat(height),
         starting_weight: parseFloat(weight),
         age: parseInt(age, 10),
-        body_fat_percent: parseInt(bodyFat, 10),
+        body_fat_percent: bodyFat ? parseInt(bodyFat, 10) : null,
         desired_body_text: desiredBodyText || '',
       }, { onConflict: 'user_id' });
 

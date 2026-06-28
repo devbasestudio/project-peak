@@ -206,9 +206,7 @@ export default function MiniAppClient() {
           return;
         }
         if (payload.status === "ready" && payload.actionLink) {
-          window.setTimeout(() => {
-            window.location.replace(payload.actionLink);
-          }, 700);
+          window.location.replace(payload.actionLink);
         }
       } catch (err) {
         if (!disposed) {

@@ -1,10 +1,22 @@
 import { decrypt } from '@/lib/session';
 import { query } from '@/lib/db';
 import { resolveUserRouteTarget } from '@/lib/adminView';
+import { defaultTrackerTemplate } from '@/lib/projectPeakConfig';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export const dynamic = 'force-dynamic';
+
+function previousDateString(dateString: string) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() - 1);
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, '0');
+  const nextDay = String(date.getDate()).padStart(2, '0');
+  return `${nextYear}-${nextMonth}-${nextDay}`;
+}
 
 export default async function DashboardPage(props: {
   searchParams: Promise<{ client_id?: string; tab?: string }>;
@@ -38,6 +50,14 @@ export default async function DashboardPage(props: {
     [targetUserId]
   );
   const profile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+  const supabase = createAdminClient();
+  const { data: customTrackerTemplate } = await supabase
+    .from("custom_tracker_templates")
+    .select("sections")
+    .eq("user_id", targetUserId)
+    .eq("active", true)
+    .maybeSingle();
 
   // Get program details
   const programs = await query('SELECT * FROM programs WHERE user_id = ?', [targetUserId]);
@@ -116,10 +136,15 @@ export default async function DashboardPage(props: {
 
   const activeDates = new Set<string>();
   allTrackers.forEach((t: any) => {
-    const hasActivity = t.body_weight !== null || t.steps !== null || t.water_3l || t.omega_3 || t.bed_phone_filter || t.toilet;
+    const trackerValues = t.tracker_values && typeof t.tracker_values === "object" ? t.tracker_values : {};
+    const hasCustomActivity = Object.values(trackerValues).some((value) => {
+      if (value === null || value === undefined || value === false) return false;
+      if (typeof value === "string") return value.trim().length > 0;
+      return true;
+    });
+    const hasActivity = t.body_weight !== null || t.steps !== null || t.water_3l || t.omega_3 || t.bed_phone_filter || t.toilet || hasCustomActivity;
     if (hasActivity) {
-      // Format date part safely
-      const dStr = new Date(t.date).toISOString().split('T')[0];
+      const dStr = typeof t.date === "string" ? t.date.split("T")[0] : new Date(t.date).toISOString().split('T')[0];
       activeDates.add(dStr);
     }
   });
@@ -129,15 +154,13 @@ export default async function DashboardPage(props: {
   if (activeDates.has(checkDateStr)) {
     while (activeDates.has(checkDateStr)) {
       streak++;
-      const nextDate = new Date(new Date(checkDateStr).getTime() - 86400000);
-      checkDateStr = new Date(nextDate.getTime() - tzOffset).toISOString().split('T')[0];
+      checkDateStr = previousDateString(checkDateStr);
     }
   } else {
     checkDateStr = yesterdayStr;
     while (activeDates.has(checkDateStr)) {
       streak++;
-      const nextDate = new Date(new Date(checkDateStr).getTime() - 86400000);
-      checkDateStr = new Date(nextDate.getTime() - tzOffset).toISOString().split('T')[0];
+      checkDateStr = previousDateString(checkDateStr);
     }
   }
 
@@ -179,6 +202,7 @@ export default async function DashboardPage(props: {
       consumedFat={Math.round(consumedFat)}
       streak={streak}
       initialTab={searchParams.tab}
+      trackerSections={Array.isArray(customTrackerTemplate?.sections) ? customTrackerTemplate.sections : defaultTrackerTemplate}
     />
   );
 }

@@ -11,8 +11,8 @@ interface BottomNavProps {
 
 const items: { key: NavKey; href: string; icon: string; label: string }[] = [
   { key: "home", href: "/user/dashboard", icon: "ph-house", label: "Home" },
-  { key: "progress", href: "/user/daily-log", icon: "ph-chart-line-up", label: "Progress" },
-  { key: "feedback", href: "/user/check-in", icon: "ph-chat-circle-text", label: "Feedback" },
+  { key: "progress", href: "/user/dashboard?tab=progress", icon: "ph-chart-line-up", label: "Progress" },
+  { key: "feedback", href: "/user/dashboard?tab=feedback", icon: "ph-chat-circle-text", label: "Feedback" },
   { key: "me", href: "/user/dashboard?tab=me", icon: "ph-user", label: "Me" },
 ];
 
@@ -30,7 +30,7 @@ export function BottomNav({ active, clientQuery = "" }: BottomNavProps) {
                   ? `${item.href}${item.href.includes("?") ? "&" : "?"}${clientQuery.replace(/^\?/, "")}`
                   : item.href
               }
-              className={`relative flex flex-col items-center gap-[0.15rem] rounded-xl px-2 py-[0.3rem] no-underline transition-all ${
+              className={`relative flex flex-col items-center gap-[0.15rem] rounded-xl px-2 py-[0.3rem] no-underline transition-all active:scale-95 ${
                 isActive ? "text-[#1c2b29]" : "text-[#83928f]"
               }`}
             >

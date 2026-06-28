@@ -120,7 +120,8 @@ ALTER TABLE IF EXISTS public.daily_trackers
   ADD COLUMN IF NOT EXISTS phone_off_time text,
   ADD COLUMN IF NOT EXISTS water_liters numeric(4,1),
   ADD COLUMN IF NOT EXISTS one_win text,
-  ADD COLUMN IF NOT EXISTS one_struggle text;
+  ADD COLUMN IF NOT EXISTS one_struggle text,
+  ADD COLUMN IF NOT EXISTS tracker_values jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE public.program_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.custom_tracker_templates ENABLE ROW LEVEL SECURITY;

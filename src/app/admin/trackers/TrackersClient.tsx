@@ -23,6 +23,20 @@ const defaultIconByType: Record<TrackerFieldType, string> = {
   text: "ph-note-pencil",
   time: "ph-clock",
 };
+const iconOptions = [
+  { label: "Check", value: "ph-check-square" },
+  { label: "Target", value: "ph-target" },
+  { label: "Note", value: "ph-note-pencil" },
+  { label: "Camera", value: "ph-camera" },
+  { label: "Meal", value: "ph-fork-knife" },
+  { label: "Workout", value: "ph-barbell" },
+  { label: "Water", value: "ph-drop" },
+  { label: "Sleep", value: "ph-moon" },
+  { label: "Time", value: "ph-clock" },
+  { label: "Steps", value: "ph-person-simple-walk" },
+  { label: "Win", value: "ph-trend-up" },
+  { label: "Warning", value: "ph-warning-circle" },
+];
 
 function cloneSections(sections: TrackerSection[]) {
   return JSON.parse(JSON.stringify(sections)) as TrackerSection[];
@@ -237,6 +251,20 @@ export default function TrackersClient({
                             </option>
                           ))}
                         </select>
+                        {!field.fixed && (
+                          <select
+                            className={`${inputClass} py-2`}
+                            value={field.icon || defaultIconByType[field.type]}
+                            onChange={(e) => updateField(sectionIndex, fieldIndex, { icon: e.target.value })}
+                            aria-label={`${field.label} icon`}
+                          >
+                            {iconOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                       {field.type === "select" && (
                         <input

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import type { TrackerField, TrackerSection } from "@/lib/projectPeakConfig";
 
 interface DashboardClientProps {
   username: string;
@@ -26,9 +27,11 @@ interface DashboardClientProps {
   consumedFat: number;
   streak: number;
   initialTab?: string;
+  trackerSections: TrackerSection[];
 }
 
 type ActiveTab = "logs" | "progress" | "feedback" | "me";
+type TrackerValue = string | number | boolean | null;
 
 const SLEEP_SCORES: Record<string, number> = { Poor: 1, Light: 2, OK: 3, Deep: 4 };
 const SCORE_TO_SLEEP: Record<number, string> = { 1: "Poor", 2: "Light", 3: "OK", 4: "Deep" };
@@ -67,6 +70,7 @@ export default function DashboardClient({
   consumedFat,
   streak,
   initialTab,
+  trackerSections,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>(
     initialTab === "progress" || initialTab === "feedback" || initialTab === "me" ? initialTab : "logs",
@@ -87,7 +91,13 @@ export default function DashboardClient({
   const [upAt, setUpAt] = useState<string>(todayLog?.wake_time || "");
   const [phoneOff, setPhoneOff] = useState<string>(todayLog?.phone_off_time || "");
   const [omegaTaken, setOmegaTaken] = useState(Boolean(todayLog?.omega_3));
+  const [oneWin, setOneWin] = useState<string>(todayLog?.one_win || "");
+  const [oneStruggle, setOneStruggle] = useState<string>(todayLog?.one_struggle || "");
+  const [trackerValues, setTrackerValues] = useState<Record<string, TrackerValue>>(() =>
+    todayLog?.tracker_values && typeof todayLog.tracker_values === "object" ? todayLog.tracker_values : {},
+  );
   const [saving, setSaving] = useState(false);
+  const [pendingAction, setPendingAction] = useState("");
   const [homePrompt, setHomePrompt] = useState(true);
   const [deviceMessage, setDeviceMessage] = useState("");
 
@@ -95,7 +105,8 @@ export default function DashboardClient({
   const hasWeight = Number.isFinite(weight) && weight > 0;
   const bodyWeight = hasWeight ? Math.round(weight * 10) / 10 : null;
   const weekLabel = program?.duration_weeks ? `${program.duration_weeks}-week program` : "Your program";
-  const workoutName = schedule?.is_rest ? "Recovery Day" : schedule?.split_name || "No split set";
+  const hasWorkoutSplit = Boolean(schedule?.split_name && !schedule?.is_rest);
+  const workoutName = schedule?.is_rest ? "Recovery Day" : schedule?.split_name || "Workout not set";
   const mealTarget = Math.max(totalMealsCount || 0, 0);
   const adherence = mealTarget > 0 ? Math.round((eatenMealsCount / mealTarget) * 100) : 0;
 
@@ -125,8 +136,9 @@ export default function DashboardClient({
       .catch(() => null);
   }, []);
 
-  async function saveDaily(extra?: Record<string, unknown>) {
+  async function saveDaily(extra?: Record<string, unknown>, actionId = "daily") {
     setSaving(true);
+    setPendingAction(actionId);
     try {
       await fetch("/api/user/save-daily", {
         method: "POST",
@@ -137,16 +149,21 @@ export default function DashboardClient({
           bodyWeight,
           steps,
           sleepScore: sleep ? SLEEP_SCORES[sleep] : null,
+          wakeTime: upAt || null,
           water3l: water >= 3,
           waterLiters: water,
           phoneOffTime: phoneOff || null,
           omega3: omegaTaken,
+          oneWin: oneWin || null,
+          oneStruggle: oneStruggle || null,
+          trackerValues,
           bedPhoneFilter: true,
           ...extra,
         }),
       });
     } finally {
       setSaving(false);
+      setPendingAction("");
     }
   }
 
@@ -165,6 +182,210 @@ export default function DashboardClient({
       const next = Math.max(0, Math.round((base + delta) * 10) / 10);
       return next > 0 ? next.toFixed(1) : "";
     });
+  }
+
+  function saveTrackerValue(fieldId: string, value: TrackerValue) {
+    const nextValues = { ...trackerValues, [fieldId]: value };
+    setTrackerValues(nextValues);
+    saveDaily({ trackerValues: nextValues }, fieldId);
+  }
+
+  function trackerValue(field: TrackerField) {
+    return trackerValues[field.id] ?? (field.type === "checkbox" ? false : field.type === "counter" || field.type === "number" ? "" : "");
+  }
+
+  function renderTrackerControl(field: TrackerField) {
+    if (field.id === "weight") {
+      return (
+        <div className="flex items-center gap-2">
+          <StepBtn icon="ph-minus" disabled={saving} onClick={() => stepWeight(-0.1)} />
+          <label className="flex min-w-[82px] items-center justify-center gap-1 rounded-lg border border-[#d8dedb] bg-white px-2 py-1">
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.1"
+              value={weightInput}
+              onChange={(e) => updateWeightInput(e.target.value)}
+              placeholder="—"
+              aria-label="Weight in kg"
+              className="w-12 bg-transparent text-center text-lg font-extrabold text-[#1c2b29] outline-none"
+            />
+            <span className="text-xs font-semibold text-[#9aa8a4]">kg</span>
+          </label>
+          <StepBtn icon="ph-plus" disabled={saving} onClick={() => stepWeight(0.1)} />
+          <ActionButton busy={pendingAction === "weight"} onClick={() => saveDaily({}, "weight")}>
+            Log
+          </ActionButton>
+        </div>
+      );
+    }
+
+    if (field.id === "up_at") {
+      return (
+        <Choices
+          options={field.options?.length ? field.options : ["5:30", "6:00", "6:30", "7:00"]}
+          value={upAt}
+          onSelect={(v) => {
+            setUpAt(v);
+            saveDaily({ wakeTime: v }, field.id);
+          }}
+        />
+      );
+    }
+
+    if (field.id === "sleep") {
+      return (
+        <Choices
+          options={field.options?.length ? field.options : ["Poor", "Light", "OK", "Deep"]}
+          value={sleep}
+          onSelect={(v) => {
+            setSleep(v);
+            saveDaily({ sleepScore: SLEEP_SCORES[v] || null }, field.id);
+          }}
+        />
+      );
+    }
+
+    if (field.id === "workout") {
+      if (schedule?.is_rest) return <span className="rounded-lg bg-[#eef2f0] px-3 py-1.5 text-xs font-bold text-[#6b7a77]">Rest</span>;
+      if (!hasWorkoutSplit) return <span className="rounded-lg bg-[#fff7e8] px-3 py-1.5 text-xs font-bold text-[#9a5a12]">Not set</span>;
+      return (
+        <a
+          href={`/user/workout${clientQuery}`}
+          className="rounded-lg bg-[#1c2b29] px-3 py-1.5 text-xs font-bold text-white no-underline transition active:scale-95"
+        >
+          Start
+        </a>
+      );
+    }
+
+    if (field.id === "steps") {
+      return (
+        <input
+          type="number"
+          value={steps || ""}
+          placeholder="0"
+          onChange={(e) => setSteps(Number(e.target.value) || 0)}
+          onBlur={() => saveDaily({}, field.id)}
+          className="w-24 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
+        />
+      );
+    }
+
+    if (field.id === "phone_off") {
+      return (
+        <Choices
+          options={field.options?.length ? field.options : ["21:30", "22:00", "22:30", "23:00"]}
+          value={phoneOff}
+          onSelect={(v) => {
+            setPhoneOff(v);
+            saveDaily({ phoneOffTime: v }, field.id);
+          }}
+        />
+      );
+    }
+
+    if (field.id === "water") {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold">{water.toFixed(1)} / 3 L</span>
+          <StepBtn
+            icon="ph-plus"
+            disabled={saving}
+            onClick={() => {
+              const next = Math.min(3, Math.round((water + 0.5) * 10) / 10);
+              setWater(next);
+              saveDaily({ water3l: next >= 3, waterLiters: next }, field.id);
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (field.id === "omega_3") {
+      return (
+        <ToggleButton
+          active={omegaTaken}
+          busy={pendingAction === field.id}
+          onClick={() => {
+            const next = !omegaTaken;
+            setOmegaTaken(next);
+            saveDaily({ omega3: next }, field.id);
+          }}
+        >
+          {omegaTaken ? "Taken" : "Tap when taken"}
+        </ToggleButton>
+      );
+    }
+
+    if (field.id === "one_win" || field.id === "one_struggle") {
+      const value = field.id === "one_win" ? oneWin : oneStruggle;
+      const setValue = field.id === "one_win" ? setOneWin : setOneStruggle;
+      return (
+        <input
+          value={value}
+          placeholder="tap to write"
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => saveDaily(field.id === "one_win" ? { oneWin: value } : { oneStruggle: value }, field.id)}
+          className="w-32 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
+        />
+      );
+    }
+
+    if (field.type === "checkbox") {
+      const checked = Boolean(trackerValue(field));
+      return (
+        <ToggleButton active={checked} busy={pendingAction === field.id} onClick={() => saveTrackerValue(field.id, !checked)}>
+          {checked ? "Done" : "Tap"}
+        </ToggleButton>
+      );
+    }
+
+    if (field.type === "select") {
+      return (
+        <Choices
+          options={field.options?.length ? field.options : ["Poor", "OK", "Great"]}
+          value={String(trackerValue(field) || "")}
+          onSelect={(value) => saveTrackerValue(field.id, value)}
+        />
+      );
+    }
+
+    if (field.type === "time") {
+      return (
+        <input
+          type="time"
+          value={String(trackerValue(field) || "")}
+          onChange={(e) => setTrackerValues((current) => ({ ...current, [field.id]: e.target.value }))}
+          onBlur={(e) => saveTrackerValue(field.id, e.target.value)}
+          className="w-28 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
+        />
+      );
+    }
+
+    if (field.type === "number" || field.type === "counter") {
+      return (
+        <input
+          type="number"
+          value={String(trackerValue(field) || "")}
+          placeholder="0"
+          onChange={(e) => setTrackerValues((current) => ({ ...current, [field.id]: e.target.value }))}
+          onBlur={(e) => saveTrackerValue(field.id, e.target.value === "" ? null : Number(e.target.value))}
+          className="w-24 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
+        />
+      );
+    }
+
+    return (
+      <input
+        value={String(trackerValue(field) || "")}
+        placeholder="tap to write"
+        onChange={(e) => setTrackerValues((current) => ({ ...current, [field.id]: e.target.value }))}
+        onBlur={(e) => saveTrackerValue(field.id, e.target.value)}
+        className="w-32 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
+      />
+    );
   }
 
   return (
@@ -191,141 +412,15 @@ export default function DashboardClient({
 
         {activeTab === "logs" && (
           <div className="mt-3 flex flex-col gap-4">
-            {/* Morning */}
-            <Section icon="ph-sun" title="Morning">
-              <Row icon="ph-scales" label="Weight">
-                <div className="flex items-center gap-2">
-                  <StepBtn
-                    icon="ph-minus"
-                    onClick={() => stepWeight(-0.1)}
-                  />
-                  <label className="flex min-w-[82px] items-center justify-center gap-1 rounded-lg border border-[#d8dedb] bg-white px-2 py-1">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.1"
-                      value={weightInput}
-                      onChange={(e) => updateWeightInput(e.target.value)}
-                      placeholder="—"
-                      aria-label="Weight in kg"
-                      className="w-12 bg-transparent text-center text-lg font-extrabold text-[#1c2b29] outline-none"
-                    />
-                    <span className="text-xs font-semibold text-[#9aa8a4]">kg</span>
-                  </label>
-                  <StepBtn
-                    icon="ph-plus"
-                    onClick={() => stepWeight(0.1)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => saveDaily()}
-                    className="rounded-lg bg-[#1c2b29] px-3 py-1.5 text-xs font-bold text-white"
-                  >
-                    Log
-                  </button>
-                </div>
-              </Row>
-              <Row icon="ph-clock" label="Up at">
-                <Choices
-                  options={["5:30", "6:00", "6:30", "7:00"]}
-                  value={upAt}
-                  onSelect={(v) => {
-                    setUpAt(v);
-                    saveDaily({ wakeTime: v });
-                  }}
-                />
-              </Row>
-              <Row icon="ph-moon" label="Sleep">
-                <Choices
-                  options={["Poor", "Light", "OK", "Deep"]}
-                  value={sleep}
-                  onSelect={(v) => {
-                    setSleep(v);
-                    saveDaily({ sleepScore: SLEEP_SCORES[v] });
-                  }}
-                />
-              </Row>
-            </Section>
-
-            {/* Mid-day */}
-            <Section icon="ph-mountains" title="Mid-day">
-              <Row icon="ph-barbell" label={workoutName}>
-                <a
-                  href={`/user/workout${clientQuery}`}
-                  className="rounded-lg bg-[#eef2f0] px-3 py-1.5 text-xs font-bold text-[#1c2b29] no-underline"
-                >
-                  {schedule?.is_rest ? "Rest" : "Start"}
-                </a>
-              </Row>
-              <Row icon="ph-fork-knife" label="Meals">
-                <a
-                  href={`/user/diet${clientQuery}`}
-                  className="flex items-center gap-2 no-underline text-[#1c2b29]"
-                >
-                  <span className="text-xs font-semibold text-[#6b7a77]">
-                    {eatenMealsCount}/{mealTarget || "—"} · {consumedCalories} kcal
-                  </span>
-                  <i className="ph ph-caret-right text-sm text-[#b6c1bd]" />
-                </a>
-              </Row>
-            </Section>
-
-            {/* Night */}
-            <Section icon="ph-moon" title="Night">
-              <Row icon="ph-person-simple-walk" label="Steps">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={steps || ""}
-                    placeholder="0"
-                    onChange={(e) => setSteps(Number(e.target.value) || 0)}
-                    onBlur={() => saveDaily()}
-                    className="w-24 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
-                  />
-                </div>
-              </Row>
-              <Row icon="ph-device-mobile-slash" label="Phone off">
-                <Choices
-                  options={["21:30", "22:00", "22:30", "23:00"]}
-                  value={phoneOff}
-                  onSelect={(v) => {
-                    setPhoneOff(v);
-                    saveDaily({ phoneOffTime: v });
-                  }}
-                />
-              </Row>
-              <Row icon="ph-drop" label="Water">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold">{water.toFixed(1)} / 3 L</span>
-                  <StepBtn
-                    icon="ph-plus"
-                    onClick={() => {
-                      const next = Math.min(3, Math.round((water + 0.5) * 10) / 10);
-                      setWater(next);
-                      saveDaily({ water3l: next >= 3, waterLiters: next });
-                    }}
-                  />
-                </div>
-              </Row>
-              <Row icon="ph-pill" label="Omega 3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !omegaTaken;
-                    setOmegaTaken(next);
-                    saveDaily({ omega3: next });
-                  }}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    omegaTaken
-                      ? "bg-[#1c2b29] text-white"
-                      : "bg-[#eef2f0] text-[#6b7a77]"
-                  }`}
-                >
-                  {omegaTaken ? "Taken" : "Tap when taken"}
-                </button>
-              </Row>
-            </Section>
+            {trackerSections.map((section) => (
+              <Section key={section.title} icon={section.icon} title={section.title}>
+                {section.fields.map((field) => (
+                  <Row key={field.id} icon={field.icon} label={field.id === "workout" ? workoutName : field.label}>
+                    {renderTrackerControl(field)}
+                  </Row>
+                ))}
+              </Section>
+            ))}
           </div>
         )}
 
@@ -508,14 +603,55 @@ function Row({ icon, label, children }: { icon: string; label: string; children:
   );
 }
 
-function StepBtn({ icon, onClick }: { icon: string; onClick: () => void }) {
+function StepBtn({ icon, onClick, disabled }: { icon: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="grid h-8 w-8 place-items-center rounded-lg bg-[#eef2f0] text-[#1c2b29]"
+      disabled={disabled}
+      className="grid h-8 w-8 place-items-center rounded-lg bg-[#eef2f0] text-[#1c2b29] transition active:scale-90 disabled:opacity-50"
     >
       <i className={`ph ${icon} text-base`} />
+    </button>
+  );
+}
+
+function ActionButton({ children, busy, onClick }: { children: ReactNode; busy?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#1c2b29] px-3 py-1.5 text-xs font-bold text-white transition active:scale-95 disabled:opacity-70"
+    >
+      {busy && <i className="ph ph-spinner animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+function ToggleButton({
+  active,
+  busy,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  busy?: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition active:scale-95 disabled:opacity-70 ${
+        active ? "bg-[#1c2b29] text-white" : "bg-[#eef2f0] text-[#6b7a77]"
+      }`}
+    >
+      {busy && <i className="ph ph-spinner animate-spin" />}
+      {children}
     </button>
   );
 }
@@ -536,7 +672,7 @@ function Choices({
           key={opt}
           type="button"
           onClick={() => onSelect(opt)}
-          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition active:scale-95 ${
             value === opt ? "bg-[#1c2b29] text-white" : "bg-[#eef2f0] text-[#6b7a77]"
           }`}
         >

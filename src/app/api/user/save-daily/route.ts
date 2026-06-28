@@ -19,10 +19,12 @@ export async function POST(request: Request) {
       dietStatus,
       satisfiedWith,
       difficultWith,
+      wakeTime,
       phoneOffTime,
       waterLiters,
       oneWin,
       oneStruggle,
+      trackerValues,
     } = body;
 
     const authClient = await createClient();
@@ -87,17 +89,35 @@ export async function POST(request: Request) {
     if (trackerError) throw trackerError;
 
     const optionalTrackerFields: Record<string, unknown> = {};
+    if (wakeTime !== undefined) optionalTrackerFields.wake_time = wakeTime || null;
     if (phoneOffTime !== undefined) optionalTrackerFields.phone_off_time = phoneOffTime || null;
     if (waterLiters !== undefined) optionalTrackerFields.water_liters = waterLiters || null;
     if (oneWin !== undefined) optionalTrackerFields.one_win = oneWin || null;
     if (oneStruggle !== undefined) optionalTrackerFields.one_struggle = oneStruggle || null;
+    const shouldSaveTrackerValues = trackerValues !== undefined && trackerValues && typeof trackerValues === 'object' && !Array.isArray(trackerValues);
 
     if (Object.keys(optionalTrackerFields).length > 0) {
-      await supabase
+      const { error: optionalTrackerError } = await supabase
         .from('daily_trackers')
         .update(optionalTrackerFields)
         .eq('user_id', userId)
         .eq('date', date);
+
+      if (optionalTrackerError) throw optionalTrackerError;
+    }
+
+    if (shouldSaveTrackerValues) {
+      const { error: trackerValuesError } = await supabase
+        .from('daily_trackers')
+        .update({ tracker_values: trackerValues })
+        .eq('user_id', userId)
+        .eq('date', date);
+
+      const missingTrackerValuesColumn =
+        trackerValuesError?.code === '42703'
+        || trackerValuesError?.code === 'PGRST204'
+        || String(trackerValuesError?.message || '').includes('tracker_values');
+      if (trackerValuesError && !missingTrackerValuesColumn) throw trackerValuesError;
     }
 
     // Upsert journaling

@@ -1,7 +1,7 @@
 import { decrypt } from '@/lib/session';
 import { query } from '@/lib/db';
 import { resolveUserRouteTarget } from '@/lib/adminView';
-import { defaultTrackerTemplate } from '@/lib/projectPeakConfig';
+import { defaultTrackerTemplate, type TrackerField, type TrackerSection } from '@/lib/projectPeakConfig';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 import { createAdminClient } from '@/utils/supabase/admin';
@@ -16,6 +16,44 @@ function previousDateString(dateString: string) {
   const nextMonth = String(date.getMonth() + 1).padStart(2, '0');
   const nextDay = String(date.getDate()).padStart(2, '0');
   return `${nextYear}-${nextMonth}-${nextDay}`;
+}
+
+const trackerFieldTypes = new Set(["number", "time", "select", "checkbox", "counter", "text", "photo"]);
+
+function normalizeTrackerSections(value: unknown): TrackerSection[] {
+  if (!Array.isArray(value)) return defaultTrackerTemplate;
+  const sections = value
+    .map((section) => {
+      if (!section || typeof section !== "object") return null;
+      const raw = section as Record<string, any>;
+      const defaultSection = defaultTrackerTemplate.find((item) => item.title === raw.title);
+      if (!defaultSection) return null;
+      const fields = Array.isArray(raw.fields) ? raw.fields : [];
+      return {
+        title: defaultSection.title,
+        icon: String(raw.icon || defaultSection.icon),
+        fields: fields
+          .map((field) => {
+            if (!field || typeof field !== "object") return null;
+            const item = field as Record<string, any>;
+            const label = String(item.label || "").trim();
+            const icon = String(item.icon || "").trim();
+            const type = (icon === "ph-camera" && String(item.type || "") === "checkbox" ? "photo" : String(item.type || "text")) as TrackerField["type"];
+            if (!label || !trackerFieldTypes.has(type)) return null;
+            return {
+              id: String(item.id || label.toLowerCase().replace(/[^a-z0-9]+/g, "_")),
+              label,
+              type,
+              icon: icon || (type === "photo" ? "ph-camera" : "ph-check-square"),
+              fixed: Boolean(item.fixed),
+              options: type === "select" && Array.isArray(item.options) ? item.options.map(String).filter(Boolean) : undefined,
+            } satisfies TrackerField;
+          })
+          .filter(Boolean) as TrackerField[],
+      } satisfies TrackerSection;
+    })
+    .filter(Boolean) as TrackerSection[];
+  return sections.length ? sections : defaultTrackerTemplate;
 }
 
 export default async function DashboardPage(props: {
@@ -202,7 +240,7 @@ export default async function DashboardPage(props: {
       consumedFat={Math.round(consumedFat)}
       streak={streak}
       initialTab={searchParams.tab}
-      trackerSections={Array.isArray(customTrackerTemplate?.sections) ? customTrackerTemplate.sections : defaultTrackerTemplate}
+      trackerSections={normalizeTrackerSections(customTrackerTemplate?.sections)}
     />
   );
 }

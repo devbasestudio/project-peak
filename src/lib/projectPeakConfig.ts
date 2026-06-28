@@ -44,7 +44,7 @@ export type IntakeField = {
 export type TrackerField = {
   id: string;
   label: string;
-  type: "number" | "time" | "select" | "checkbox" | "counter" | "text";
+  type: "number" | "time" | "select" | "checkbox" | "counter" | "text" | "photo";
   icon: string;
   fixed?: boolean;
   options?: string[];
@@ -142,9 +142,9 @@ export const defaultTrackerTemplate: TrackerSection[] = [
     fields: [
       { id: "workout", label: "Upper - Push", type: "checkbox", icon: "ph-barbell" },
       { id: "meal_1", label: "Meal 1", type: "checkbox", icon: "ph-check" },
-      { id: "meal_2", label: "Meal 2", type: "checkbox", icon: "ph-camera" },
-      { id: "meal_3", label: "Meal 3", type: "checkbox", icon: "ph-camera" },
-      { id: "meal_4", label: "Meal 4", type: "checkbox", icon: "ph-camera" },
+      { id: "meal_2", label: "Meal 2", type: "photo", icon: "ph-camera" },
+      { id: "meal_3", label: "Meal 3", type: "photo", icon: "ph-camera" },
+      { id: "meal_4", label: "Meal 4", type: "photo", icon: "ph-camera" },
     ],
   },
   {

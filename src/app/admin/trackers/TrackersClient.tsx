@@ -14,15 +14,25 @@ type ClientOption = { id: string; label: string };
 type SavedTrackerTemplate = { name: string; sections: unknown };
 type TrackerFieldType = TrackerField["type"];
 
-const fieldTypes: TrackerFieldType[] = ["number", "time", "select", "checkbox", "counter", "text"];
+const fieldTypes: TrackerFieldType[] = ["number", "time", "select", "checkbox", "counter", "text", "photo"];
 const defaultIconByType: Record<TrackerFieldType, string> = {
   checkbox: "ph-check-square",
   counter: "ph-plus-circle",
   number: "ph-hash",
+  photo: "ph-camera",
   select: "ph-list-checks",
   text: "ph-note-pencil",
   time: "ph-clock",
 };
+const typeOptions: Array<{ type: TrackerFieldType; icon: string; label: string }> = [
+  { type: "checkbox", icon: "ph-check-square", label: "Done" },
+  { type: "photo", icon: "ph-camera", label: "Photo" },
+  { type: "number", icon: "ph-hash", label: "Number" },
+  { type: "counter", icon: "ph-plus-circle", label: "Counter" },
+  { type: "time", icon: "ph-clock", label: "Time" },
+  { type: "select", icon: "ph-list-checks", label: "Choice" },
+  { type: "text", icon: "ph-note-pencil", label: "Text" },
+];
 const iconOptions = [
   { label: "Check", value: "ph-check-square" },
   { label: "Target", value: "ph-target" },
@@ -66,14 +76,15 @@ function normalizeSections(value: unknown) {
             if (!field || typeof field !== "object") return null;
             const item = field as Record<string, unknown>;
             const label = String(item.label || "").trim();
-            const type = String(item.type || "text");
+            const rawIcon = String(item.icon || "").trim();
+            const type = rawIcon === "ph-camera" && String(item.type || "") === "checkbox" ? "photo" : String(item.type || "text");
             if (!label || !isTrackerFieldType(type)) return null;
 
             return {
               id: String(item.id || `field_${crypto.randomUUID()}`).trim(),
               label,
               type,
-              icon: String(item.icon || defaultIconByType[type]).trim() || defaultIconByType[type],
+              icon: rawIcon || defaultIconByType[type],
               fixed: Boolean(item.fixed),
               options:
                 type === "select" && Array.isArray(item.options)
@@ -234,36 +245,59 @@ export default function TrackersClient({
                         </button>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                        <select
-                          className={`${inputClass} py-2 ${field.fixed ? "cursor-not-allowed bg-[#eef2f0] text-[#6b7a77]" : ""}`}
-                          disabled={field.fixed}
-                          value={field.type}
-                          onChange={(e) =>
-                            updateField(sectionIndex, fieldIndex, {
-                              type: e.target.value as TrackerFieldType,
-                            })
-                          }
-                          aria-label={`${field.label} field type`}
-                        >
-                          {fieldTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
+                        <div className="grid grid-cols-7 gap-1 rounded-xl border border-[#d8dedb] bg-white p-2">
+                          {typeOptions.map((option) => (
+                            <button
+                              key={option.type}
+                              type="button"
+                              disabled={field.fixed}
+                              title={option.label}
+                              onClick={() =>
+                                updateField(sectionIndex, fieldIndex, {
+                                  type: option.type,
+                                  icon:
+                                    option.type === "photo" || field.icon === defaultIconByType[field.type]
+                                      ? defaultIconByType[option.type]
+                                      : field.icon || defaultIconByType[option.type],
+                                })
+                              }
+                              className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
+                                field.type === option.type
+                                  ? "border-[#1c2b29] bg-[#1c2b29] text-white"
+                                  : field.fixed
+                                    ? "cursor-not-allowed border-[#e6eae8] bg-[#eef2f0] text-[#9aa8a4]"
+                                    : "border-[#e6eae8] bg-[#f6f8f7] text-[#5b6a67] hover:border-[#9aa8a4]"
+                              }`}
+                              aria-label={`${field.label} ${option.label} type`}
+                            >
+                              <i className={`ph ${option.icon} text-lg`} />
+                            </button>
                           ))}
-                        </select>
+                        </div>
                         {!field.fixed && (
-                          <select
-                            className={`${inputClass} py-2`}
-                            value={field.icon || defaultIconByType[field.type]}
-                            onChange={(e) => updateField(sectionIndex, fieldIndex, { icon: e.target.value })}
-                            aria-label={`${field.label} icon`}
-                          >
+                          <div className="grid grid-cols-6 gap-1 rounded-xl border border-[#d8dedb] bg-white p-2">
                             {iconOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
+                              <button
+                                key={option.value}
+                                type="button"
+                                title={option.label}
+                                onClick={() =>
+                                  updateField(sectionIndex, fieldIndex, {
+                                    icon: option.value,
+                                    ...(option.value === "ph-camera" ? { type: "photo" as TrackerFieldType } : {}),
+                                  })
+                                }
+                                className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
+                                  (field.icon || defaultIconByType[field.type]) === option.value
+                                    ? "border-[#1c2b29] bg-[#1c2b29] text-white"
+                                    : "border-[#e6eae8] bg-[#f6f8f7] text-[#5b6a67] hover:border-[#9aa8a4]"
+                                }`}
+                                aria-label={`${field.label} ${option.label} icon`}
+                              >
+                                <i className={`ph ${option.value} text-lg`} />
+                              </button>
                             ))}
-                          </select>
+                          </div>
                         )}
                       </div>
                       {field.type === "select" && (

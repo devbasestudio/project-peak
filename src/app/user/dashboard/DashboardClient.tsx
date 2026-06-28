@@ -190,6 +190,28 @@ export default function DashboardClient({
     saveDaily({ trackerValues: nextValues }, fieldId);
   }
 
+  async function uploadTrackerPhoto(fieldId: string, file?: File) {
+    if (!file) return;
+    setSaving(true);
+    setPendingAction(fieldId);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("userId", targetUserId);
+      const response = await fetch("/api/user/upload-tracker-photo", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Photo upload failed.");
+      saveTrackerValue(fieldId, payload.url);
+    } catch (err) {
+      setDeviceMessage(err instanceof Error ? err.message : "Photo upload failed.");
+      setSaving(false);
+      setPendingAction("");
+    }
+  }
+
   function trackerValue(field: TrackerField) {
     return trackerValues[field.id] ?? (field.type === "checkbox" ? false : field.type === "counter" || field.type === "number" ? "" : "");
   }
@@ -249,10 +271,10 @@ export default function DashboardClient({
 
     if (field.id === "workout") {
       if (schedule?.is_rest) return <span className="rounded-lg bg-[#eef2f0] px-3 py-1.5 text-xs font-bold text-[#6b7a77]">Rest</span>;
-      if (!hasWorkoutSplit) return <span className="rounded-lg bg-[#fff7e8] px-3 py-1.5 text-xs font-bold text-[#9a5a12]">Not set</span>;
+      const workoutHref = buildHref("/user/workout", { split: hasWorkoutSplit ? schedule?.split_name : field.label });
       return (
         <a
-          href={`/user/workout${clientQuery}`}
+          href={workoutHref}
           className="rounded-lg bg-[#1c2b29] px-3 py-1.5 text-xs font-bold text-white no-underline transition active:scale-95"
         >
           Start
@@ -364,6 +386,28 @@ export default function DashboardClient({
       );
     }
 
+    if (field.type === "photo") {
+      const value = String(trackerValue(field) || "");
+      return (
+        <label className="relative inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#eef2f0] px-3 py-1.5 text-xs font-bold text-[#1c2b29] transition active:scale-95">
+          {pendingAction === field.id ? (
+            <i className="ph ph-spinner animate-spin text-base" />
+          ) : value ? (
+            <img src={value} alt={field.label} className="h-7 w-7 rounded-md object-cover" />
+          ) : (
+            <i className="ph ph-camera text-base" />
+          )}
+          {value ? "Change" : "Upload"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="absolute inset-0 cursor-pointer opacity-0"
+            onChange={(e) => uploadTrackerPhoto(field.id, e.target.files?.[0])}
+          />
+        </label>
+      );
+    }
+
     if (field.type === "number" || field.type === "counter") {
       return (
         <input
@@ -386,6 +430,15 @@ export default function DashboardClient({
         className="w-32 rounded-lg border border-[#d8dedb] px-2 py-1 text-right text-sm font-bold outline-none focus:border-[#1c2b29]"
       />
     );
+  }
+
+  function buildHref(path: string, params: Record<string, string | undefined>) {
+    const searchParams = new URLSearchParams(clientQuery.replace(/^\?/, ""));
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) searchParams.set(key, value);
+    });
+    const query = searchParams.toString();
+    return query ? `${path}?${query}` : path;
   }
 
   return (

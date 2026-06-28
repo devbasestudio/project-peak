@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 import { defaultTrackerTemplate, type TrackerField } from "@/lib/projectPeakConfig";
 
-const TRACKER_FIELD_TYPES = new Set(["number", "time", "select", "checkbox", "counter", "text"]);
+const TRACKER_FIELD_TYPES = new Set(["number", "time", "select", "checkbox", "counter", "text", "photo"]);
 const TRACKER_SECTION_TITLES = new Set(["Morning", "Mid-day", "Night"]);
 const DEFAULT_ICON_BY_TYPE: Record<string, string> = {
   checkbox: "ph-check-square",
@@ -11,6 +11,7 @@ const DEFAULT_ICON_BY_TYPE: Record<string, string> = {
   select: "ph-list-checks",
   text: "ph-note-pencil",
   time: "ph-clock",
+  photo: "ph-camera",
 };
 
 function cleanId(value: unknown, fallback: string) {
@@ -38,14 +39,15 @@ function normalizeSections(value: unknown) {
           if (!field || typeof field !== "object") return null;
           const item = field as Record<string, unknown>;
           const label = String(item.label || "").trim();
-          const type = String(item.type || "text");
+          const icon = String(item.icon || "").trim();
+          const type = icon === "ph-camera" && String(item.type || "") === "checkbox" ? "photo" : String(item.type || "text");
           if (!label || !TRACKER_FIELD_TYPES.has(type)) return null;
 
           return {
             id: cleanId(item.id, `field_${sectionIndex}_${fieldIndex}`),
             label,
             type,
-            icon: String(item.icon || DEFAULT_ICON_BY_TYPE[type]).trim() || DEFAULT_ICON_BY_TYPE[type],
+            icon: icon || DEFAULT_ICON_BY_TYPE[type],
             fixed: Boolean(item.fixed),
             ...(type === "select"
               ? {

@@ -8,7 +8,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 export default async function WorkoutPage(props: {
-  searchParams: Promise<{ client_id?: string }>;
+  searchParams: Promise<{ client_id?: string; split?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const session = await decrypt();
@@ -47,7 +47,9 @@ export default async function WorkoutPage(props: {
   const clientQuery = isAdminViewing ? `?client_id=${targetUserId}` : '';
 
   // Check if today is a rest day (no split, split_name is Rest, or is_rest is true)
-  const isRestDay = !schedule || schedule.is_rest === 1 || schedule.split_name === 'Rest' || !schedule.split_name;
+  const requestedSplit = String(searchParams.split || "").trim();
+  const splitName = schedule?.split_name || requestedSplit || "Upper - Push";
+  const isRestDay = schedule?.is_rest === 1 || schedule?.split_name === 'Rest';
 
   if (isRestDay) {
     return (
@@ -128,8 +130,6 @@ export default async function WorkoutPage(props: {
       </>
     );
   }
-
-  const splitName = schedule.split_name;
 
   // Get user program type to fetch template
   const programs = await query('SELECT program_type FROM programs WHERE user_id = ?', [targetUserId]);

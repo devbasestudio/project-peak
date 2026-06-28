@@ -3,6 +3,14 @@ import { requireAdmin } from "@/lib/adminAuth";
 
 const TRACKER_FIELD_TYPES = new Set(["number", "time", "select", "checkbox", "counter", "text"]);
 const TRACKER_SECTION_TITLES = new Set(["Morning", "Mid-day", "Night"]);
+const DEFAULT_ICON_BY_TYPE: Record<string, string> = {
+  checkbox: "ph-check-square",
+  counter: "ph-plus-circle",
+  number: "ph-hash",
+  select: "ph-list-checks",
+  text: "ph-note-pencil",
+  time: "ph-clock",
+};
 
 function cleanId(value: unknown, fallback: string) {
   const id = String(value || "")
@@ -39,7 +47,7 @@ function normalizeSections(value: unknown) {
               id: cleanId(item.id, `field_${sectionIndex}_${fieldIndex}`),
               label,
               type,
-              icon: String(item.icon || "ph-check-square").trim() || "ph-check-square",
+              icon: String(item.icon || DEFAULT_ICON_BY_TYPE[type]).trim() || DEFAULT_ICON_BY_TYPE[type],
               fixed: Boolean(item.fixed),
               ...(type === "select"
                 ? {

@@ -15,6 +15,14 @@ type SavedTrackerTemplate = { name: string; sections: unknown };
 type TrackerFieldType = TrackerField["type"];
 
 const fieldTypes: TrackerFieldType[] = ["number", "time", "select", "checkbox", "counter", "text"];
+const defaultIconByType: Record<TrackerFieldType, string> = {
+  checkbox: "ph-check-square",
+  counter: "ph-plus-circle",
+  number: "ph-hash",
+  select: "ph-list-checks",
+  text: "ph-note-pencil",
+  time: "ph-clock",
+};
 
 function cloneSections(sections: TrackerSection[]) {
   return JSON.parse(JSON.stringify(sections)) as TrackerSection[];
@@ -51,7 +59,7 @@ function normalizeSections(value: unknown) {
               id: String(item.id || `field_${crypto.randomUUID()}`).trim(),
               label,
               type,
-              icon: String(item.icon || "ph-check-square").trim() || "ph-check-square",
+              icon: String(item.icon || defaultIconByType[type]).trim() || defaultIconByType[type],
               fixed: Boolean(item.fixed),
               options:
                 type === "select" && Array.isArray(item.options)
@@ -72,7 +80,7 @@ function freshField(): TrackerField {
     id: `custom_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
     label: "New field",
     type: "text",
-    icon: "ph-note-pencil",
+    icon: defaultIconByType.text,
   };
 }
 
@@ -188,7 +196,9 @@ export default function TrackersClient({
                       className="flex flex-col gap-2 rounded-lg border border-[#e6eae8] bg-[#f6f8f7] p-3"
                     >
                       <div className="flex items-center gap-2">
-                        <i className={`ph ${field.icon} text-base text-[#5b6a67]`} />
+                        <i
+                          className={`ph ${field.icon || defaultIconByType[field.type]} text-base text-[#5b6a67]`}
+                        />
                         <input
                           className={`${inputClass} min-w-0 flex-1 py-2`}
                           value={field.label}
@@ -204,7 +214,7 @@ export default function TrackersClient({
                           <i className="ph ph-trash text-base" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-2">
                         <select
                           className={`${inputClass} py-2`}
                           value={field.type}
@@ -221,13 +231,6 @@ export default function TrackersClient({
                             </option>
                           ))}
                         </select>
-                        <input
-                          className={`${inputClass} py-2`}
-                          value={field.icon}
-                          onChange={(e) => updateField(sectionIndex, fieldIndex, { icon: e.target.value })}
-                          aria-label={`${field.label} icon class`}
-                          placeholder="ph-check-square"
-                        />
                       </div>
                       {field.type === "select" && (
                         <input

@@ -24,6 +24,14 @@ function normalizeDurations(value: unknown) {
         months,
         price,
         note: String(row.note || "").trim(),
+        currency: String(row.currency || "MMK").trim(),
+        badge: String(row.badge || "").trim(),
+        originalPrice: Number(row.originalPrice || 0) || undefined,
+        promoEnabled: Boolean(row.promoEnabled),
+        promoPrice: Number(row.promoPrice || 0) || undefined,
+        promoLimit: Number(row.promoLimit || 0) || undefined,
+        promoTitle: String(row.promoTitle || "").trim(),
+        promoDescription: String(row.promoDescription || "").trim(),
       };
     })
     .filter(Boolean);

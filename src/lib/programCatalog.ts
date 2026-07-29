@@ -37,6 +37,14 @@ function validDurations(value: unknown): ProgramDuration[] | null {
         months,
         price,
         note: String(row.note || ""),
+        currency: String(row.currency || "MMK"),
+        badge: String(row.badge || ""),
+        originalPrice: Number(row.originalPrice || 0) || undefined,
+        promoEnabled: Boolean(row.promoEnabled),
+        promoPrice: Number(row.promoPrice || 0) || undefined,
+        promoLimit: Number(row.promoLimit || 0) || undefined,
+        promoTitle: String(row.promoTitle || ""),
+        promoDescription: String(row.promoDescription || ""),
       };
     })
     .filter(Boolean) as ProgramDuration[];

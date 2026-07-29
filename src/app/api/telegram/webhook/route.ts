@@ -9,9 +9,10 @@ import { approvePaymentRegistration, rejectPaymentRegistration } from "@/lib/pay
 import { getPublicProjectPrograms } from "@/lib/programCatalog";
 import {
   defaultIntakeFields,
-  formatMmk,
+  formatProgramPrice,
   paymentMethods,
   type IntakeField,
+  type ProgramDuration,
   type ProjectProgram,
 } from "@/lib/projectPeakConfig";
 import {
@@ -90,15 +91,36 @@ function durationDisplayLabel(duration: ProjectProgram["durations"][number]) {
   return String(duration.label || "").trim() || durationLabel(duration.months);
 }
 
-function durationButtonText(duration: ProjectProgram["durations"][number]) {
-  const text = `${durationDisplayLabel(duration)} | ${formatMmk(duration.price)}`;
+function formatDurationPrice(duration: ProgramDuration, price = duration.price) {
+  return formatProgramPrice(price, duration.currency || "MMK");
+}
+
+function isPromotionConfigured(duration: ProgramDuration) {
+  return Boolean(duration.promoEnabled && duration.promoPrice && duration.promoLimit && duration.promoLimit > 0);
+}
+
+function promotionalPrice(duration: ProgramDuration, claimedCount = 0) {
+  if (!isPromotionConfigured(duration)) return duration.price;
+  return claimedCount < Number(duration.promoLimit || 0) ? Number(duration.promoPrice) : duration.price;
+}
+
+function promotionRemaining(duration: ProgramDuration, claimedCount = 0) {
+  if (!isPromotionConfigured(duration)) return null;
+  return Math.max(0, Number(duration.promoLimit || 0) - claimedCount);
+}
+
+function durationButtonText(duration: ProjectProgram["durations"][number], claimedCount = 0) {
+  const remaining = promotionRemaining(duration, claimedCount);
+  const price = promotionalPrice(duration, claimedCount);
+  const promo = remaining !== null && remaining > 0 ? " Promo" : "";
+  const text = `${durationDisplayLabel(duration)} | ${formatDurationPrice(duration, price)}${promo}`;
   return text.length > 62 ? `${text.slice(0, 59)}...` : text;
 }
 
-function durationRows(program: ProjectProgram): TelegramInlineButton[][] {
+function durationRows(program: ProjectProgram, promotionCounts: Record<number, number> = {}): TelegramInlineButton[][] {
   const rows = program.durations.map((duration) => [
     {
-      text: durationButtonText(duration),
+      text: durationButtonText(duration, promotionCounts[duration.months] || 0),
       callback_data: `buy:${program.key}:${duration.months}`,
     },
   ]);
@@ -138,7 +160,8 @@ function paymentStatusLabel(status: string) {
 
 function packageSummary(programs: ProjectProgram[]) {
   const lines = programs.map((program, index) => {
-    const startPrice = program.durations[0]?.price ? formatMmk(program.durations[0].price) : "";
+    const firstDuration = program.durations[0];
+    const startPrice = firstDuration?.price ? formatDurationPrice(firstDuration) : "";
     return `${index + 1}. <b>${escapeHtml(program.shortName)}</b>${startPrice ? ` - ${startPrice} မှစ` : ""}`;
   });
 
@@ -151,14 +174,52 @@ function packageSummary(programs: ProjectProgram[]) {
   ].join("\n");
 }
 
-function packageCaption(program: ProjectProgram) {
+async function promotionClaimCount(programKey: string, months: number, excludeRegistrationId?: number | string | null) {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("program_registrations")
+    .select("id", { count: "exact", head: true })
+    .eq("program_key", programKey)
+    .eq("duration_months", months)
+    .in("payment_status", ["awaiting_payment", "pending", "approved", "ready"]);
+
+  if (excludeRegistrationId) query = query.neq("id", excludeRegistrationId);
+
+  const { count, error } = await query;
+  if (error) return 0;
+  return count || 0;
+}
+
+async function promotionCountsForProgram(program: ProjectProgram) {
+  const entries = await Promise.all(
+    program.durations.map(async (duration) => [duration.months, await promotionClaimCount(program.key, duration.months)] as const),
+  );
+  return Object.fromEntries(entries) as Record<number, number>;
+}
+
+function packageCaption(program: ProjectProgram, promotionCounts: Record<number, number> = {}) {
   const includes = program.includes.slice(0, 3).map((item) => `• ${escapeHtml(item.title)}`).join("\n");
   const prices = program.durations
     .map((duration) => {
       const note = String(duration.note || "").trim();
+      const claimedCount = promotionCounts[duration.months] || 0;
+      const remaining = promotionRemaining(duration, claimedCount);
+      const activePrice = promotionalPrice(duration, claimedCount);
+      const hasPromotion = remaining !== null;
+      const normalPrice = duration.originalPrice || duration.price;
+      const promoLines = hasPromotion
+        ? [
+            "",
+            `🎉 <b>${escapeHtml(duration.promoTitle || "Launch Promotion")}</b>`,
+            escapeHtml(duration.promoDescription || `ပထမဆုံး Member အယောက် (${duration.promoLimit}) အတွက်သာ`),
+            `${formatDurationPrice(duration, activePrice)}${normalPrice && normalPrice !== activePrice ? ` <s>${formatDurationPrice(duration, normalPrice)}</s>` : ""}`,
+            remaining && remaining > 0 ? `ကျန်သေးသည်: ${remaining}/${duration.promoLimit}` : "Promotion limit ပြည့်သွားပါပြီ။",
+          ]
+        : [];
       return [
-        `<b>${escapeHtml(durationDisplayLabel(duration))}</b>`,
-        `${formatMmk(duration.price)}${note ? `\n<i>${escapeHtml(note)}</i>` : ""}`,
+        `<b>${escapeHtml(durationDisplayLabel(duration))}</b>${duration.badge ? ` · ${escapeHtml(duration.badge)}` : ""}`,
+        `${formatDurationPrice(duration, activePrice)}${note ? `\n<i>${escapeHtml(note)}</i>` : ""}`,
+        ...promoLines,
       ].filter(Boolean).join("\n");
     })
     .join("\n\n");
@@ -178,20 +239,23 @@ function packageCaption(program: ProjectProgram) {
   return telegramCaption(lines);
 }
 
-function paymentCaption(program: ProjectProgram, months: number, price: number, telegramId: string) {
+function paymentCaption(program: ProjectProgram, duration: ProgramDuration, price: number, telegramId: string, promoRemainingCount: number | null) {
   const paymentMethod = paymentMethods[0];
+  const normalPrice = duration.originalPrice || duration.price;
   return [
     "<b>Payment လုပ်ရန်အသေးစိတ်</b>",
     `Package: ${escapeHtml(program.name)}`,
-    `Duration: ${durationLabel(months)}`,
-    `ကျသင့်ငွေ: ${formatMmk(price)}`,
+    `Duration: ${escapeHtml(durationDisplayLabel(duration))}`,
+    `ကျသင့်ငွေ: ${formatDurationPrice(duration, price)}`,
+    normalPrice && normalPrice !== price ? `ပုံမှန်ဈေး: <s>${formatDurationPrice(duration, normalPrice)}</s>` : "",
+    promoRemainingCount !== null ? `Promotion ကျန်သေးသည်: ${promoRemainingCount}/${duration.promoLimit}` : "",
     `ငွေလွှဲမည့်နည်းလမ်း: ${escapeHtml(paymentMethod.label)}`,
     "",
     `သင့် Telegram ID: <code>${telegramId}</code>`,
     "",
     "ငွေလွှဲပြီးသွားရင် screenshot ကို ဒီ chat ထဲကို photo အနေနဲ့ပို့ပေးပါ။",
     "Admin စစ်ပြီး approve လုပ်ပြီးတာနဲ့ သင့်အတွက် tracker ကိုပြင်ပေးပါမယ်။ Ready ဖြစ်ရင် Mini App သုံးလို့ရပါပြီ။",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function telegramMethodResponse(method: string, payload: Record<string, unknown>) {
@@ -510,11 +574,12 @@ async function handlePackageDetails(chatId: string, packageKey: string, baseUrl:
   if (!programs.length) return noPackagesResponse(chatId);
   const program = programs.find((item) => item.key === packageKey);
   if (!program) return noPackagesResponse(chatId);
+  const promotionCounts = await promotionCountsForProgram(program);
   return sendPhotoResponse(
     chatId,
     assetUrl(baseUrl, program.image),
-    packageCaption(program),
-    durationRows(program),
+    packageCaption(program, promotionCounts),
+    durationRows(program, promotionCounts),
   );
 }
 
@@ -634,7 +699,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   const accountPromise = seedTelegramUser(from).catch(() => null);
   const supabase = createAdminClient();
 
-  const registration = {
+  const registrationBase = {
     user_id: null,
     name: userDisplayName(from),
     age: 0,
@@ -647,11 +712,9 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     program_key: program.key,
     program_name: program.name,
     duration_months: duration.months,
-    program_price: duration.price,
     payment_method: paymentMethods[0].label,
     status: "pending",
     payment_status: "awaiting_payment",
-    notes: "Telegram bot checkout ကနေ create လုပ်ထားသည်။",
   };
 
   const { data: existingRegistration, error: lookupError } = await supabase
@@ -664,6 +727,18 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
     .maybeSingle();
 
   if (lookupError) throw lookupError;
+
+  const claimedCount = await promotionClaimCount(program.key, duration.months, existingRegistration?.id);
+  const activePrice = promotionalPrice(duration, claimedCount);
+  const remaining = promotionRemaining(duration, claimedCount);
+  const registration = {
+    ...registrationBase,
+    program_price: activePrice,
+    notes:
+      remaining !== null && remaining > 0
+        ? `Telegram bot checkout ကနေ create လုပ်ထားသည်။ Promotion ${remaining}/${duration.promoLimit} ကျန်။`
+        : "Telegram bot checkout ကနေ create လုပ်ထားသည်။",
+  };
 
   const saveResult = existingRegistration?.id
     ? await supabase
@@ -687,7 +762,7 @@ async function handleDurationSelection(chatId: string, from: TelegramUser | unde
   }).catch(() => null);
 
   const qrUrl = `${baseUrl}${paymentMethods[0].qr}`;
-  const caption = paymentCaption(program, duration.months, duration.price, telegramId);
+  const caption = paymentCaption(program, duration, activePrice, telegramId, remaining);
   return sendPhotoResponse(chatId, qrUrl, caption);
 }
 

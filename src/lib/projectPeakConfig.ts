@@ -5,14 +5,6 @@ export type ProgramDuration = {
   months: number;
   price: number;
   note: string;
-  currency?: string;
-  badge?: string;
-  originalPrice?: number;
-  promoEnabled?: boolean;
-  promoPrice?: number;
-  promoLimit?: number;
-  promoTitle?: string;
-  promoDescription?: string;
 };
 
 export type ProjectProgram = {
@@ -192,13 +184,4 @@ export const adminDevicePolicy = {
 
 export function formatMmk(value: number) {
   return new Intl.NumberFormat("en-US").format(value) + " MMK";
-}
-
-export function formatProgramPrice(value: number, currency = "MMK") {
-  const amount = new Intl.NumberFormat("en-US").format(value || 0);
-  const cleanCurrency = String(currency || "MMK").trim();
-  if (cleanCurrency === "JPY" || cleanCurrency === "¥") return `¥${amount}`;
-  if (cleanCurrency === "USD" || cleanCurrency === "$") return `$${amount}`;
-  if (cleanCurrency === "THB" || cleanCurrency === "฿") return `฿${amount}`;
-  return `${amount} ${cleanCurrency}`;
 }

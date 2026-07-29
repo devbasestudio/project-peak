@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   defaultIntakeFields,
-  formatProgramPrice,
+  formatMmk,
   type FeedbackFormType,
   type IntakeField,
   type ProgramDuration,
@@ -39,22 +39,8 @@ function newProgram(): EditableProgram {
     image: "/img/hero_bg.jpg",
     accent: "#ff6b35",
     durations: [
-      { label: "1 Month", months: 1, price: 980, currency: "¥", note: "" },
-      {
-        label: "1 Year",
-        months: 12,
-        price: 4980,
-        currency: "¥",
-        note: "Most Popular",
-        badge: "Most Popular",
-        originalPrice: 4980,
-        promoEnabled: true,
-        promoPrice: 3980,
-        promoLimit: 100,
-        promoTitle: "Launch Promotion",
-        promoDescription: "ပထမဆုံး Member အယောက် (၁၀၀) အတွက်သာ",
-      },
-      { label: "Lifetime", months: 999, price: 12800, currency: "¥", note: "" },
+      { label: "1 month", months: 1, price: 0, note: "" },
+      { label: "3 months", months: 3, price: 0, note: "" },
     ],
     includes: [],
     outcomes: [],
@@ -121,7 +107,7 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
     if (!config) return;
     const months = Math.max(1, ...config.durations.map((duration) => duration.months || 0)) + 1;
     updateProgram({
-      durations: [...config.durations, { label: `${months} months`, months, price: 0, currency: "¥", note: "" }],
+      durations: [...config.durations, { label: `${months} months`, months, price: 0, note: "" }],
     });
   }
 
@@ -191,15 +177,7 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
       shortName: config.name,
       headline: config.description,
       bestFor: config.description,
-      durations: config.durations
-        .filter((duration) => duration.months > 0 && duration.price >= 0)
-        .map((duration) => ({
-          ...duration,
-          currency: duration.currency || "¥",
-          promoEnabled: Boolean(duration.promoEnabled),
-          promoPrice: duration.promoPrice || undefined,
-          promoLimit: duration.promoLimit || undefined,
-        })),
+      durations: config.durations.filter((duration) => duration.months > 0 && duration.price >= 0),
       intakeFields: config.intakeFields,
       feedbackFormType: config.feedbackFormType,
     };
@@ -349,27 +327,12 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
                   Add price
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 {config.durations.map((duration, index) => (
                   <div
                     key={`${duration.months}-${index}`}
-                    className="flex flex-col gap-3 rounded-xl border border-[#e6eae8] bg-[#f6f8f7] p-3"
+                    className="grid grid-cols-1 gap-2 rounded-xl border border-[#e6eae8] bg-[#f6f8f7] p-3 sm:grid-cols-[1fr_0.5fr_0.7fr_auto]"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-wide text-[#9aa8a4]">Pricing card</p>
-                        <p className="text-lg font-extrabold text-[#1c2b29]">
-                          {formatProgramPrice(Number(duration.promoEnabled && duration.promoPrice ? duration.promoPrice : duration.price || 0), duration.currency)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeDuration(index)}
-                        className="rounded-xl border border-[#f4c7bd] bg-white px-3 py-2.5 text-sm font-bold text-[#c0432b]"
-                      >
-                        <i className="ph ph-trash text-base" />
-                      </button>
-                    </div>
                     <FieldLabel>
                       Label
                       <input
@@ -378,117 +341,42 @@ export default function ProgramsClient({ programs = [] }: { programs?: ProjectPr
                         onChange={(event) => updateDuration(index, { label: event.target.value })}
                       />
                     </FieldLabel>
-                    <div className="grid grid-cols-3 gap-2">
-                      <FieldLabel>
-                        Months
-                        <input
-                          className={inputClass}
-                          type="number"
-                          value={duration.months}
-                          onChange={(event) => updateDuration(index, { months: Number(event.target.value) })}
-                        />
-                      </FieldLabel>
-                      <FieldLabel>
-                        Price
-                        <input
-                          className={inputClass}
-                          type="number"
-                          value={duration.price}
-                          onChange={(event) => updateDuration(index, { price: Number(event.target.value) })}
-                        />
-                      </FieldLabel>
-                      <FieldLabel>
-                        Currency
-                        <input
-                          className={inputClass}
-                          value={duration.currency || "¥"}
-                          onChange={(event) => updateDuration(index, { currency: event.target.value })}
-                        />
-                      </FieldLabel>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <FieldLabel>
-                        Badge
-                        <input
-                          className={inputClass}
-                          value={duration.badge || ""}
-                          placeholder="Most Popular"
-                          onChange={(event) => updateDuration(index, { badge: event.target.value })}
-                        />
-                      </FieldLabel>
-                      <FieldLabel>
-                        Normal price
-                        <input
-                          className={inputClass}
-                          type="number"
-                          value={duration.originalPrice || ""}
-                          placeholder="4980"
-                          onChange={(event) => updateDuration(index, { originalPrice: Number(event.target.value) || undefined })}
-                        />
-                      </FieldLabel>
-                    </div>
+                    <FieldLabel>
+                      Months
+                      <input
+                        className={inputClass}
+                        type="number"
+                        value={duration.months}
+                        onChange={(event) => updateDuration(index, { months: Number(event.target.value) })}
+                      />
+                    </FieldLabel>
+                    <FieldLabel>
+                      Price
+                      <input
+                        className={inputClass}
+                        type="number"
+                        value={duration.price}
+                        onChange={(event) => updateDuration(index, { price: Number(event.target.value) })}
+                      />
+                    </FieldLabel>
+                    <button
+                      type="button"
+                      onClick={() => removeDuration(index)}
+                      className="self-end rounded-xl border border-[#f4c7bd] bg-white px-3 py-2.5 text-sm font-bold text-[#c0432b]"
+                    >
+                      <i className="ph ph-trash text-base" />
+                    </button>
                     <FieldLabel>
                       Note
                       <input
                         className={inputClass}
                         value={duration.note}
-                        placeholder="Most Popular"
                         onChange={(event) => updateDuration(index, { note: event.target.value })}
                       />
                     </FieldLabel>
-                    <label className="flex items-center gap-2 rounded-xl border border-[#e0e7e4] bg-white px-3 py-2.5 text-sm font-bold text-[#1c2b29]">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(duration.promoEnabled)}
-                        onChange={(event) => updateDuration(index, { promoEnabled: event.target.checked })}
-                        className="h-4 w-4 accent-[#1c2b29]"
-                      />
-                      Promotion enabled
-                    </label>
-                    {duration.promoEnabled && (
-                      <div className="flex flex-col gap-2 rounded-xl border border-[#ffd9c7] bg-[#fff4ee] p-3">
-                        <div className="grid grid-cols-2 gap-2">
-                          <FieldLabel>
-                            Promo price
-                            <input
-                              className={inputClass}
-                              type="number"
-                              value={duration.promoPrice || ""}
-                              placeholder="3980"
-                              onChange={(event) => updateDuration(index, { promoPrice: Number(event.target.value) || undefined })}
-                            />
-                          </FieldLabel>
-                          <FieldLabel>
-                            Member limit
-                            <input
-                              className={inputClass}
-                              type="number"
-                              value={duration.promoLimit || ""}
-                              placeholder="100"
-                              onChange={(event) => updateDuration(index, { promoLimit: Number(event.target.value) || undefined })}
-                            />
-                          </FieldLabel>
-                        </div>
-                        <FieldLabel>
-                          Promotion title
-                          <input
-                            className={inputClass}
-                            value={duration.promoTitle || ""}
-                            placeholder="Launch Promotion"
-                            onChange={(event) => updateDuration(index, { promoTitle: event.target.value })}
-                          />
-                        </FieldLabel>
-                        <FieldLabel>
-                          Promotion text
-                          <input
-                            className={inputClass}
-                            value={duration.promoDescription || ""}
-                            placeholder="ပထမဆုံး Member အယောက် (၁၀၀) အတွက်သာ"
-                            onChange={(event) => updateDuration(index, { promoDescription: event.target.value })}
-                          />
-                        </FieldLabel>
-                      </div>
-                    )}
+                    <p className="self-end pb-2 text-sm font-bold text-[#1c2b29]">
+                      {formatMmk(Number(duration.price || 0))}
+                    </p>
                   </div>
                 ))}
               </div>

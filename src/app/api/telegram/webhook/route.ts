@@ -235,8 +235,27 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, ms: number) {
   }
 }
 
+let fastProgramsCache: { value: ProjectProgram[]; expiresAt: number } | null = null;
+const FAST_PROGRAM_CACHE_MS = 30_000;
+const PROGRAM_FETCH_TIMEOUT_MS = 2_500;
+
 async function getFastProjectPrograms() {
-  return withTimeout(getPublicProjectPrograms({ fresh: true }), [], 900);
+  if (fastProgramsCache && fastProgramsCache.expiresAt > Date.now()) {
+    return fastProgramsCache.value;
+  }
+
+  const programs = await withTimeout<ProjectProgram[] | null>(
+    getPublicProjectPrograms({ fresh: true }),
+    null,
+    PROGRAM_FETCH_TIMEOUT_MS,
+  );
+
+  if (programs?.length) {
+    fastProgramsCache = { value: programs, expiresAt: Date.now() + FAST_PROGRAM_CACHE_MS };
+    return programs;
+  }
+
+  return fastProgramsCache?.value || [];
 }
 
 function noPackagesResponse(chatId: string) {

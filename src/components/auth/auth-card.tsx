@@ -73,7 +73,7 @@ export function AuthCard({ locale, nextPath }: { locale: Locale; nextPath: strin
   }
 
   return (
-    <main className="grid min-h-screen bg-paper lg:grid-cols-[1fr_.86fr]">
+    <main lang={mm ? "my" : "en"} className="grid min-h-screen bg-paper lg:grid-cols-[1fr_.86fr]">
       <section className="relative hidden overflow-hidden bg-charcoal p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:64px_64px]" />
         <Image src="/brand/logo-light.svg" alt="Project Peak" width={190} height={54} className="relative" />

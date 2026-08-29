@@ -107,7 +107,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
   );
 
   return (
-    <div ref={rootRef} className="noise overflow-hidden bg-paper text-charcoal">
+    <div ref={rootRef} lang={locale === "mm" ? "my" : "en"} className="noise overflow-hidden bg-paper text-charcoal">
       <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5">
         <nav className="glass mx-auto flex max-w-[1320px] items-center justify-between rounded-2xl px-4 py-3">
           <Link href={`/${locale}`} aria-label="Project Peak home" className="hero-mark flex items-center gap-3">

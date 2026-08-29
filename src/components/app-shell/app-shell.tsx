@@ -21,7 +21,7 @@ export function AppShell({ children, locale, isAdmin, name }: { children: React.
   ];
 
   return (
-    <div className="min-h-screen bg-[#edf4f6] text-charcoal lg:grid lg:grid-cols-[236px_1fr]">
+    <div lang={locale === "mm" ? "my" : "en"} className="min-h-screen bg-[#edf4f6] text-charcoal lg:grid lg:grid-cols-[236px_1fr]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[236px] flex-col border-r border-white/8 bg-charcoal p-5 text-white lg:flex">
         <Link href={`/${locale}/app`} className="flex items-center gap-3 border-b border-white/8 pb-6">
           <Image src="/brand/icon-gradient.svg" alt="" width={36} height={36} />

@@ -51,8 +51,8 @@ The production schema is in `supabase/migrations/202608300001_project_peak.sql`.
 Google OAuth uses Supabase as the callback broker:
 
 - Google JavaScript origin (local): `http://localhost:3000`
-- Google JavaScript origin (production): `https://project-peak.vercel.app`
+- Google JavaScript origin (production): `https://project-peak-beta.vercel.app`
 - Google redirect URI: `https://gzcostlnfwuvtihuzice.supabase.co/auth/v1/callback`
-- App callback allowlist: `http://localhost:3000/auth/callback`, `https://project-peak.vercel.app/auth/callback`
+- App callback allowlist: `http://localhost:3000/auth/callback`, `https://project-peak-beta.vercel.app/auth/callback`
 
 Never expose the management PAT or service-role key in client code or source control.

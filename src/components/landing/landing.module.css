@@ -174,7 +174,7 @@
   .hero { min-height: 940px; align-items: flex-start; padding: 106px 18px 40px; }
   .heroPhoto { inset: 68px 0 0; }
   .heroPhoto img { object-position: 62% center; }
-  .heroShade { inset: 68px 0 0; background: linear-gradient(180deg,rgba(246,245,239,.98) 0%,rgba(246,245,239,.88) 39%,rgba(246,245,239,.04) 70%),linear-gradient(0deg,rgba(6,17,26,.42),transparent 38%); }
+  .heroShade { inset: 68px 0 0; background: linear-gradient(90deg,rgba(246,245,239,.98) 0%,rgba(246,245,239,.88) 39%,rgba(246,245,239,.04) 78%),linear-gradient(0deg,rgba(6,17,26,.42),transparent 38%); }
   .heroContent { width: 100%; padding-top: 24px; }
   .heroTitle { font-size: clamp(4.5rem,22vw,7rem); }
   .page[lang="my"] .heroTitle { max-width: 8ch; font-size: clamp(3.8rem,17vw,6rem); }

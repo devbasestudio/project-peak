@@ -3,344 +3,143 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowDownRight, ArrowRight, Check, Dumbbell, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, ChevronRight } from "lucide-react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import type { Locale } from "@/lib/i18n";
 import { landingCopy } from "@/lib/landing-content";
+import styles from "./landing.module.css";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const screens = [
-  { src: "/screens/baseline.png", alt: "Project Peak baseline test" },
-  { src: "/screens/today.png", alt: "Project Peak training day" },
-  { src: "/screens/workout.png", alt: "Project Peak exercise logger" },
-  { src: "/screens/progress.png", alt: "Project Peak progress grid" },
-  { src: "/screens/complete.png", alt: "Project Peak week 12 comparison" },
-];
+const weeks = Array.from({ length: 12 }, (_, index) => ({ week: index + 1, from: index * 4 + 1, to: index * 4 + 4 }));
+const movements = ["Push up", "Wide pull up", "Lateral raise · 4 L", "Sissy squat"];
 
 export function LandingPage({ locale }: { locale: Locale }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+  const root = useRef<HTMLDivElement>(null);
   const copy = landingCopy[locale];
-  const otherLocale = locale === "mm" ? "en" : "mm";
-  const otherPath = pathname.replace(/^\/(mm|en)/, `/${otherLocale}`);
+  const mm = locale === "mm";
+  const other = mm ? "en" : "mm";
+
+  const phases = mm ? [
+    { no: "01", meta: "START · DAY 00", title: "Baseline", body: "အခုရှိနေတဲ့ အင်အားကို movement 4 ခုနဲ့ တိတိကျကျ မှတ်ထားမယ်" },
+    { no: "02", meta: "SESSIONS · 01—12", title: "Foundation", body: "Form၊ routine နဲ့ habit ကို ဦးစားပေးပြီး ခန္ဓာကိုယ်ကို system နဲ့ရင်းနှီးစေမယ်" },
+    { no: "03", meta: "SESSIONS · 13—47", title: "Progressive overload", body: "Rep range ကိုနိုင်ပြီးမှ backpack ထဲအလေးချိန်တိုးမယ်။ Exercise တစ်ခုစီက သူ့အရှိန်နဲ့တိုးမယ်" },
+    { no: "04", meta: "SESSION · 48", title: "Proof", body: "အစမှာစမ်းခဲ့တဲ့ 4 ခုကို ပြန်စမ်းပြီး Week 1 နဲ့ Week 12 ကို ဘေးချင်းယှဉ်မယ်" },
+  ] : [
+    { no: "01", meta: "START · DAY 00", title: "Baseline", body: "Record exactly where you are through four clean movement tests." },
+    { no: "02", meta: "SESSIONS · 01—12", title: "Foundation", body: "Build form, rhythm and habits before chasing heavier work." },
+    { no: "03", meta: "SESSIONS · 13—47", title: "Progressive overload", body: "Own the rep range, then add weight. Each exercise moves at its own pace." },
+    { no: "04", meta: "SESSION · 48", title: "Proof", body: "Repeat the four tests and place Week 1 directly beside Week 12." },
+  ];
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const lenis = new Lenis({ duration: 1.05, smoothWheel: true, wheelMultiplier: 0.92 });
-    const update = (time: number) => lenis.raf(time * 1000);
+    const lenis = new Lenis({ duration: 1.08, smoothWheel: true, wheelMultiplier: 0.9 });
+    const raf = (time: number) => lenis.raf(time * 1000);
     lenis.on("scroll", ScrollTrigger.update);
-    gsap.ticker.add(update);
+    gsap.ticker.add(raf);
     gsap.ticker.lagSmoothing(0);
-    return () => {
-      gsap.ticker.remove(update);
-      lenis.destroy();
-    };
+    return () => { gsap.ticker.remove(raf); lenis.destroy(); };
   }, []);
 
-  useGSAP(
-    () => {
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduced) return;
+  useGSAP(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const counter = { value: 0 };
+    const intro = gsap.timeline({ defaults: { ease: "power4.out" } });
+    intro
+      .from("[data-nav]", { autoAlpha: 0, y: -18, duration: 0.55 })
+      .from("[data-hero-image]", { scale: 1.14, clipPath: "inset(0 0 100% 0)", duration: 1.25, ease: "power4.inOut" }, "-=.25")
+      .from("[data-hero-line]", { yPercent: 120, duration: 0.85, stagger: 0.08 }, "-=.82")
+      .from("[data-hero-copy], [data-hero-action]", { autoAlpha: 0, y: 20, duration: 0.58, stagger: 0.08 }, "-=.45")
+      .to(counter, { value: 48, duration: 1.25, snap: { value: 1 }, ease: "power2.out", onUpdate: () => {
+        const node = root.current?.querySelector<HTMLElement>("[data-counter]");
+        if (node) node.textContent = String(Math.round(counter.value)).padStart(2, "0");
+      } }, "-=1");
 
-      const intro = gsap.timeline({ defaults: { ease: "power4.out" } });
-      const count = { value: 0 };
-      intro
-        .from(".hero-mark", { autoAlpha: 0, y: 20, duration: 0.5 })
-        .from(".hero-line", { yPercent: 110, duration: 0.85, stagger: 0.07 }, "-=.2")
-        .from(".hero-copy, .hero-actions", { autoAlpha: 0, y: 18, duration: 0.6, stagger: 0.08 }, "-=.45")
-        .from(".hero-visual", { clipPath: "inset(100% 0 0 0)", scale: 1.05, duration: 1.05, ease: "power4.inOut" }, "-=.85")
-        .to(count, {
-          value: 48,
-          duration: 1.2,
-          snap: { value: 1 },
-          ease: "power2.out",
-          onUpdate: () => {
-            const element = rootRef.current?.querySelector(".session-counter");
-            if (element) element.textContent = String(Math.round(count.value)).padStart(2, "0");
-          },
-        }, "-=1");
-
-      gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
-        gsap.from(element, {
-          autoAlpha: 0,
-          y: 48,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: { trigger: element, start: "top 86%", once: true },
-        });
-      });
-
-      gsap.utils.toArray<HTMLElement>("[data-parallax]").forEach((element) => {
-        gsap.fromTo(element, { yPercent: 7 }, {
-          yPercent: -5,
-          ease: "none",
-          scrollTrigger: { trigger: element, start: "top bottom", end: "bottom top", scrub: 1 },
-        });
-      });
-
-      gsap.to(".discipline-track", { xPercent: -50, repeat: -1, duration: 38, ease: "none" });
-
-      const mm = gsap.matchMedia();
-      mm.add("(min-width: 900px)", () => {
-        const cards = gsap.utils.toArray<HTMLElement>(".journey-card");
-        gsap.to(cards, {
-          xPercent: -100 * (cards.length - 1),
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".journey-pin",
-            start: "top top",
-            end: "+=2600",
-            pin: true,
-            scrub: 0.8,
-            invalidateOnRefresh: true,
-          },
-        });
-      });
-      return () => mm.revert();
-    },
-    { scope: rootRef },
-  );
+    gsap.to("[data-hero-image]", { scale: 1.03, yPercent: 7, ease: "none", scrollTrigger: { trigger: "[data-hero]", start: "top top", end: "bottom top", scrub: 1 } });
+    gsap.to("[data-marquee]", { xPercent: -20, ease: "none", scrollTrigger: { trigger: "[data-marquee-wrap]", start: "top bottom", end: "bottom top", scrub: 0.7 } });
+    gsap.to("[data-method-image]", { scale: 1.07, ease: "none", scrollTrigger: { trigger: "[data-method]", start: "top bottom", end: "bottom top", scrub: 1 } });
+    gsap.fromTo("[data-route-line]", { scaleY: 0 }, { scaleY: 1, ease: "none", scrollTrigger: { trigger: "[data-route]", start: "top 72%", end: "bottom 70%", scrub: 0.8 } });
+    gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => gsap.from(element, { autoAlpha: 0, y: 52, duration: 0.82, ease: "power3.out", scrollTrigger: { trigger: element, start: "top 87%", once: true } }));
+    gsap.utils.toArray<HTMLElement>("[data-scale]").forEach((element) => gsap.from(element, { scale: 0.9, autoAlpha: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: element, start: "top 84%", once: true } }));
+  }, { scope: root });
 
   return (
-    <div ref={rootRef} lang={locale === "mm" ? "my" : "en"} className="noise overflow-hidden bg-paper text-charcoal">
-      <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5">
-        <nav className="glass mx-auto flex max-w-[1320px] items-center justify-between rounded-2xl px-4 py-3">
-          <Link href={`/${locale}`} aria-label="Project Peak home" className="hero-mark flex items-center gap-3">
-            <Image src="/brand/icon-gradient.svg" alt="" width={34} height={34} priority />
-            <span className="font-display text-sm font-bold tracking-[-.03em]">PROJECT PEAK</span>
-          </Link>
-          <div className="hidden items-center gap-7 text-xs font-semibold uppercase tracking-[.08em] md:flex">
-            <a href="#method">{copy.nav.method}</a>
-            <a href="#journey">{copy.nav.journey}</a>
-            <a href="#program">{copy.nav.program}</a>
-            <a href="#faq">{copy.nav.faq}</a>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href={otherPath || `/${otherLocale}`} className="rounded-lg border border-charcoal/10 px-3 py-2 text-xs font-bold">
-              {locale === "mm" ? "EN" : "မြန်မာ"}
-            </Link>
-            <Link href={`/${locale}/login`} className="rounded-lg bg-charcoal px-3.5 py-2 text-xs font-bold text-white sm:px-4">
-              {copy.nav.signIn}
-            </Link>
-          </div>
-        </nav>
+    <div className={styles.page} lang={mm ? "my" : "en"} ref={root}>
+      <header className={styles.header} data-nav>
+        <Link className={styles.brand} href={`/${locale}`}><Image alt="Project Peak" height={46} priority src="/brand/logo-dark.svg" width={174} /></Link>
+        <nav className={styles.nav} aria-label="Main navigation"><a href="#route">{copy.nav.journey}</a><a href="#method">{copy.nav.method}</a><a href="#program">{copy.nav.program}</a></nav>
+        <div className={styles.navActions}><Link className={styles.language} href={`/${other}`}>{mm ? "EN" : "မြန်မာ"}</Link><Link className={styles.login} href={`/${locale}/login`}>{copy.nav.signIn}<ChevronRight size={14} /></Link></div>
       </header>
 
       <main>
-        <section className="relative min-h-[100svh] overflow-hidden border-b border-charcoal/10 px-4 pb-14 pt-28 sm:px-6 lg:px-10 lg:pb-8 lg:pt-32">
-          <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(6,17,26,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(6,17,26,.04)_1px,transparent_1px)] [background-size:64px_64px]" />
-          <div className="relative mx-auto grid min-h-[calc(100svh-10rem)] max-w-[1320px] gap-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
-            <div className="relative z-10 max-w-4xl">
-              <div className="hero-mark mb-8 flex items-center gap-3">
-                <span className="h-2 w-2 rounded-full bg-sky shadow-[0_0_0_7px_rgba(5,171,221,.14)]" />
-                <p className="eyebrow text-charcoal/60">{copy.hero.kicker}</p>
-              </div>
-              <h1 className="font-display max-w-[18ch] overflow-hidden text-[clamp(3.5rem,7.4vw,8.8rem)] font-bold leading-[.86] tracking-[-.075em]">
-                <span className="hero-line block">{locale === "mm" ? "12 ပတ်" : "12 WEEKS"}</span>
-                <span className="hero-line block text-sky">{locale === "mm" ? "တကယ်လုပ်ဖြစ်မယ့်" : "BUILT TO DO"}</span>
-                <span className="hero-line block">{locale === "mm" ? "SYSTEM" : "NOT TO SAVE"}</span>
-              </h1>
-              <p className="hero-copy mt-8 max-w-2xl text-base leading-8 text-charcoal/64 sm:text-lg" lang={locale === "mm" ? "my" : "en"}>
-                {copy.hero.title}. {copy.hero.body}
-              </p>
-              <div className="hero-actions mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link href={`/${locale}/login?next=/${locale}/app`} className="primary-button group min-w-52">
-                  {copy.hero.primary}<ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </Link>
-                <a href="#method" className="secondary-button min-w-48">{copy.hero.secondary}<ArrowDownRight size={16} /></a>
-              </div>
-              <div className="hero-copy mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-charcoal/48">
-                <span className="flex items-center gap-2"><ShieldCheck size={15} className="text-aqua" />{copy.hero.badge}</span>
-                <span className="mono">48 SESSIONS · PUSH / PULL</span>
-              </div>
-            </div>
-
-            <div className="hero-visual relative mx-auto w-full max-w-[590px] self-end lg:mx-0">
-              <div className="absolute -inset-20 -z-10 rounded-full bg-sky/12 blur-[100px]" />
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] border border-charcoal/10 bg-charcoal p-5 shadow-[0_36px_100px_rgba(6,17,26,.2)] sm:p-8">
-                <div className="flex items-center justify-between text-white">
-                  <span className="eyebrow text-white/55">PROGRAM QUEUE</span>
-                  <Image src="/brand/icon-gradient.svg" width={34} height={34} alt="" />
-                </div>
-                <div className="mt-7 grid grid-cols-[1fr_auto] items-end gap-4 border-y border-white/10 py-6">
-                  <div>
-                    <p className="text-sm text-white/50">Sessions complete</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">Your pace. Your queue.</p>
-                  </div>
-                  <div className="mono flex items-baseline text-sky">
-                    <span className="session-counter text-7xl font-bold tracking-[-.08em]">00</span>
-                    <span className="ml-2 text-sm text-white/38">/48</span>
-                  </div>
-                </div>
-                <div className="relative mt-6 h-[58%] overflow-hidden rounded-2xl border border-white/10 bg-[#0b1d28]">
-                  <Image src="/screens/today.png" alt="Project Peak workout dashboard" fill priority sizes="(max-width: 1024px) 90vw, 42vw" className="object-contain object-top" />
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-charcoal to-transparent" />
-                </div>
-              </div>
-              <div className="absolute -bottom-4 -left-3 rounded-xl border border-charcoal/10 bg-white px-4 py-3 shadow-xl sm:-left-8">
-                <p className="eyebrow text-charcoal/40">TODAY</p>
-                <p className="mt-1 text-sm font-bold">Next: Push · Phase 1</p>
-              </div>
-            </div>
+        <section className={styles.hero} data-hero>
+          <div className={styles.heroPhoto}><Image alt="Athlete training at home with a Project Peak weighted backpack" data-hero-image fill priority sizes="100vw" src="/brand/hero-athlete-branded.jpg" /></div>
+          <div className={styles.heroShade} />
+          <div className={styles.heroContent}>
+            <p className={styles.kicker}>12 WEEKS · 48 SESSIONS · ONE BACKPACK</p>
+            <h1 className={styles.heroTitle}>
+              <span><i data-hero-line>{mm ? "အိမ်မှာ" : "BUILD"}</i></span>
+              <span><i data-hero-line>{mm ? "တက်မယ့်" : "YOUR"}</i></span>
+              <span><i className={styles.accent} data-hero-line>{mm ? "PEAK" : "PEAK."}</i></span>
+            </h1>
+            <p className={styles.heroCopy} data-hero-copy>{copy.hero.body}</p>
+            <div className={styles.heroActions} data-hero-action><Link className={styles.primary} href={`/${locale}/login?next=/${locale}/app`}>{copy.hero.primary}<ArrowRight size={17} /></Link><a className={styles.textLink} href="#route">{copy.hero.secondary}<ArrowDown size={15} /></a></div>
           </div>
+          <div className={styles.heroIndex}><span>SESSION</span><strong data-counter>00</strong><small>/48</small></div>
+          <div className={styles.heroCaption}>PROJECT PEAK · BACKPACK METHOD · MYANMAR</div>
         </section>
 
-        <div className="overflow-hidden border-b border-charcoal/10 bg-sky py-4 text-charcoal">
-          <div className="discipline-track flex w-max items-center gap-8 whitespace-nowrap font-display text-lg font-bold tracking-[-.02em]">
-            {[0, 1].map((group) => (
-              <div key={group} className="flex items-center gap-8 pr-8">
-                <span>FORM</span><span>✦</span><span>KNOWLEDGE</span><span>✦</span><span>HABITS</span><span>✦</span><span>PROGRESSIVE OVERLOAD</span><span>✦</span><span>IDENTITY</span><span>✦</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className={styles.marquee} data-marquee-wrap><div data-marquee>FORM FIRST <b>✦</b> KNOWLEDGE <b>✦</b> HABITS <b>✦</b> PROGRESSIVE OVERLOAD <b>✦</b> NO MISSED DAYS <b>✦</b> YOUR PACE <b>✦</b> FORM FIRST <b>✦</b> KNOWLEDGE <b>✦</b> HABITS <b>✦</b></div></div>
 
-        <section id="method" className="px-4 py-24 sm:px-6 lg:px-10 lg:py-36">
-          <div className="mx-auto max-w-[1220px]">
-            <div data-reveal className="grid gap-8 lg:grid-cols-[.75fr_1.25fr] lg:items-start">
-              <p className="eyebrow text-charcoal/45">{copy.thesis.eyebrow}</p>
-              <div>
-                <h2 className="font-display text-4xl font-bold leading-[.96] tracking-[-.055em] sm:text-6xl lg:text-7xl">{copy.thesis.title}</h2>
-                <p className="mt-8 max-w-3xl text-lg leading-8 text-charcoal/60" lang={locale === "mm" ? "my" : "en"}>{copy.thesis.body}</p>
-              </div>
-            </div>
-            <div className="mt-16 grid gap-4 lg:grid-cols-2">
-              {copy.pillars.map((pillar, index) => (
-                <article data-reveal key={pillar.number} className={`relative min-h-[360px] overflow-hidden rounded-[2rem] border p-7 sm:p-10 ${index === 0 ? "border-charcoal/10 bg-charcoal text-white" : "border-charcoal/10 bg-ice"}`}>
-                  <span className="mono text-sm opacity-50">{pillar.number}</span>
-                  <div className="mt-28">
-                    <h3 className="font-display text-4xl font-bold tracking-[-.045em] sm:text-5xl">{pillar.title}</h3>
-                    <p className={`mt-5 max-w-lg leading-7 ${index === 0 ? "text-white/60" : "text-charcoal/58"}`} lang={locale === "mm" ? "my" : "en"}>{pillar.body}</p>
-                  </div>
-                  {index === 0 ? <Sparkles className="absolute right-8 top-8 text-sky" /> : <Check className="absolute right-8 top-8 text-aqua" />}
-                </article>
-              ))}
-            </div>
-          </div>
+        <section className={styles.opening}>
+          <div className={styles.openingNumber} data-scale>12<span>W</span></div>
+          <div data-reveal><p className={styles.sectionLabel}>{copy.thesis.eyebrow}</p><h2>{copy.thesis.title}</h2><p>{copy.thesis.body}</p></div>
         </section>
 
-        <section id="journey" className="journey-pin flex min-h-screen items-center overflow-hidden bg-charcoal py-24 text-white">
-          <div className="w-full">
-            <div className="mx-auto mb-12 flex max-w-[1220px] items-end justify-between px-4 sm:px-6">
-              <div data-reveal>
-                <p className="eyebrow text-sky">12 WEEK JOURNEY</p>
-                <h2 className="mt-4 font-display text-5xl font-bold tracking-[-.06em] sm:text-7xl">One queue.<br />Five turning points.</h2>
-              </div>
-              <p className="mono hidden text-sm text-white/35 md:block">SCROLL TO MOVE →</p>
-            </div>
-            <div className="flex flex-col gap-4 px-4 sm:px-6 md:w-max md:flex-row md:gap-5">
-              {copy.journey.map((item, index) => (
-                <article key={item.step} className="journey-card flex min-h-[340px] w-full shrink-0 flex-col justify-between rounded-[2rem] border border-white/10 bg-white/[.045] p-7 md:w-[460px] md:p-9">
-                  <div className="flex items-start justify-between">
-                    <span className="mono text-sm text-sky">{item.step}</span>
-                    <span className="mono text-xs text-white/25">0{index + 1}</span>
-                  </div>
-                  <div>
-                    <h3 className="font-display text-4xl font-bold tracking-[-.05em]">{item.title}</h3>
-                    <p className="mt-4 max-w-sm leading-7 text-white/52" lang={locale === "mm" ? "my" : "en"}>{item.body}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
+        <section className={styles.route} data-route id="route">
+          <div className={styles.routeIntro}><p className={styles.sectionLabel}>THE 12-WEEK ROUTE</p><h2>{mm ? "Motivation ကို မစောင့်ဘူး။ လမ်းကြောင်းကို လိုက်မယ်" : "DON’T WAIT FOR MOTIVATION. FOLLOW THE ROUTE."}</h2><p>{mm ? "Calendar deadline မရှိဘူး။ ကိုယ့်အရှိန်နဲ့ session တစ်ခုပြီးတစ်ခု တက်သွားမယ်" : "There is no calendar deadline. Move at your pace, one completed session at a time."}</p></div>
+          <div className={styles.phaseList}><span className={styles.routeLine} data-route-line />{phases.map((phase) => <article data-reveal key={phase.no}><span className={styles.phaseNo}>{phase.no}</span><div><p>{phase.meta}</p><h3>{phase.title}</h3><span>{phase.body}</span></div></article>)}</div>
         </section>
 
-        <section id="program" className="px-4 py-24 sm:px-6 lg:px-10 lg:py-36">
-          <div className="mx-auto max-w-[1220px]">
-            <div data-reveal className="grid gap-8 lg:grid-cols-[.75fr_1.25fr]">
-              <p className="eyebrow text-charcoal/45">{copy.showcase.eyebrow}</p>
-              <div>
-                <h2 className="font-display text-4xl font-bold leading-[.96] tracking-[-.055em] sm:text-6xl lg:text-7xl">{copy.showcase.title}</h2>
-                <p className="mt-8 max-w-3xl text-lg leading-8 text-charcoal/60" lang={locale === "mm" ? "my" : "en"}>{copy.showcase.body}</p>
-              </div>
-            </div>
-            <div className="mt-16 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5">
-              {screens.map((screen, index) => (
-                <div data-reveal key={screen.src} className={`relative overflow-hidden rounded-[1.6rem] border border-charcoal/10 bg-charcoal shadow-[0_24px_60px_rgba(6,17,26,.12)] ${index === 1 ? "mt-8 lg:mt-16" : index === 3 ? "mt-8 lg:mt-16" : ""}`}>
-                  <div data-parallax className="relative aspect-[293/633]">
-                    <Image src={screen.src} alt={screen.alt} fill sizes="(max-width: 640px) 50vw, 20vw" className="object-cover object-top" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section className={styles.method} data-method id="method">
+          <div className={styles.methodPhoto}><Image alt="Loading a Project Peak backpack for progressive overload" data-method-image fill sizes="(max-width: 900px) 100vw, 58vw" src="/brand/backpack-load-branded.jpg" /></div>
+          <div className={styles.methodCopy} data-reveal><p className={styles.sectionLabel}>THE BACKPACK METHOD</p><h2>{mm ? "ရှိတာနဲ့ စမယ်။ လုပ်နိုင်မှ ထပ်လေးမယ်" : "START WITH WHAT YOU HAVE. EARN MORE WEIGHT."}</h2><p>{mm ? "စာအုပ်၊ ရေဘူးနဲ့ backpack တစ်လုံး။ Rep range ရဲ့အပေါ်ဆုံးကို set တိုင်းရောက်မှ အလေးချိန်တိုးမယ်။ မရောက်သေးရင် မတိုးဘူး" : "Books, water, and one backpack. Weight only rises after every set reaches the top of its rep range. Until then, it stays."}</p><div className={styles.ruleFormula}><span>REPS FIRST</span><b>→</b><span>LOAD NEXT</span><b>→</b><span>REPEAT</span></div></div>
         </section>
 
-        <section className="border-y border-charcoal/10 bg-white/45 px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
-          <div className="mx-auto grid max-w-[1220px] gap-5 lg:grid-cols-2">
-            <article data-reveal className="rounded-[2rem] border border-charcoal/10 bg-paper p-7 sm:p-10">
-              <Dumbbell className="text-aqua" />
-              <p className="eyebrow mt-16 text-charcoal/42">{copy.equipment.eyebrow}</p>
-              <h2 className="mt-4 font-display text-4xl font-bold tracking-[-.05em] sm:text-5xl">{copy.equipment.title}</h2>
-              <p className="mt-5 text-charcoal/55" lang={locale === "mm" ? "my" : "en"}>{copy.equipment.body}</p>
-              <ul className="mt-8 divide-y divide-charcoal/10 border-y border-charcoal/10">
-                {copy.equipment.items.map((item, index) => <li key={item} className="flex items-center gap-4 py-4 text-sm font-semibold"><span className="mono text-xs text-charcoal/30">0{index + 1}</span>{item}</li>)}
-              </ul>
-            </article>
-            <div className="grid gap-5">
-              {[copy.mission, copy.vision].map((section) => (
-                <article data-reveal key={section.eyebrow} className="rounded-[2rem] border border-charcoal/10 bg-surface p-7 sm:p-9">
-                  <p className="eyebrow text-aqua">{section.eyebrow}</p>
-                  <h3 className="mt-5 font-display text-3xl font-bold leading-tight tracking-[-.04em]">{section.title}</h3>
-                  <p className="mt-5 leading-7 text-charcoal/55" lang={locale === "mm" ? "my" : "en"}>{section.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
+        <section className={styles.foundations} id="program">
+          <header data-reveal><p className={styles.sectionLabel}>{copy.showcase.eyebrow}</p><h2>{mm ? "Body ပြောင်းတာထက်ပိုပြီး ကျန်ခဲ့မယ့် အခြေခံနှစ်ခု" : "TWO FOUNDATIONS THAT OUTLAST A TRANSFORMATION."}</h2></header>
+          <div className={styles.foundationRows}>{copy.pillars.map((pillar, index) => <article data-reveal key={pillar.number}><span>0{index + 1}</span><h3>{pillar.title}</h3><p>{pillar.body}</p><div className={index === 0 ? styles.knowledgeMarks : styles.habitMarks}>{Array.from({ length: index === 0 ? 12 : 21 }, (_, mark) => <i key={mark} />)}</div></article>)}</div>
         </section>
 
-        <section className="px-4 py-24 sm:px-6 lg:px-10 lg:py-36">
-          <div data-reveal className="relative mx-auto max-w-[1220px] overflow-hidden rounded-[2.5rem] bg-sky p-7 sm:p-12 lg:p-16">
-            <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-charcoal/15" />
-            <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full border border-charcoal/15" />
-            <div className="relative grid gap-10 lg:grid-cols-[1fr_.7fr] lg:items-end">
-              <div>
-                <p className="eyebrow text-charcoal/55">{copy.price.eyebrow}</p>
-                <h2 className="mono mt-5 text-[clamp(3.8rem,9vw,8.5rem)] font-bold leading-none tracking-[-.085em]">{copy.price.title}</h2>
-                <p className="mt-7 max-w-2xl leading-8 text-charcoal/68" lang={locale === "mm" ? "my" : "en"}>{copy.price.body}</p>
-              </div>
-              <div className="lg:text-right">
-                <Link href={`/${locale}/login?next=/${locale}/app`} className="primary-button w-full sm:w-auto">{copy.price.button}<ArrowRight size={16} /></Link>
-                <p className="mono mt-4 text-xs text-charcoal/45">{copy.price.note}</p>
-              </div>
-            </div>
-          </div>
+        <section className={styles.weekSystem}>
+          <div className={styles.weekSticky}><p className={styles.sectionLabel}>48 SESSION SYSTEM</p><h2>{mm ? "တစ်ပတ် ၄ ကြိမ်။ ကိုယ့်အရှိန်နဲ့ ၁၂ ဆင့်" : "FOUR SESSIONS. TWELVE LEVELS. YOUR PACE."}</h2><p>{mm ? "Odd session က Push၊ even session က Pull။ မလုပ်ဖြစ်တဲ့နေ့ကို အပြစ်မပေးဘူး—ပြန်လာရင် နောက်တစ်ခုကနေ ဆက်မယ်" : "Odd sessions push. Even sessions pull. Missing a day is not a failure—return and continue with what is next."}</p></div>
+          <div className={styles.weekRows}>{weeks.map((item) => <div data-reveal key={item.week}><span>W{String(item.week).padStart(2, "0")}</span><strong>{String(item.from).padStart(2, "0")}—{String(item.to).padStart(2, "0")}</strong><div>{Array.from({ length: 4 }, (_, index) => <i className={index % 2 === 0 ? styles.push : styles.pull} key={index}>{index % 2 === 0 ? "PUSH" : "PULL"}</i>)}</div></div>)}</div>
         </section>
 
-        <section id="faq" className="border-t border-charcoal/10 px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
-          <div className="mx-auto grid max-w-[1220px] gap-12 lg:grid-cols-[.75fr_1.25fr]">
-            <div data-reveal>
-              <p className="eyebrow text-aqua">{copy.faq.eyebrow}</p>
-              <h2 className="mt-5 font-display text-5xl font-bold tracking-[-.055em]">{copy.faq.title}</h2>
-            </div>
-            <div className="divide-y divide-charcoal/10 border-y border-charcoal/10">
-              {copy.faq.items.map((item) => (
-                <details data-reveal key={item.q} className="group py-6">
-                  <summary className="flex cursor-pointer list-none items-start justify-between gap-5 text-lg font-bold">
-                    <span lang={locale === "mm" ? "my" : "en"}>{item.q}</span><span className="mono text-sky transition-transform group-open:rotate-45">+</span>
-                  </summary>
-                  <p className="max-w-2xl pt-4 leading-7 text-charcoal/55" lang={locale === "mm" ? "my" : "en"}>{item.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
+        <section className={styles.proof}>
+          <div className={styles.proofTitle} data-reveal><p className={styles.sectionLabel}>BASELINE → PROOF</p><h2>{mm ? "ခံစားချက်မဟုတ်ဘူး။ တိုင်းထားတဲ့ တိုးတက်မှု" : "NOT A FEELING. MEASURED PROGRESS."}</h2></div>
+          <div className={styles.proofList}>{movements.map((movement, index) => <div data-reveal key={movement}><span>0{index + 1}</span><strong>{movement}</strong><p>WEEK 01</p><b>→</b><p>WEEK 12</p></div>)}</div>
         </section>
+
+        <section className={styles.equipment}>
+          <div data-reveal><p className={styles.sectionLabel}>{copy.equipment.eyebrow}</p><h2>{copy.equipment.title}</h2><p>{copy.equipment.body}</p></div>
+          <ol>{copy.equipment.items.map((item, index) => <li data-reveal key={item}><span>0{index + 1}</span>{item}<Check size={17} /></li>)}</ol>
+        </section>
+
+        <section className={styles.purchase}>
+          <p>PROJECT PEAK · COMPLETE 12-WEEK ROUTE</p>
+          <div className={styles.purchasePrice} data-scale><span>75,000</span><small>MMK</small></div>
+          <div className={styles.purchaseBottom}><p>{copy.price.body}</p><Link className={styles.purchaseButton} href={`/${locale}/login?next=/${locale}/app`}>{copy.price.button}<ArrowRight size={18} /></Link></div>
+        </section>
+
+        <section className={styles.faq} id="faq"><div><p className={styles.sectionLabel}>{copy.faq.eyebrow}</p><h2>{copy.faq.title}</h2></div><div>{copy.faq.items.map((item) => <details key={item.q}><summary>{item.q}<span>+</span></summary><p>{item.a}</p></details>)}</div></section>
       </main>
 
-      <footer className="bg-charcoal px-4 py-10 text-white sm:px-6 lg:px-10">
-        <div className="mx-auto flex max-w-[1220px] flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <Image src="/brand/logo-light.svg" width={170} height={48} alt="Project Peak" />
-            <p className="mono mt-5 text-xs text-white/35">{copy.footer}</p>
-          </div>
-          <div className="flex items-center gap-5 text-sm text-white/45"><Link className="underline-offset-4 hover:underline" href={`/${locale}/legal`}>Terms · Privacy</Link><span>© {new Date().getFullYear()} Project Peak · Myanmar</span></div>
-        </div>
-      </footer>
+      <footer className={styles.footer}><Image alt="Project Peak" height={48} src="/brand/logo-light.svg" width={180} /><p>{copy.footer}</p><div><Link href={`/${locale}/legal`}>Terms · Privacy</Link><span>© {new Date().getFullYear()}</span></div></footer>
     </div>
   );
 }

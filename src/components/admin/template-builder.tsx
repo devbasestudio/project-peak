@@ -392,7 +392,7 @@ export function TemplateBuilder({ initialTemplate, locale }: { initialTemplate: 
   return (
     <div className={styles.builderShell}>
       <aside className={styles.documentRail}>
-        <div className={styles.railHeading}><strong>Screens</strong><button aria-label="Add screen" className={styles.iconButton} onClick={addDocument} type="button"><Plus size={14} /></button></div>
+        <div className={styles.railHeading}><strong>Screens · {String(template.documents.length).padStart(2, "0")}</strong><button aria-label="Add screen" className={styles.iconButton} onClick={addDocument} type="button"><Plus size={14} /></button></div>
         <div className={styles.documentList}>
           {template.documents.map((document, index) => (
             <button className={styles.documentTab} data-active={document.id === activeDocument.id} key={document.id} onClick={() => { setActiveDocumentId(document.id); setSelectedBlockId(null); }} type="button">
@@ -422,9 +422,9 @@ export function TemplateBuilder({ initialTemplate, locale }: { initialTemplate: 
           <div className={styles.field}><label>Program day · optional</label><input className={styles.input} max={48} min={1} onChange={(event) => updateActiveDocument((document) => ({ ...document, dayNumber: event.target.value ? Number(event.target.value) : null }))} placeholder="No fixed day" type="number" value={activeDocument.dayNumber ?? ""} /></div>
         </div>
 
-        <details className={styles.blockPalette} style={{ marginBottom: 14, marginTop: 0 }}>
-          <summary className={styles.blockPaletteTitle} style={{ cursor: "pointer", marginBottom: 0 }}>Template names and descriptions</summary>
-          <div className={styles.formGrid} style={{ marginTop: 14 }}>
+        <details className={`${styles.blockPalette} ${styles.templateDetails}`}>
+          <summary className={styles.blockPaletteTitle}>Template names and descriptions</summary>
+          <div className={styles.formGrid}>
             <div className={styles.field}><label>English name</label><input className={styles.input} onChange={(event) => mutate({ ...template, nameEn: event.target.value })} value={template.nameEn} /></div>
             <div className={styles.field}><label>Myanmar name</label><input className={styles.input} onChange={(event) => mutate({ ...template, nameMm: event.target.value })} value={template.nameMm} /></div>
             <div className={styles.field}><label>English description</label><textarea className={styles.textarea} onChange={(event) => mutate({ ...template, descriptionEn: event.target.value })} value={template.descriptionEn} /></div>
@@ -474,6 +474,11 @@ export function TemplateBuilder({ initialTemplate, locale }: { initialTemplate: 
         <div className={styles.localeTabs} style={{ marginBottom: 14, paddingTop: 0 }}>
           <button data-active={previewLocale === "en"} onClick={() => setPreviewLocale("en")} type="button">English</button>
           <button data-active={previewLocale === "mm"} onClick={() => setPreviewLocale("mm")} type="button">မြန်မာ</button>
+        </div>
+        <div className={styles.previewMeta}>
+          <span>Screen key</span><strong>{activeDocument.screenKey}</strong>
+          <span>Blocks</span><strong>{String(activeDocument.blocks.length).padStart(2, "0")}</strong>
+          <span>Target day</span><strong>{activeDocument.dayNumber ? `D${activeDocument.dayNumber}` : "Flexible"}</strong>
         </div>
         <div className={styles.phone} lang={previewLocale === "mm" ? "my" : "en"}>
           <div className={styles.phoneTop}><strong>{previewLocale === "mm" ? activeDocument.titleMm : activeDocument.titleEn}</strong><span>Project Peak</span></div>

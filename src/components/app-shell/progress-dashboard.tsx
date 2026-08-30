@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Dumbbell, Droplets, Moon, Trophy, Utensils } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
+import { AscentMark, AscentRule } from "@/components/app-shell/ascent-mark";
 
 export type AssessmentComparison = {
   position: number;
@@ -53,28 +54,28 @@ export function ProgressDashboard({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <section className="relative overflow-hidden rounded-[2rem] bg-charcoal p-6 text-white sm:p-9">
-        <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full border border-white/8" />
+      <section className="relative overflow-hidden border-b-2 border-charcoal bg-white pb-8 pt-3">
+        <AscentMark className="absolute -right-10 top-0 h-48 w-72 text-sky sm:h-64 sm:w-96" />
         <div className="relative grid gap-9 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div><p className="eyebrow text-sky">{program.name} · WEEK {week}</p><h1 className="mt-5 font-display text-5xl font-bold tracking-[-.06em] sm:text-7xl">{mm ? "ကိုယ့်တိုးတက်မှု" : "Your progress"}</h1><p className="mt-4 max-w-xl text-sm leading-7 text-white/48" lang={mm ? "my" : "en"}>{mm ? "Workout, habits နဲ့ ပထမနေ့က baseline ကို တစ်နေရာထဲမှာ ပြန်ကြည့်မယ်" : "See your training, daily habits and the proof that started on day one."}</p></div>
-          <div className="flex items-end gap-3"><span className="mono text-7xl font-bold tracking-[-.09em] text-sky">{progress}</span><span className="mb-3 text-sm text-white/38">%</span></div>
+          <div><p className="font-mono text-[10px] font-bold uppercase tracking-[.2em] text-charcoal/45">{program.name} · WEEK {week}</p><h1 className="mt-5 max-w-3xl font-display text-5xl font-black uppercase leading-[.88] tracking-[-.07em] sm:text-8xl">{mm ? "ကိုယ့်တိုးတက်မှု" : "The ascent"}</h1><p className="mt-5 max-w-xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "Workout, habits နဲ့ ပထမနေ့က baseline ကို တစ်နေရာထဲမှာ ပြန်ကြည့်မယ်" : "See your training, daily habits and the proof that started on day one."}</p></div>
+          <div className="flex items-end gap-2"><span className="font-mono text-7xl font-black tracking-[-.09em] text-charcoal">{progress}</span><span className="mb-3 text-sm text-charcoal/38">%</span></div>
         </div>
-        <div className="relative mt-8 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-sky" style={{ width: `${progress}%` }} /></div>
-        <div className="relative mt-5 flex flex-wrap gap-x-7 gap-y-2 text-xs text-white/42"><span><b className="mono mr-2 text-white">{program.completed}</b>/ 48 sessions</span><span><b className="mono mr-2 text-white">{Math.max(0, 48 - program.completed)}</b>{mm ? "ကျန်" : "remaining"}</span><span className="uppercase">{program.status}</span></div>
+        <div className="relative mt-8"><AscentRule completed={program.completed} /></div>
+        <div className="relative mt-5 flex flex-wrap gap-x-7 gap-y-2 font-mono text-[10px] uppercase tracking-wider text-charcoal/45"><span><b className="mr-2 text-charcoal">{program.completed}</b>/ 48 sessions</span><span><b className="mr-2 text-charcoal">{Math.max(0, 48 - program.completed)}</b>{mm ? "ကျန်" : "remaining"}</span><span>{program.status}</span></div>
       </section>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl border border-charcoal/10 bg-white p-1.5">
+      <div className="mt-8 grid grid-cols-3 border-y border-charcoal/15 bg-white">
         {([
           ["days", mm ? "နေ့စဉ်" : "Daily"],
           ["history", mm ? "လေ့ကျင့်ခန်း" : "Exercises"],
           ["proof", mm ? "နှိုင်းယှဉ်" : "Proof"],
-        ] as Array<[Tab, string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setTab(value)} className={`min-h-11 rounded-lg px-3 text-xs font-bold transition ${tab === value ? "bg-charcoal text-white" : "text-charcoal/45"}`}>{label}</button>)}
+        ] as Array<[Tab, string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setTab(value)} className={`min-h-12 border-r border-charcoal/15 px-3 font-mono text-[10px] font-bold uppercase tracking-wider transition last:border-r-0 ${tab === value ? "bg-charcoal text-white" : "text-charcoal/45 hover:bg-paper"}`}>{label}</button>)}
       </div>
 
       {tab === "days" ? (
         <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_.38fr]">
-          <div className="surface p-5 sm:p-7">
-            <div className="flex items-center justify-between gap-4"><div><p className="eyebrow text-aqua">DAILY GRID</p><h2 className="mt-2 font-display text-2xl font-bold">{mm ? "တစ်နေ့ချင်းစီ" : "One day at a time"}</h2></div><Link href={`/${locale}/app/habits`} className="secondary-button min-h-10 px-3 text-xs">{mm ? "ဒီနေ့မှတ်မယ်" : "Log today"}<ArrowRight size={14} /></Link></div>
+          <div className="border border-charcoal/15 bg-white p-4 sm:p-7">
+            <div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">DAILY GRID</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-tight">{mm ? "တစ်နေ့ချင်းစီ" : "One day at a time"}</h2></div><Link href={`/${locale}/app/habits`} className="flex min-h-11 items-center gap-2 border border-charcoal/15 px-3 text-xs font-bold hover:bg-paper">{mm ? "ဒီနေ့မှတ်မယ်" : "Log today"}<ArrowRight size={14} /></Link></div>
             {cells.length ? <div className="mt-6 grid grid-cols-4 gap-2.5">{cells.map((cell, index) => <DayCell key={cell.date} cell={cell} number={index + 1} />)}</div> : <Empty copy={mm ? "Activity မရှိသေးဘူး" : "No activity yet"} />}
             <div className="mt-5 flex flex-wrap gap-4 text-[10px] font-semibold text-charcoal/42"><Legend fill label={mm ? "ပြီး" : "Done"} /><Legend label={mm ? "မပြီးသေး" : "Not done"} /><Legend dashed label={mm ? "မသက်ဆိုင်" : "Not applicable"} /></div>
           </div>
@@ -87,16 +88,16 @@ export function ProgressDashboard({
       ) : null}
 
       {tab === "history" ? (
-        <section className="surface mt-4 p-5 sm:p-7">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="eyebrow text-aqua">EXERCISE HISTORY</p><h2 className="mt-2 font-display text-2xl font-bold">{mm ? "Session တစ်ခုပြီးတစ်ခု" : "Session by session"}</h2></div><div className="grid grid-cols-2 rounded-xl border border-charcoal/10 bg-paper p-1">{(["push", "pull"] as const).map((value) => <button key={value} type="button" onClick={() => setDayType(value)} className={`min-h-10 rounded-lg px-5 text-xs font-bold uppercase ${dayType === value ? "bg-sky text-charcoal" : "text-charcoal/38"}`}>{value}</button>)}</div></div>
+        <section className="mt-4 border border-charcoal/15 bg-white p-5 sm:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">EXERCISE HISTORY</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-tight">{mm ? "Session တစ်ခုပြီးတစ်ခု" : "Session by session"}</h2></div><div className="grid grid-cols-2 border border-charcoal/15 bg-paper">{(["push", "pull"] as const).map((value) => <button key={value} type="button" onClick={() => setDayType(value)} className={`min-h-11 border-r border-charcoal/15 px-5 text-xs font-bold uppercase last:border-r-0 ${dayType === value ? "bg-sky text-charcoal" : "text-charcoal/38"}`}>{value}</button>)}</div></div>
           {visibleHistory.length ? <div className="mt-6 space-y-3">{visibleHistory.map((exercise) => <HistoryCard key={exercise.id} locale={locale} exercise={exercise} dayType={dayType} />)}</div> : <Empty copy={mm ? "ဒီ day type အတွက် logs မရှိသေးဘူး" : "No logs for this day type yet"} />}
         </section>
       ) : null}
 
       {tab === "proof" ? (
         <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_.36fr]">
-          <div className="surface p-5 sm:p-7"><p className="eyebrow text-aqua">WEEK 1 → WEEK 12</p><h2 className="mt-2 font-display text-2xl font-bold">{mm ? "စခဲ့တဲ့နေရာနဲ့ ရောက်နေတဲ့နေရာ" : "Where you started. Where you arrived."}</h2><div className="mt-6 space-y-2">{comparisons.map((item) => <ComparisonRow key={item.position} locale={locale} item={item} />)}</div></div>
-          <aside className="rounded-[1.4rem] bg-charcoal p-6 text-white sm:p-8"><Trophy className="text-sky" /><p className="eyebrow mt-16 text-white/30">THE PROOF</p><h3 className="mt-3 font-display text-3xl font-bold tracking-[-.045em]">{comparisons.every((item) => item.final != null) ? (mm ? "12 weeks comparison အဆင်သင့်ဖြစ်ပြီ" : "Your 12-week comparison is ready") : (mm ? "Session 48 မှာ ပြန်စမ်းမယ်" : "Retest after session 48")}</h3>{program.completed >= 48 && comparisons.some((item) => item.final == null) ? <Link href={`/${locale}/app/completion`} className="mt-7 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-sky px-4 text-sm font-bold text-charcoal">{mm ? "Final flow စမယ်" : "Start final flow"}<ArrowRight size={16} /></Link> : null}</aside>
+          <div className="border border-charcoal/15 bg-white p-5 sm:p-7"><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">WEEK 1 → WEEK 12</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-tight">{mm ? "စခဲ့တဲ့နေရာနဲ့ ရောက်နေတဲ့နေရာ" : "Start line / summit"}</h2><div className="mt-6">{comparisons.map((item) => <ComparisonRow key={item.position} locale={locale} item={item} />)}</div></div>
+          <aside className="relative overflow-hidden bg-charcoal p-6 text-white sm:p-8"><AscentMark className="absolute -right-12 top-0 h-40 w-60 text-sky/20" /><Trophy className="relative text-sky" /><p className="relative mt-16 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-white/35">THE PROOF</p><h3 className="relative mt-3 font-display text-3xl font-black uppercase tracking-[-.045em]">{comparisons.every((item) => item.final != null) ? (mm ? "12 weeks comparison အဆင်သင့်ဖြစ်ပြီ" : "Your 12-week comparison is ready") : (mm ? "Session 48 မှာ ပြန်စမ်းမယ်" : "Retest after session 48")}</h3>{program.completed >= 48 && comparisons.some((item) => item.final == null) ? <Link href={`/${locale}/app/completion`} className="relative mt-7 flex min-h-12 items-center justify-center gap-2 bg-sky px-4 text-sm font-bold text-charcoal">{mm ? "Final flow စမယ်" : "Start final flow"}<ArrowRight size={16} /></Link> : null}</aside>
         </section>
       ) : null}
     </div>
@@ -122,31 +123,31 @@ function buildDayCells(startDate: string, sessions: Array<{ localDate: string }>
 }
 
 function DayCell({ cell, number }: { cell: DayCellValue; number: number }) {
-  return <div className="rounded-xl border border-charcoal/9 bg-white p-2.5"><div className="mb-2 flex items-center justify-between"><span className="mono text-[10px] font-bold text-charcoal/35">{number}</span>{cell.sleepHours != null ? <span className="mono text-[9px] text-charcoal/30">{cell.sleepHours}h</span> : null}</div><div className="grid grid-cols-3 gap-1"><Chip done={cell.protein} label="P" /><Chip done={cell.water} label="W" /><Chip done={cell.session} dashed={!cell.session} label="S" /></div></div>;
+  return <div className="border border-charcoal/12 bg-white p-2.5"><div className="mb-2 flex items-center justify-between"><span className="mono text-[10px] font-bold text-charcoal/35">{number}</span>{cell.sleepHours != null ? <span className="mono text-[9px] text-charcoal/30">{cell.sleepHours}h</span> : null}</div><div className="grid grid-cols-3 gap-1"><Chip done={cell.protein} label="P" /><Chip done={cell.water} label="W" /><Chip done={cell.session} dashed={!cell.session} label="S" /></div></div>;
 }
 
 function Chip({ done, dashed = false, label }: { done: boolean; dashed?: boolean; label: string }) {
-  return <span className={`grid aspect-square place-items-center rounded-[5px] border text-[8px] font-bold ${done ? "border-sky bg-sky text-charcoal" : dashed ? "border-dashed border-charcoal/15 text-charcoal/20" : "border-charcoal/10 text-charcoal/22"}`}>{done ? <Check size={9} /> : label}</span>;
+  return <span className={`grid aspect-square place-items-center border text-[8px] font-bold ${done ? "border-sky bg-sky text-charcoal" : dashed ? "border-dashed border-charcoal/15 text-charcoal/20" : "border-charcoal/10 text-charcoal/22"}`}>{done ? <Check size={9} /> : label}</span>;
 }
 
 function Legend({ label, fill = false, dashed = false }: { label: string; fill?: boolean; dashed?: boolean }) {
-  return <span className="flex items-center gap-1.5"><i className={`h-3 w-3 rounded-[3px] border ${fill ? "border-sky bg-sky" : dashed ? "border-dashed border-charcoal/20" : "border-charcoal/15"}`} />{label}</span>;
+  return <span className="flex items-center gap-1.5"><i className={`h-3 w-3 border ${fill ? "border-sky bg-sky" : dashed ? "border-dashed border-charcoal/20" : "border-charcoal/15"}`} />{label}</span>;
 }
 
 function Metric({ icon: Icon, label, value }: { icon: typeof Dumbbell; label: string; value: string }) {
-  return <div className="surface flex items-center justify-between p-5"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-ice text-aqua"><Icon size={18} /></span><span className="text-xs font-bold text-charcoal/48">{label}</span></div><span className="mono text-xl font-bold">{value}</span></div>;
+  return <div className="flex items-center justify-between border border-charcoal/15 bg-white p-5"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center bg-sky text-charcoal"><Icon size={18} /></span><span className="text-xs font-bold text-charcoal/48">{label}</span></div><span className="mono text-xl font-bold">{value}</span></div>;
 }
 
 function HistoryCard({ locale, exercise, dayType }: { locale: Locale; exercise: ExerciseHistory; dayType: "push" | "pull" }) {
   const rows = exercise.sessions.filter((session) => session.dayType === dayType);
-  return <article className="overflow-hidden rounded-xl border border-charcoal/9 bg-white"><header className="flex items-center justify-between gap-3 border-b border-charcoal/8 px-4 py-3"><h3 className="font-display font-bold">{locale === "mm" ? exercise.nameMm : exercise.nameEn}</h3><span className="mono text-[10px] text-charcoal/32">{rows.length} SESSIONS</span></header><div className="overflow-x-auto"><div className="grid min-w-max auto-cols-[92px] grid-flow-col gap-px bg-charcoal/8">{rows.map((row) => <div key={row.dayNumber} className="bg-white p-3 text-center"><p className="mono text-[9px] font-bold text-aqua">S{row.dayNumber}</p><p className="mono mt-2 text-sm font-bold">{row.weightKg} kg</p><p className="mono mt-1 text-[10px] text-charcoal/42">{row.reps.join("·")}</p></div>)}</div></div></article>;
+  return <article className="overflow-hidden border border-charcoal/15 bg-white"><header className="flex items-center justify-between gap-3 border-b border-charcoal/15 px-4 py-3"><h3 className="font-display font-black uppercase">{locale === "mm" ? exercise.nameMm : exercise.nameEn}</h3><span className="mono text-[10px] text-charcoal/32">{rows.length} SESSIONS</span></header><div className="overflow-x-auto"><div className="grid min-w-max auto-cols-[92px] grid-flow-col gap-px bg-charcoal/10">{rows.map((row) => <div key={row.dayNumber} className="bg-white p-3 text-center"><p className="mono text-[9px] font-bold text-charcoal/45">S{row.dayNumber}</p><p className="mono mt-2 text-sm font-bold">{row.weightKg} kg</p><p className="mono mt-1 text-[10px] text-charcoal/42">{row.reps.join("·")}</p></div>)}</div></div></article>;
 }
 
 function ComparisonRow({ locale, item }: { locale: Locale; item: AssessmentComparison }) {
   const difference = item.final == null ? null : item.final - item.baseline;
-  return <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 rounded-xl border border-charcoal/8 bg-white px-4 py-4"><div><p className="font-display font-bold">{locale === "mm" ? item.nameMm : item.nameEn}</p><p className="mt-1 text-[10px] text-charcoal/35">{locale === "mm" ? item.equipmentMm : item.equipmentEn}</p></div><div className="text-right"><p className="eyebrow text-charcoal/28">W1</p><p className="mono mt-1 text-lg font-bold">{item.baseline}</p></div><div className="min-w-16 rounded-lg bg-ice px-3 py-2 text-right"><p className="eyebrow text-aqua">W12</p><p className="mono mt-1 text-lg font-bold text-aqua">{item.final ?? "—"}</p>{difference != null ? <p className="mono text-[9px] text-aqua">{difference >= 0 ? "+" : ""}{difference}</p> : null}</div></div>;
+  return <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-charcoal/15 px-1 py-5"><div><p className="font-display font-black uppercase">{locale === "mm" ? item.nameMm : item.nameEn}</p><p className="mt-1 text-[10px] text-charcoal/35">{locale === "mm" ? item.equipmentMm : item.equipmentEn}</p></div><div className="min-w-12 text-right"><p className="eyebrow text-charcoal/28">W1</p><p className="mono mt-1 text-lg font-bold">{item.baseline}</p></div><div className="min-w-16 bg-sky px-3 py-2 text-right"><p className="eyebrow text-charcoal/45">W12</p><p className="mono mt-1 text-lg font-bold">{item.final ?? "—"}</p>{difference != null ? <p className="mono text-[9px]">{difference >= 0 ? "+" : ""}{difference}</p> : null}</div></div>;
 }
 
 function Empty({ copy }: { copy: string }) {
-  return <div className="mt-6 rounded-xl border border-dashed border-charcoal/15 px-5 py-10 text-center text-sm text-charcoal/38">{copy}</div>;
+  return <div className="mt-6 border border-dashed border-charcoal/20 px-5 py-10 text-center font-mono text-xs uppercase tracking-wider text-charcoal/38">{copy}</div>;
 }

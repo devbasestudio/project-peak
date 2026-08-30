@@ -14,6 +14,7 @@ export function PaymentReview({ orderId, locale, versions }: { orderId: string; 
   const [pending, startTransition] = useTransition();
 
   function review(decision: "approve" | "reject") {
+    if (decision === "reject" && !window.confirm("Reject this payment order? The customer will not receive program access.")) return;
     setMessage("");
     startTransition(async () => {
       const result = await reviewPaymentOrder(orderId, decision, decision === "approve" && versionId ? versionId : null, "", locale);
@@ -30,12 +31,11 @@ export function PaymentReview({ orderId, locale, versions }: { orderId: string; 
         <button className={styles.button} disabled={pending} onClick={() => review("approve")} type="button">
           {pending ? <LoaderCircle className="animate-spin" size={13} /> : <Check size={13} />} Approve
         </button>
-        <button aria-label="Reject payment" className={styles.buttonDanger} disabled={pending} onClick={() => review("reject")} type="button">
-          <X size={13} />
+        <button className={styles.buttonDanger} disabled={pending} onClick={() => review("reject")} type="button">
+          <X size={13} /> Reject
         </button>
       </div>
       {message ? <small className={styles.muted}>{message}</small> : null}
     </div>
   );
 }
-

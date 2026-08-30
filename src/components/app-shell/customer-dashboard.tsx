@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, Copy, Droplets, LockKeyhole, Moon, Play, Send, Utensils, WifiOff } from "lucide-react";
 import { toast } from "sonner";
@@ -31,14 +32,39 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
             <div className="flex flex-col justify-between border-t border-charcoal/15 bg-sky p-6 lg:border-l lg:border-t-0 lg:p-8"><span className="mono text-[10px] font-bold tracking-[.2em]">STEP 01 / 03</span><AscentMark className="my-12 w-full text-charcoal" /><button disabled={pending} className="flex min-h-14 items-center justify-between border-2 border-charcoal bg-charcoal px-5 text-sm font-bold text-white disabled:opacity-60">{pending ? (mm ? "လုပ်နေတယ်…" : "Creating…") : (mm ? "Reference ထုတ်မယ်" : "Create reference")}<ArrowRight size={17} /></button></div>
           </form>
         ) : (
-          <section className="mt-10 grid border-y border-charcoal/20 bg-white lg:grid-cols-[1fr_340px]">
-            <div className="p-6 sm:p-10">
-              <div className="flex items-center justify-between gap-4"><p className="eyebrow text-charcoal/42">PURCHASE REFERENCE</p><span className="border border-charcoal/15 bg-sky px-3 py-1 text-[9px] font-bold uppercase tracking-wider">{order.status.replaceAll("_", " ")}</span></div>
-              <button type="button" onClick={() => { navigator.clipboard.writeText(order.reference_code); toast.success(mm ? "Reference copy ကူးပြီးပြီ" : "Reference copied"); }} className="mt-8 flex w-full items-center justify-between border-y-2 border-charcoal bg-paper px-1 py-6 text-left"><span className="mono text-3xl font-bold tracking-[-.05em] sm:text-5xl">{order.reference_code}</span><Copy size={20} /></button>
-              <ol className="mt-8 grid gap-5 text-sm leading-6 text-charcoal/62 sm:grid-cols-3"><li><span className="mono mb-2 block text-[10px] text-sky">01</span>{mm ? "75,000 MMK ကို KPay နဲ့ငွေလွှဲပါ" : "Pay 75,000 MMK by KPay"}</li><li><span className="mono mb-2 block text-[10px] text-sky">02</span>{mm ? "Screenshot + reference + email ပို့ပါ" : "Send screenshot + reference + email"}</li><li className="break-all"><span className="mono mb-2 block text-[10px] text-sky">03</span>{email}</li></ol>
-              <a href="https://t.me/wayneax21" target="_blank" rel="noreferrer" className="mt-8 flex min-h-14 w-full items-center justify-between border-2 border-charcoal bg-charcoal px-5 text-sm font-bold text-white sm:w-auto sm:min-w-72"><Send size={17} />Telegram @wayneax21<ArrowRight size={17} /></a>
+          <section className="mt-10 overflow-hidden border-y border-charcoal/20 bg-white">
+            <div className="grid lg:grid-cols-[minmax(300px,390px)_1fr]">
+              <div className="relative overflow-hidden bg-[#0d5aad] p-5 sm:p-7">
+                <div aria-hidden className="absolute -right-12 -top-12 h-40 w-40 rotate-45 border border-white/20" />
+                <div className="relative flex items-center justify-between gap-4 pb-4 text-white">
+                  <div><p className="mono text-[9px] font-bold uppercase tracking-[.18em] text-white/55">PAYMENT / 01</p><p className="mt-1 text-lg font-bold">KBZPay QR</p></div>
+                  <div className="border border-white/25 px-3 py-2 text-right"><p className="mono text-lg font-bold">75,000</p><p className="mono text-[8px] tracking-[.16em] text-white/55">MMK</p></div>
+                </div>
+                <div className="relative border border-white/25 bg-white p-2 shadow-[0_24px_70px_rgba(0,0,0,.22)]">
+                  <Image src="/payment/kbzpay-project-peak.jpg" alt="KBZPay QR code for Project Peak payment to Mg Phyo Zin Ko" width={1242} height={1242} className="h-auto w-full" priority />
+                </div>
+                <p className="relative mt-4 text-center text-[11px] font-semibold leading-5 text-white/70" lang={mm ? "my" : "en"}>{mm ? "KBZPay app နဲ့ QR ကို scan ဖတ်ပြီး 75,000 MMK ပေးချေပါ" : "Scan with the KBZPay app and pay 75,000 MMK"}</p>
+              </div>
+
+              <div className="p-6 sm:p-9 lg:p-10">
+                <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow text-charcoal/42">PURCHASE REFERENCE</p><p className="mt-2 text-sm text-charcoal/50" lang={mm ? "my" : "en"}>{mm ? "Screenshot ပို့တဲ့အခါ ဒီ code ကို တစ်ပါတည်းပို့ပါ" : "Include this code when you send your payment screenshot."}</p></div><span className="border border-charcoal/15 bg-sky px-3 py-1 text-[9px] font-bold uppercase tracking-wider">{order.status.replaceAll("_", " ")}</span></div>
+                <button type="button" onClick={() => { navigator.clipboard.writeText(order.reference_code); toast.success(mm ? "Reference copy ကူးပြီးပြီ" : "Reference copied"); }} className="mt-6 flex w-full items-center justify-between border-y-2 border-charcoal bg-paper px-2 py-5 text-left transition hover:bg-ice"><span className="mono text-3xl font-bold tracking-[-.05em] sm:text-5xl">{order.reference_code}</span><span className="grid h-10 w-10 shrink-0 place-items-center border border-charcoal/15 bg-white"><Copy size={17} /></span></button>
+
+                <ol className="mt-7 grid border-t border-charcoal/15 sm:grid-cols-3">
+                  <li className="border-b border-charcoal/15 py-4 pr-4 sm:border-b-0 sm:border-r"><span className="mono mb-2 block text-[9px] font-bold text-sky">01 · SCAN</span><p className="text-sm leading-6 text-charcoal/62" lang={mm ? "my" : "en"}>{mm ? "QR scan ဖတ်ပြီး 75,000 MMK ပေးချေပါ" : "Scan the QR and pay 75,000 MMK."}</p></li>
+                  <li className="border-b border-charcoal/15 py-4 sm:border-b-0 sm:border-r sm:px-4"><span className="mono mb-2 block text-[9px] font-bold text-sky">02 · CAPTURE</span><p className="text-sm leading-6 text-charcoal/62" lang={mm ? "my" : "en"}>{mm ? "ငွေလွှဲအောင်မြင်တဲ့ screenshot ကိုသိမ်းပါ" : "Save the successful payment screenshot."}</p></li>
+                  <li className="py-4 sm:pl-4"><span className="mono mb-2 block text-[9px] font-bold text-sky">03 · SEND</span><p className="text-sm leading-6 text-charcoal/62" lang={mm ? "my" : "en"}>{mm ? "Screenshot + reference ကို Telegram ပို့ပါ" : "Send the screenshot and reference on Telegram."}</p></li>
+                </ol>
+
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border border-dashed border-charcoal/20 bg-paper px-4 py-3"><span className="mono text-[9px] font-bold uppercase tracking-[.12em] text-charcoal/38">SIGNED-IN EMAIL</span><span className="break-all text-xs font-semibold">{email}</span></div>
+                <a href="https://t.me/wayneax21" target="_blank" rel="noreferrer" className="mt-5 flex min-h-14 w-full items-center justify-between border-2 border-charcoal bg-charcoal px-5 text-sm font-bold text-white transition hover:border-sky hover:bg-sky hover:text-charcoal"><Send size={17} /><span>{mm ? "Payment proof ကို @wayneax21 ဆီပို့မယ်" : "Send payment proof to @wayneax21"}</span><ArrowRight size={17} /></a>
+              </div>
             </div>
-            <aside className="border-t border-charcoal/15 bg-paper p-6 lg:border-l lg:border-t-0 lg:p-8"><LockKeyhole /><p className="mono mt-16 text-[10px] font-bold tracking-[.18em] text-charcoal/35">YOUR COPY · LOCKED IN</p><h2 className="mt-4 font-display text-3xl font-bold leading-tight tracking-[-.045em]">{mm ? "Program ကို သီးသန့်ဖွင့်ပေးမယ်" : "A program copy that stays yours"}</h2><p className="mt-5 text-sm leading-7 text-charcoal/52" lang={mm ? "my" : "en"}>{mm ? "Admin confirm ပြီးတာနဲ့ baseline test ကစဖွင့်မယ်။ Master template ပြောင်းလဲမှုက ကိုယ့် program ကိုမထိခိုက်ဘူး" : "Once approved, the baseline opens. Later master-template edits never rewrite your work."}</p></aside>
+            <aside className="grid gap-4 border-t border-charcoal/15 bg-paper px-6 py-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:px-9">
+              <span className="grid h-10 w-10 place-items-center border border-charcoal/15 bg-white"><LockKeyhole size={18} /></span>
+              <div><p className="text-sm font-bold" lang={mm ? "my" : "en"}>{mm ? "Admin အတည်ပြုပြီးတာနဲ့ ကိုယ်ပိုင် program ဖွင့်ပေးမယ်" : "Your personal program opens after admin approval."}</p><p className="mt-1 text-xs leading-5 text-charcoal/48" lang={mm ? "my" : "en"}>{mm ? "အတည်ပြုပြီးရင် baseline test ကနေ စတင်နိုင်ပါပြီ" : "Once approved, your 12-week journey starts with the baseline test."}</p></div>
+              <span className="mono text-[9px] font-bold uppercase tracking-[.16em] text-charcoal/35">Secure · Manual verify</span>
+            </aside>
           </section>
         )}
       </div>

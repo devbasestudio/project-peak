@@ -41,7 +41,7 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
                   <div className="border border-white/25 px-3 py-2 text-right"><p className="mono text-lg font-bold">75,000</p><p className="mono text-[8px] tracking-[.16em] text-white/55">MMK</p></div>
                 </div>
                 <div className="relative border border-white/25 bg-white p-2 shadow-[0_24px_70px_rgba(0,0,0,.22)]">
-                  <Image src="/payment/kbzpay-project-peak.jpg" alt="KBZPay QR code for Project Peak payment to Mg Phyo Zin Ko" width={1242} height={1242} className="h-auto w-full" priority />
+                  <Image src="/payment/kbzpay-project-peak.jpg" alt="KBZPay QR code for Project Peak payment to Thet Naing Htun" width={828} height={1228} className="h-auto w-full" priority />
                 </div>
                 <p className="relative mt-4 text-center text-[11px] font-semibold leading-5 text-white/70" lang={mm ? "my" : "en"}>{mm ? "KBZPay app နဲ့ QR ကို scan ဖတ်ပြီး 75,000 MMK ပေးချေပါ" : "Scan with the KBZPay app and pay 75,000 MMK"}</p>
               </div>

@@ -23,12 +23,13 @@ export function LandingPage({ locale }: { locale: Locale }) {
   const copy = landingCopy[locale];
   const mm = locale === "mm";
   const other = mm ? "en" : "mm";
+  const movementLabels = mm ? ["ဒိုက်ထိုး (Push-up)", "လက်ကျယ်ဆွဲတင် (Wide pull-up)", "ဘေးသို့လက်မြှောက် · ၄ လီတာ", "Sissy squat"] : movements;
 
   const phases = mm ? [
-    { no: "01", meta: "START · DAY 00", title: "Baseline", body: "အခုရှိနေတဲ့ အင်အားကို movement 4 ခုနဲ့ တိတိကျကျ မှတ်ထားမယ်" },
-    { no: "02", meta: "SESSIONS · 01—12", title: "Foundation", body: "Form၊ routine နဲ့ habit ကို ဦးစားပေးပြီး ခန္ဓာကိုယ်ကို system နဲ့ရင်းနှီးစေမယ်" },
-    { no: "03", meta: "SESSIONS · 13—47", title: "Progressive overload", body: "Rep range ကိုနိုင်ပြီးမှ backpack ထဲအလေးချိန်တိုးမယ်။ Exercise တစ်ခုစီက သူ့အရှိန်နဲ့တိုးမယ်" },
-    { no: "04", meta: "SESSION · 48", title: "Proof", body: "အစမှာစမ်းခဲ့တဲ့ 4 ခုကို ပြန်စမ်းပြီး Week 1 နဲ့ Week 12 ကို ဘေးချင်းယှဉ်မယ်" },
+    { no: "01", meta: "စတင်ချိန် · နေ့ ၀၀", title: "အစမ်းတိုင်းတာခြင်း", body: "လက်ရှိအင်အားကို လှုပ်ရှားမှု ၄ မျိုးနဲ့ တိတိကျကျ မှတ်တမ်းတင်မယ်။" },
+    { no: "02", meta: "လေ့ကျင့်မှု · ၀၁—၁၂", title: "အခြေခံတည်ဆောက်ခြင်း", body: "လှုပ်ရှားပုံမှန်ကန်ရေး၊ လေ့ကျင့်မှုအစီအစဉ်နဲ့ နေ့စဉ်အလေ့အကျင့်ကို အရင်ဆုံး ခိုင်မာအောင်လုပ်မယ်။" },
+    { no: "03", meta: "လေ့ကျင့်မှု · ၁၃—၄၇", title: "အဆင့်လိုက်တိုးခြင်း", body: "သတ်မှတ်ထားတဲ့ အကြိမ်ရေကို ကောင်းကောင်းလုပ်နိုင်တဲ့အခါမှ ကျောပိုးအိတ်ထဲ အလေးချိန်တိုးမယ်။ လေ့ကျင့်ခန်းတစ်ခုစီကို ကိုယ်လုပ်နိုင်တဲ့အရှိန်နဲ့ တိုးသွားမယ်။" },
+    { no: "04", meta: "လေ့ကျင့်မှု · ၄၈", title: "တိုးတက်မှုကို သက်သေပြခြင်း", body: "အစမှာစမ်းခဲ့တဲ့ လှုပ်ရှားမှု ၄ မျိုးကို ပြန်စမ်းပြီး ပထမပတ်နဲ့ နောက်ဆုံးပတ်ရလဒ်ကို ဘေးချင်းယှဉ်ကြည့်မယ်။" },
   ] : [
     { no: "01", meta: "START · DAY 00", title: "Baseline", body: "Record exactly where you are through four clean movement tests." },
     { no: "02", meta: "SESSIONS · 01—12", title: "Foundation", body: "Build form, rhythm and habits before chasing heavier work." },
@@ -113,8 +114,8 @@ export function LandingPage({ locale }: { locale: Locale }) {
             <p className={styles.kicker}>12 WEEKS · 48 SESSIONS · ONE BACKPACK</p>
             <h1 className={styles.heroTitle}>
               <span><i data-hero-line>{mm ? "အိမ်မှာ" : "BUILD"}</i></span>
-              <span><i data-hero-line>{mm ? "တက်မယ့်" : "YOUR"}</i></span>
-              <span><i className={styles.accent} data-hero-line>{mm ? "PEAK" : "PEAK."}</i></span>
+              <span><i data-hero-line>{mm ? "ပိုသန်မာ" : "YOUR"}</i></span>
+              <span><i className={styles.accent} data-hero-line>{mm ? "လာမယ်။" : "PEAK."}</i></span>
             </h1>
             <p className={styles.heroCopy} data-hero-copy>{copy.hero.body}</p>
             <div className={styles.heroActions} data-hero-action><Link className={styles.primary} href={`/${locale}/login?next=/${locale}/app`}>{copy.hero.primary}<ArrowRight size={17} /></Link><a className={styles.textLink} href="#route">{copy.hero.secondary}<ArrowDown size={15} /></a></div>
@@ -131,17 +132,17 @@ export function LandingPage({ locale }: { locale: Locale }) {
         </section>
 
         <section className={styles.route} data-route id="route">
-          <div className={styles.routeIntro}><p className={styles.sectionLabel}>THE 12-WEEK ROUTE</p><h2>{mm ? "Motivation ကို မစောင့်ဘူး။ လမ်းကြောင်းကို လိုက်မယ်" : "DON’T WAIT FOR MOTIVATION. FOLLOW THE ROUTE."}</h2><p>{mm ? "Calendar deadline မရှိဘူး။ ကိုယ့်အရှိန်နဲ့ session တစ်ခုပြီးတစ်ခု တက်သွားမယ်" : "There is no calendar deadline. Move at your pace, one completed session at a time."}</p></div>
+          <div className={styles.routeIntro}><p className={styles.sectionLabel}>THE 12-WEEK ROUTE</p><h2>{mm ? "စိတ်အားတက်လာမယ့်အချိန်ကို မစောင့်နဲ့။ သတ်မှတ်ထားတဲ့ လမ်းကြောင်းအတိုင်း ဆက်သွားမယ်။" : "DON’T WAIT FOR MOTIVATION. FOLLOW THE ROUTE."}</h2><p>{mm ? "ပြီးရမယ့်ရက် အတိအကျမရှိပါဘူး။ ကိုယ်လုပ်နိုင်တဲ့အရှိန်နဲ့ လေ့ကျင့်ခန်းတစ်ကြိမ်ပြီးတစ်ကြိမ် ဆက်လုပ်သွားမယ်။" : "There is no calendar deadline. Move at your pace, one completed session at a time."}</p></div>
           <div className={styles.phaseList}><span className={styles.routeLine} data-route-line />{phases.map((phase) => <article data-reveal key={phase.no}><span className={styles.phaseNo}>{phase.no}</span><div><p>{phase.meta}</p><h3>{phase.title}</h3><span>{phase.body}</span></div></article>)}</div>
         </section>
 
         <section className={styles.method} data-method id="method">
           <div className={styles.methodPhoto}><Image alt="Loading a Project Peak backpack for progressive overload" data-method-image fill sizes="(max-width: 900px) 100vw, 58vw" src="/brand/backpack-load-branded.jpg" /></div>
-          <div className={styles.methodCopy} data-reveal><p className={styles.sectionLabel}>THE BACKPACK METHOD</p><h2>{mm ? "ရှိတာနဲ့ စမယ်။ လုပ်နိုင်မှ ထပ်လေးမယ်" : "START WITH WHAT YOU HAVE. EARN MORE WEIGHT."}</h2><p>{mm ? "စာအုပ်၊ ရေဘူးနဲ့ backpack တစ်လုံး။ Rep range ရဲ့အပေါ်ဆုံးကို set တိုင်းရောက်မှ အလေးချိန်တိုးမယ်။ မရောက်သေးရင် မတိုးဘူး" : "Books, water, and one backpack. Weight only rises after every set reaches the top of its rep range. Until then, it stays."}</p><div className={styles.ruleFormula}><span>REPS FIRST</span><b>→</b><span>LOAD NEXT</span><b>→</b><span>REPEAT</span></div></div>
+          <div className={styles.methodCopy} data-reveal><p className={styles.sectionLabel}>THE BACKPACK METHOD</p><h2>{mm ? "ရှိတာနဲ့ စမယ်။ ကောင်းကောင်းလုပ်နိုင်တဲ့အခါမှ အလေးချိန်တိုးမယ်။" : "START WITH WHAT YOU HAVE. EARN MORE WEIGHT."}</h2><p>{mm ? "စာအုပ်၊ ရေဘူးနဲ့ ကျောပိုးအိတ်တစ်လုံးပဲလိုတယ်။ လေ့ကျင့်မှုအတွဲတိုင်းမှာ သတ်မှတ်အကြိမ်ရေအပြည့်ကို မှန်မှန်ကန်ကန်လုပ်နိုင်တဲ့အခါမှ အလေးချိန်တိုးမယ်။ မလုပ်နိုင်သေးရင် မတိုးသေးဘူး။" : "Books, water, and one backpack. Weight only rises after every set reaches the top of its rep range. Until then, it stays."}</p><div className={styles.ruleFormula}><span>REPS FIRST</span><b>→</b><span>LOAD NEXT</span><b>→</b><span>REPEAT</span></div></div>
         </section>
 
         <section className={styles.foundations} id="program">
-          <header data-reveal><p className={styles.sectionLabel}>{copy.showcase.eyebrow}</p><h2>{mm ? "Body ပြောင်းတာထက်ပိုပြီး ကျန်ခဲ့မယ့် အခြေခံနှစ်ခု" : "TWO FOUNDATIONS THAT OUTLAST A TRANSFORMATION."}</h2></header>
+          <header data-reveal><p className={styles.sectionLabel}>{copy.showcase.eyebrow}</p><h2>{mm ? "ခန္ဓာကိုယ်ပြောင်းလဲပြီးနောက်မှာပါ ကျန်ရှိနေမယ့် အခြေခံနှစ်ခု။" : "TWO FOUNDATIONS THAT OUTLAST A TRANSFORMATION."}</h2></header>
           <div className={styles.foundationRows}>{copy.pillars.map((pillar, index) => (
             <article data-reveal key={pillar.number}>
               <div className={styles.foundationTop}><span>0{index + 1}</span><small>{index === 0 ? "LEARN · APPLY · ADJUST" : "SHOW UP · LOG · REPEAT"}</small></div>
@@ -157,15 +158,15 @@ export function LandingPage({ locale }: { locale: Locale }) {
 
         <section className={styles.weekSystem}>
           <div className={styles.weekHead}>
-            <div><p className={styles.sectionLabel}>48 SESSION SYSTEM</p><h2>{mm ? "၁၂ ပတ်ကို တစ်ချက်ကြည့်ရုံနဲ့ နားလည်မယ်" : "YOUR 12 WEEKS, CLEAR AT A GLANCE."}</h2></div>
-            <div><p>{mm ? "တစ်ပတ်ကို session ၄ ခု—Push နှစ်ခု၊ Pull နှစ်ခု။ Deadline မထားဘဲ ပြီးသွားတဲ့ session နောက်တစ်ခုကနေ ဆက်မယ်" : "Four sessions each week: two push and two pull. No deadline—complete the next session in your queue."}</p><div className={styles.weekLegend}><span><i className={styles.push} />PUSH</span><span><i className={styles.pull} />PULL</span></div></div>
+            <div><p className={styles.sectionLabel}>48 SESSION SYSTEM</p><h2>{mm ? "၁၂ ပတ်လုံး ဘာလုပ်ရမလဲ တစ်ချက်ကြည့်ရုံနဲ့ သိနိုင်မယ်။" : "YOUR 12 WEEKS, CLEAR AT A GLANCE."}</h2></div>
+            <div><p>{mm ? "တစ်ပတ်မှာ လေ့ကျင့်ခန်း ၄ ကြိမ်ပါမယ်—တွန်းလေ့ကျင့်ခန်း ၂ ကြိမ်နဲ့ ဆွဲလေ့ကျင့်ခန်း ၂ ကြိမ်။ ရက်သတ်မှတ်ချက်မရှိလို့ ပြီးထားတဲ့နေရာကနေ ကိုယ့်အရှိန်နဲ့ ဆက်လုပ်နိုင်တယ်။" : "Four sessions each week: two push and two pull. No deadline—complete the next session in your queue."}</p><div className={styles.weekLegend}><span><i className={styles.push} />PUSH</span><span><i className={styles.pull} />PULL</span></div></div>
           </div>
           <div className={styles.weekRows}>{weeks.map((item, weekIndex) => <article data-phase={Math.floor(weekIndex / 4) + 1} data-reveal key={item.week}><div className={styles.weekCardTop}><span>W{String(item.week).padStart(2, "0")}</span><small>{weekIndex < 4 ? "FOUNDATION" : weekIndex < 8 ? "BUILD" : "PEAK"}</small></div><strong>{String(item.from).padStart(2, "0")}—{String(item.to).padStart(2, "0")}</strong><p>SESSIONS</p><div className={styles.weekPattern}>{Array.from({ length: 4 }, (_, index) => <i className={index % 2 === 0 ? styles.push : styles.pull} key={index}>{index % 2 === 0 ? "P" : "L"}</i>)}</div></article>)}</div>
         </section>
 
         <section className={styles.proof}>
-          <div className={styles.proofTitle} data-reveal><p className={styles.sectionLabel}>BASELINE → PROOF</p><h2>{mm ? "ခံစားချက်မဟုတ်ဘူး။ တိုင်းထားတဲ့ တိုးတက်မှု" : "NOT A FEELING. MEASURED PROGRESS."}</h2></div>
-          <div className={styles.proofList}>{movements.map((movement, index) => <div data-reveal key={movement}><span>0{index + 1}</span><strong>{movement}</strong><p>WEEK 01</p><b>→</b><p>WEEK 12</p></div>)}</div>
+          <div className={styles.proofTitle} data-reveal><p className={styles.sectionLabel}>BASELINE → PROOF</p><h2>{mm ? "ခံစားချက်နဲ့ မှန်းတာမဟုတ်ဘူး။ တိုင်းတာလို့ရတဲ့ တိုးတက်မှု။" : "NOT A FEELING. MEASURED PROGRESS."}</h2></div>
+          <div className={styles.proofList}>{movementLabels.map((movement, index) => <div data-reveal key={movement}><span>0{index + 1}</span><strong>{movement}</strong><p>WEEK 01</p><b>→</b><p>WEEK 12</p></div>)}</div>
         </section>
 
         <section className={styles.equipment}>

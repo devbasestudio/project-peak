@@ -19,6 +19,7 @@ const movements = ["Push up", "Wide pull up", "Lateral raise · 4 L", "Sissy squ
 
 export function LandingPage({ locale }: { locale: Locale }) {
   const root = useRef<HTMLDivElement>(null);
+  const cursor = useRef<HTMLDivElement>(null);
   const copy = landingCopy[locale];
   const mm = locale === "mm";
   const other = mm ? "en" : "mm";
@@ -45,13 +46,35 @@ export function LandingPage({ locale }: { locale: Locale }) {
     return () => { gsap.ticker.remove(raf); lenis.destroy(); };
   }, []);
 
+  useEffect(() => {
+    const dot = cursor.current;
+    const container = root.current;
+    if (!dot || !container || window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const move = (event: MouseEvent) => {
+      dot.classList.add(styles.cursorVisible);
+      gsap.to(dot, { x: event.clientX, y: event.clientY, duration: 0.16, ease: "power2.out", overwrite: "auto" });
+    };
+    const grow = () => dot.classList.add(styles.cursorActive);
+    const shrink = () => dot.classList.remove(styles.cursorActive);
+    const targets = container.querySelectorAll("a, button, summary");
+    window.addEventListener("mousemove", move);
+    targets.forEach((target) => { target.addEventListener("mouseenter", grow); target.addEventListener("mouseleave", shrink); });
+    return () => {
+      window.removeEventListener("mousemove", move);
+      targets.forEach((target) => { target.removeEventListener("mouseenter", grow); target.removeEventListener("mouseleave", shrink); });
+    };
+  }, []);
+
   useGSAP(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const counter = { value: 0 };
     const intro = gsap.timeline({ defaults: { ease: "power4.out" } });
     intro
-      .from("[data-nav]", { autoAlpha: 0, y: -18, duration: 0.55 })
-      .from("[data-hero-image]", { scale: 1.14, clipPath: "inset(0 0 100% 0)", duration: 1.25, ease: "power4.inOut" }, "-=.25")
+      .from("[data-intro-word]", { yPercent: 125, duration: 0.72, stagger: 0.08, ease: "power4.inOut" })
+      .to("[data-intro-rule]", { scaleX: 1, duration: 0.42, ease: "power3.inOut" }, "-=.32")
+      .to("[data-intro]", { yPercent: -100, duration: 0.86, delay: 0.12, ease: "power4.inOut" })
+      .from("[data-nav]", { autoAlpha: 0, y: -18, duration: 0.55 }, "-=.28")
+      .from("[data-hero-image]", { scale: 1.14, clipPath: "inset(0 0 100% 0)", duration: 1.25, ease: "power4.inOut" }, "-=.35")
       .from("[data-hero-line]", { yPercent: 120, duration: 0.85, stagger: 0.08 }, "-=.82")
       .from("[data-hero-copy], [data-hero-action]", { autoAlpha: 0, y: 20, duration: 0.58, stagger: 0.08 }, "-=.45")
       .to(counter, { value: 48, duration: 1.25, snap: { value: 1 }, ease: "power2.out", onUpdate: () => {
@@ -69,6 +92,13 @@ export function LandingPage({ locale }: { locale: Locale }) {
 
   return (
     <div className={styles.page} lang={mm ? "my" : "en"} ref={root}>
+      <div aria-hidden="true" className={styles.cursor} ref={cursor} />
+      <div aria-hidden="true" className={styles.siteIntro} data-intro>
+        <div className={styles.introWord}><span data-intro-word>PROJECT</span></div>
+        <span className={styles.introRule} data-intro-rule />
+        <div className={`${styles.introWord} ${styles.introOutline}`}><span data-intro-word>PEAK</span></div>
+        <small>12 WEEKS · 48 SESSIONS · YOUR ASCENT</small>
+      </div>
       <header className={styles.header} data-nav>
         <Link className={styles.brand} href={`/${locale}`}><Image alt="Project Peak" height={46} priority src="/brand/logo-dark.svg" width={174} /></Link>
         <nav className={styles.nav} aria-label="Main navigation"><a href="#route">{copy.nav.journey}</a><a href="#method">{copy.nav.method}</a><a href="#program">{copy.nav.program}</a></nav>
@@ -112,12 +142,25 @@ export function LandingPage({ locale }: { locale: Locale }) {
 
         <section className={styles.foundations} id="program">
           <header data-reveal><p className={styles.sectionLabel}>{copy.showcase.eyebrow}</p><h2>{mm ? "Body ပြောင်းတာထက်ပိုပြီး ကျန်ခဲ့မယ့် အခြေခံနှစ်ခု" : "TWO FOUNDATIONS THAT OUTLAST A TRANSFORMATION."}</h2></header>
-          <div className={styles.foundationRows}>{copy.pillars.map((pillar, index) => <article data-reveal key={pillar.number}><span>0{index + 1}</span><h3>{pillar.title}</h3><p>{pillar.body}</p><div className={index === 0 ? styles.knowledgeMarks : styles.habitMarks}>{Array.from({ length: index === 0 ? 12 : 21 }, (_, mark) => <i key={mark} />)}</div></article>)}</div>
+          <div className={styles.foundationRows}>{copy.pillars.map((pillar, index) => (
+            <article data-reveal key={pillar.number}>
+              <div className={styles.foundationTop}><span>0{index + 1}</span><small>{index === 0 ? "LEARN · APPLY · ADJUST" : "SHOW UP · LOG · REPEAT"}</small></div>
+              <h3>{pillar.title}</h3>
+              <p>{pillar.body}</p>
+              <div className={styles.foundationVisual}>
+                {index === 0 ? <span className={styles.foundationVisualLabel}>FORM <b>→</b> LOAD <b>→</b> LOG <b>→</b> RECOVER</span> : <div className={styles.habitWeekLabels}><span>W01</span><span>W02</span><span>W03</span></div>}
+                <div className={index === 0 ? styles.knowledgeMarks : styles.habitMarks}>{Array.from({ length: index === 0 ? 12 : 21 }, (_, mark) => <i key={mark} />)}</div>
+              </div>
+            </article>
+          ))}</div>
         </section>
 
         <section className={styles.weekSystem}>
-          <div className={styles.weekSticky}><p className={styles.sectionLabel}>48 SESSION SYSTEM</p><h2>{mm ? "တစ်ပတ် ၄ ကြိမ်။ ကိုယ့်အရှိန်နဲ့ ၁၂ ဆင့်" : "FOUR SESSIONS. TWELVE LEVELS. YOUR PACE."}</h2><p>{mm ? "Odd session က Push၊ even session က Pull။ မလုပ်ဖြစ်တဲ့နေ့ကို အပြစ်မပေးဘူး—ပြန်လာရင် နောက်တစ်ခုကနေ ဆက်မယ်" : "Odd sessions push. Even sessions pull. Missing a day is not a failure—return and continue with what is next."}</p></div>
-          <div className={styles.weekRows}>{weeks.map((item) => <div data-reveal key={item.week}><span>W{String(item.week).padStart(2, "0")}</span><strong>{String(item.from).padStart(2, "0")}—{String(item.to).padStart(2, "0")}</strong><div>{Array.from({ length: 4 }, (_, index) => <i className={index % 2 === 0 ? styles.push : styles.pull} key={index}>{index % 2 === 0 ? "PUSH" : "PULL"}</i>)}</div></div>)}</div>
+          <div className={styles.weekHead}>
+            <div><p className={styles.sectionLabel}>48 SESSION SYSTEM</p><h2>{mm ? "၁၂ ပတ်ကို တစ်ချက်ကြည့်ရုံနဲ့ နားလည်မယ်" : "YOUR 12 WEEKS, CLEAR AT A GLANCE."}</h2></div>
+            <div><p>{mm ? "တစ်ပတ်ကို session ၄ ခု—Push နှစ်ခု၊ Pull နှစ်ခု။ Deadline မထားဘဲ ပြီးသွားတဲ့ session နောက်တစ်ခုကနေ ဆက်မယ်" : "Four sessions each week: two push and two pull. No deadline—complete the next session in your queue."}</p><div className={styles.weekLegend}><span><i className={styles.push} />PUSH</span><span><i className={styles.pull} />PULL</span></div></div>
+          </div>
+          <div className={styles.weekRows}>{weeks.map((item, weekIndex) => <article data-phase={Math.floor(weekIndex / 4) + 1} data-reveal key={item.week}><div className={styles.weekCardTop}><span>W{String(item.week).padStart(2, "0")}</span><small>{weekIndex < 4 ? "FOUNDATION" : weekIndex < 8 ? "BUILD" : "PEAK"}</small></div><strong>{String(item.from).padStart(2, "0")}—{String(item.to).padStart(2, "0")}</strong><p>SESSIONS</p><div className={styles.weekPattern}>{Array.from({ length: 4 }, (_, index) => <i className={index % 2 === 0 ? styles.push : styles.pull} key={index}>{index % 2 === 0 ? "P" : "L"}</i>)}</div></article>)}</div>
         </section>
 
         <section className={styles.proof}>

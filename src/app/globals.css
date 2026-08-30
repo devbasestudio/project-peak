@@ -52,7 +52,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 [lang="my"], .myanmar {
-  font-family: "Myanmar Text", "Noto Sans Myanmar", "Padauk", var(--font-geist), system-ui, sans-serif;
+  font-family: var(--font-myanmar), "Myanmar Text", sans-serif;
   line-height: 1.72;
 }
 
@@ -61,7 +61,7 @@ h1, h2, h3, h4, .font-display {
 [lang="my"] h3,
 [lang="my"] h4,
 [lang="my"] .font-display {
-  font-family: "Myanmar Text", "Noto Sans Myanmar", "Padauk", var(--font-geist), system-ui, sans-serif;
+  font-family: var(--font-myanmar), "Myanmar Text", sans-serif;
   letter-spacing: -0.035em;
 }
 button, input, textarea, select { font: inherit; }

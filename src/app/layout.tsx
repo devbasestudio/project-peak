@@ -24,6 +24,14 @@ const geistMono = localFont({
   display: "swap",
 });
 
+const myanmarSagar = localFont({
+  src: "./fonts/myanmar-sagar.ttf",
+  variable: "--font-myanmar",
+  weight: "400",
+  style: "normal",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
@@ -58,7 +66,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="my" className={`${archivo.variable} ${geist.variable} ${geistMono.variable}`}>
+    <html lang="my" className={`${archivo.variable} ${geist.variable} ${geistMono.variable} ${myanmarSagar.variable}`}>
       <body>
         {children}
         <Toaster position="top-center" richColors={false} closeButton />

@@ -1,18 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, KeyRound, LoaderCircle, Mail } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Locale } from "@/lib/i18n";
 
 export function AuthCard({ locale, nextPath }: { locale: Locale; nextPath: string }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState<"google" | "email" | "password" | null>(null);
+  const [loading, setLoading] = useState(false);
   const mm = locale === "mm";
 
   const callbackUrl = () => {
@@ -22,7 +19,7 @@ export function AuthCard({ locale, nextPath }: { locale: Locale; nextPath: strin
 
   async function signInWithGoogle() {
     try {
-      setLoading("google");
+      setLoading(true);
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -30,45 +27,10 @@ export function AuthCard({ locale, nextPath }: { locale: Locale; nextPath: strin
       });
       if (error) throw error;
     } catch (error) {
-      setLoading(null);
+      setLoading(false);
       toast.error(mm ? "Google login မဖွင့်ရသေးဘူး" : "Google sign-in is not configured yet", {
         description: error instanceof Error ? error.message : undefined,
       });
-    }
-  }
-
-  async function sendMagicLink(event: FormEvent) {
-    event.preventDefault();
-    try {
-      setLoading("email");
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: callbackUrl() },
-      });
-      if (error) throw error;
-      toast.success(mm ? "Email ထဲက login link ကိုဖွင့်ပါ" : "Open the sign-in link in your email");
-    } catch (error) {
-      toast.error(mm ? "Login link ပို့မရဘူး" : "Could not send the sign-in link", {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  async function signInWithPassword() {
-    try {
-      setLoading("password");
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      window.location.assign(nextPath.startsWith("/") ? nextPath : `/${locale}/app`);
-    } catch (error) {
-      toast.error(mm ? "Email သို့မဟုတ် password မမှန်ဘူး" : "Email or password is incorrect", {
-        description: error instanceof Error ? error.message : undefined,
-      });
-      setLoading(null);
     }
   }
 
@@ -97,16 +59,10 @@ export function AuthCard({ locale, nextPath }: { locale: Locale; nextPath: strin
             <h2 className="mt-4 font-display text-5xl font-bold leading-[.92] tracking-[-.06em]">{mm ? "ကိုယ့် program ထဲ ဝင်မယ်" : "ENTER YOUR PROGRAM"}</h2>
             <p className="mt-5 text-sm leading-7 text-charcoal/52" lang={mm ? "my" : "en"}>{mm ? "Account အသစ်နဲ့လည်း ဒီကနေစနိုင်တယ်။ Payment confirm မဖြစ်သေးရင် ကိုယ့် reference နဲ့ လုပ်ရမယ့်အဆင့်ကို ဆက်ပြမယ်" : "The same doorway works for a new account. If payment is pending, your reference and next step will be waiting inside."}</p>
 
-            <button type="button" onClick={signInWithGoogle} disabled={Boolean(loading)} className="mt-9 flex min-h-14 w-full items-center justify-between border border-charcoal bg-charcoal px-5 text-xs font-bold uppercase tracking-[.08em] text-white transition hover:bg-sky hover:text-charcoal disabled:opacity-60"><span>{mm ? "Google နဲ့ဆက်မယ်" : "Continue with Google"}</span>{loading === "google" ? <LoaderCircle className="animate-spin" size={17} /> : <span className="grid h-7 w-7 place-items-center border border-current font-display">G</span>}</button>
-            <div className="my-6 flex items-center gap-4"><span className="h-px flex-1 bg-charcoal/15" /><span className="eyebrow text-charcoal/30">EMAIL</span><span className="h-px flex-1 bg-charcoal/15" /></div>
-            <form onSubmit={sendMagicLink} className="space-y-3">
-              <label htmlFor="email" className="eyebrow block text-charcoal/50">Your email</label>
-              <div className="relative"><Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-aqua" /><input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="min-h-14 w-full border border-charcoal/20 bg-paper/55 pl-11 pr-4 outline-none transition focus:border-sky" /></div>
-              <button type="submit" disabled={Boolean(loading)} className="primary-button w-full">{loading === "email" ? <LoaderCircle className="animate-spin" size={17} /> : null}{mm ? "Login link ပို့မယ်" : "Send secure login link"}</button>
-            </form>
-            <button type="button" onClick={() => setShowPassword((value) => !value)} className="mx-auto mt-5 flex items-center gap-2 text-xs font-bold text-charcoal/42"><KeyRound size={14} />{mm ? "Owner password သုံးမယ်" : "Use owner password"}</button>
-            {showPassword ? <div className="mt-4 space-y-3 border-l-2 border-sky bg-ice/55 p-4"><label htmlFor="password" className="eyebrow block text-charcoal/50">Password</label><input id="password" type="password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} className="min-h-13 w-full border border-charcoal/20 bg-white px-4 outline-none focus:border-sky" /><button type="button" onClick={signInWithPassword} disabled={Boolean(loading) || !email || password.length < 8} className="secondary-button w-full disabled:opacity-45">{loading === "password" ? <LoaderCircle className="animate-spin" size={17} /> : null}{mm ? "Password နဲ့ဝင်မယ်" : "Enter with password"}</button></div> : null}
-            <p className="mt-8 text-center text-[11px] leading-6 text-charcoal/35">{mm ? "ဆက်ဝင်ခြင်းဖြင့် " : "By continuing, you accept the "}<Link href={`/${locale}/legal`} className="underline underline-offset-4">{mm ? "Terms နဲ့ Privacy Policy" : "Terms and Privacy Policy"}</Link>{mm ? " ကိုသဘောတူသည်" : "."}</p>
+            <button type="button" onClick={signInWithGoogle} disabled={loading} className="mt-9 flex min-h-16 w-full items-center justify-center gap-4 border border-charcoal/20 bg-white px-5 text-sm font-bold text-charcoal shadow-[0_10px_30px_rgba(6,17,26,.06)] transition hover:-translate-y-0.5 hover:border-sky hover:bg-ice disabled:opacity-60">
+              {loading ? <LoaderCircle className="animate-spin" size={20} /> : <Image src="/brand/google-g.svg" alt="" width={22} height={22} />}
+              <span>{mm ? "Google နဲ့ဆက်မယ်" : "Continue with Google"}</span>
+            </button>
           </div>
         </section>
       </div>

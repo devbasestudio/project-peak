@@ -44,16 +44,23 @@ export const metadata: Metadata = {
   category: "fitness",
   openGraph: {
     type: "website",
+    locale: "my_MM",
+    alternateLocale: ["en_US"],
     siteName: "Project Peak",
     title: "Project Peak — 12 Week Home Workout",
     description: "Knowledge. Habits. A stronger identity in 12 weeks.",
-    images: [{ url: "/brand/social-card.jpg", width: 1800, height: 1800 }],
+    images: [{
+      url: "/brand/project-peak-social-2026.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Project Peak — 12 weeks, 48 sessions, build your peak",
+    }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Project Peak — 12 Week Home Workout",
     description: "Knowledge. Habits. A stronger identity in 12 weeks.",
-    images: ["/brand/social-card.jpg"],
+    images: ["/brand/project-peak-social-2026.jpg"],
   },
 };
 

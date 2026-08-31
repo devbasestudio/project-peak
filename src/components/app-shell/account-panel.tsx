@@ -21,7 +21,7 @@ export function AccountPanel({
   email: string;
   displayName: string;
   preferredLocale: Locale;
-  program: { status: string; name: string; assignedAt: string } | null;
+  program: { status: string; name: string; assignedDate: string } | null;
   order: { status: string; reference_code: string } | null;
 }) {
   const mm = locale === "mm";
@@ -92,7 +92,7 @@ export function AccountPanel({
 
       {program ? (
         <section className="mt-4 flex flex-col gap-5 rounded-2xl border border-charcoal/10 bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="eyebrow text-charcoal/35">CURRENT PROGRAM</p><h2 className="mt-3 font-display text-2xl font-bold">{program.name}</h2><p className="mt-2 text-xs text-charcoal/42">{mm ? "Assign လုပ်ထားတဲ့ရက်" : "Assigned"} · {new Intl.DateTimeFormat(locale === "mm" ? "my-MM" : "en-US", { dateStyle: "medium", timeZone: "Asia/Yangon" }).format(new Date(program.assignedAt))}</p></div>
+          <div><p className="eyebrow text-charcoal/35">CURRENT PROGRAM</p><h2 className="mt-3 font-display text-2xl font-bold">{program.name}</h2><p className="mt-2 text-xs text-charcoal/42">{mm ? "Assign လုပ်ထားတဲ့ရက်" : "Assigned"} · {program.assignedDate}</p></div>
           <Link href={`/${locale}/app/progress`} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-charcoal/10 px-5 text-sm font-semibold hover:bg-paper">{mm ? "တိုးတက်မှုကြည့်မယ်" : "View progress"}<ChevronRight size={16} /></Link>
         </section>
       ) : null}

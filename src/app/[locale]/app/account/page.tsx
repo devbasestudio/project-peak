@@ -38,7 +38,10 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
       program={program ? {
         status: program.status,
         name: locale === "mm" ? program.name_mm : program.name_en,
-        assignedAt: program.assigned_at,
+        assignedDate: new Intl.DateTimeFormat(locale === "mm" ? "my-MM" : "en-US", {
+          dateStyle: "medium",
+          timeZone: "Asia/Yangon",
+        }).format(new Date(program.assigned_at)),
       } : null}
       order={order}
     />

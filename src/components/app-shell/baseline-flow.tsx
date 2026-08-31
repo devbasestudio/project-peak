@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Minus, Plus, TimerReset } from "lucide-react";
 import { saveBaseline } from "@/app/actions";
-import { AscentMark } from "@/components/app-shell/ascent-mark";
 import type { Locale } from "@/lib/i18n";
 
 type Movement = { id: string; name_mm: string; name_en: string; equipment_mm: string | null; equipment_en: string | null };
@@ -41,31 +40,59 @@ export function BaselineFlow({ locale, programId, movements }: { locale: Locale;
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <header className="grid gap-6 border-b-2 border-charcoal pb-7 lg:grid-cols-[1fr_260px] lg:items-end">
-        <div><p className="eyebrow text-charcoal/40">BASE CAMP · DAY ZERO</p><h1 className="mt-4 font-display text-5xl font-bold leading-[.9] tracking-[-.07em] sm:text-7xl">{mm ? "စတင်တဲ့နေရာကို မှတ်မယ်" : "Mark the starting line"}</h1><p className="mt-5 max-w-2xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "Form မပျက်ဘဲ ကိုယ်လုပ်နိုင်သလောက်စမ်းပါ။ ဒီကိန်းဂဏန်းတွေကို Week 12 မှာ ပြန်ယှဉ်မယ်" : "Use clean form and record your honest maximum. These numbers become your Week 12 proof."}</p></div>
-        <AscentMark className="hidden w-full text-charcoal lg:block" />
+    <div className="mx-auto mt-6 max-w-4xl">
+      <header className="mb-6">
+        <p className="text-xs font-semibold text-sky">{mm ? "စတင်မယ့်အခြေအနေ · ၄ ခု" : "Starting point · 4 movements"}</p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl" lang={mm ? "my" : "en"}>{mm ? "လက်ရှိအားကို မှတ်ထားမယ်" : "Record your starting point"}</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "လှုပ်ရှားမှုတစ်ခုစီကို Form မှန်မှန်နဲ့ အများဆုံးလုပ်ပြီး ရတဲ့အကြိမ်ကို မှတ်ပါ။" : "Use clean form, do your honest maximum, and record the reps for each movement."}</p>
       </header>
 
-      <div className="mt-6 grid grid-cols-4 border-y border-charcoal/15 bg-white">
-        {movements.map((item, itemIndex) => <button key={item.id} type="button" onClick={() => setIndex(itemIndex)} className={`relative min-h-16 border-r border-charcoal/12 px-2 py-3 text-left last:border-r-0 ${itemIndex === index ? "bg-sky" : ""}`}><span className="mono block text-[9px] font-bold text-charcoal/35">0{itemIndex + 1}</span><span className="mt-1 hidden truncate text-xs font-bold sm:block">{mm ? item.name_mm : item.name_en}</span>{itemIndex < index ? <Check className="absolute right-2 top-2" size={13} /> : null}</button>)}
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1" aria-label="Baseline movements">
+        {movements.map((item, itemIndex) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setIndex(itemIndex)}
+            className={`flex min-h-11 min-w-24 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold transition ${itemIndex === index ? "bg-charcoal text-white" : itemIndex < index ? "bg-ice text-aqua" : "border border-charcoal/10 bg-white text-charcoal/48"}`}
+          >
+            {itemIndex < index ? <Check size={14} /> : <span>{itemIndex + 1}</span>}
+            <span className="max-w-24 truncate">{mm ? item.name_mm : item.name_en}</span>
+          </button>
+        ))}
       </div>
 
-      <section className="grid border-b border-charcoal/20 bg-white lg:grid-cols-[1fr_360px]">
-        <div className="relative min-h-[430px] overflow-hidden p-6 sm:p-10 lg:min-h-[500px]">
-          <div aria-hidden className="absolute bottom-0 left-0 h-2 w-full bg-charcoal/8"><div className="h-full bg-sky transition-[width] duration-500" style={{ width: `${progress}%` }} /></div>
-          <div className="flex h-full flex-col justify-between">
-            <div className="flex items-start justify-between"><div><p className="mono text-[10px] font-bold tracking-[.2em] text-charcoal/38">MOVEMENT {String(index + 1).padStart(2, "0")} / {String(movements.length).padStart(2, "0")}</p><h2 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[.9] tracking-[-.065em] sm:text-7xl">{mm ? movement.name_mm : movement.name_en}</h2><p className="mt-4 text-sm font-bold text-charcoal/42">{mm ? movement.equipment_mm : movement.equipment_en}</p></div><span className="hidden text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/28 [writing-mode:vertical-rl] sm:block">Maximum clean reps</span></div>
-            <div className="mt-12 border-t border-charcoal/15 pt-5"><p className="max-w-xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "တစ်ခုပြီးရင် 3 မိနစ်နားပြီး နောက် movement ကိုဆက်မယ်" : "After this movement, rest three minutes before continuing."}</p></div>
+      <section className="overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-[0_16px_45px_rgba(6,17,26,.05)]">
+        <div className="h-1.5 bg-charcoal/[.06]"><div className="h-full rounded-r-full bg-sky transition-[width] duration-300" style={{ width: `${progress}%` }} /></div>
+        <div className="grid lg:grid-cols-[1fr_290px]">
+          <div className="p-6 sm:p-8">
+            <p className="text-xs font-semibold text-charcoal/38">{mm ? `လှုပ်ရှားမှု ${index + 1} / ${movements.length}` : `Movement ${index + 1} of ${movements.length}`}</p>
+            <h2 className="mt-3 font-display text-4xl font-bold tracking-[-.04em] sm:text-5xl" lang={mm ? "my" : "en"}>{mm ? movement.name_mm : movement.name_en}</h2>
+            <p className="mt-2 text-sm text-charcoal/45">{mm ? movement.equipment_mm : movement.equipment_en}</p>
+            <div className="mt-7 rounded-xl bg-[#f4f6f5] p-4 text-sm leading-7 text-charcoal/58" lang={mm ? "my" : "en"}>{mm ? "Form မပျက်ခင်အထိ လုပ်ပါ။ ပြီးရင် အောက်မှာ အကြိမ်ရေကို ထည့်ပြီး ဆက်သွားပါ။" : "Stop before your form breaks. Enter the reps, then continue."}</div>
           </div>
-        </div>
 
-        <aside className="flex flex-col border-t border-charcoal/15 bg-paper lg:border-l lg:border-t-0">
-          <div className="border-b border-charcoal/15 p-6 sm:p-8"><p className="eyebrow text-charcoal/35">REPS RECORDED</p><div aria-live="polite" className="mono mt-4 text-[7rem] font-bold leading-none tracking-[-.12em] sm:text-[8.5rem]">{values[movement.id]}</div></div>
-          <div className="grid grid-cols-2 border-b border-charcoal/15"><button type="button" onClick={() => setValues((current) => ({ ...current, [movement.id]: Math.max(0, current[movement.id] - 1) }))} className="grid min-h-20 place-items-center border-r border-charcoal/15 bg-white" aria-label="Decrease reps"><Minus size={24} /></button><button type="button" onClick={() => setValues((current) => ({ ...current, [movement.id]: Math.min(999, current[movement.id] + 1) }))} className="grid min-h-20 place-items-center bg-sky" aria-label="Increase reps"><Plus size={24} /></button></div>
-          {rest !== null && rest > 0 ? <div className="flex items-center justify-between border-b border-charcoal/15 px-6 py-4"><span className="flex items-center gap-2 text-xs font-bold"><TimerReset size={16} />{mm ? "နားချိန်" : "Rest"}</span><button type="button" onClick={() => setRest(0)} className="mono text-2xl font-bold">{time}</button></div> : null}
-          <div className="mt-auto p-6"><button type="button" onClick={next} disabled={saving} className="flex min-h-14 w-full items-center justify-between border-2 border-charcoal bg-charcoal px-5 text-sm font-bold text-white disabled:opacity-50"><span>{saving ? (mm ? "သိမ်းနေတယ်…" : "Saving…") : index === movements.length - 1 ? (mm ? "Baseline သိမ်းမယ်" : "Save baseline") : (mm ? "နောက်တစ်ခု" : "Next movement")}</span>{index === movements.length - 1 ? <Check size={17} /> : <ArrowRight size={17} />}</button>{index > 0 ? <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 text-xs font-bold text-charcoal/45"><ArrowLeft size={14} />{mm ? "နောက်ပြန်" : "Previous"}</button> : null}</div>
-        </aside>
+          <aside className="border-t border-charcoal/8 bg-[#fafbfa] p-6 lg:border-l lg:border-t-0">
+            <p className="text-center text-xs font-semibold text-charcoal/42">{mm ? "ရရှိတဲ့အကြိမ်" : "Reps completed"}</p>
+            <div className="mt-4 flex items-center justify-center gap-4">
+              <button type="button" onClick={() => setValues((current) => ({ ...current, [movement.id]: Math.max(0, current[movement.id] - 1) }))} className="grid h-12 w-12 place-items-center rounded-xl border border-charcoal/10 bg-white" aria-label="Decrease reps"><Minus size={20} /></button>
+              <span aria-live="polite" className="mono min-w-24 text-center text-5xl font-bold tracking-[-.05em]">{values[movement.id]}</span>
+              <button type="button" onClick={() => setValues((current) => ({ ...current, [movement.id]: Math.min(999, current[movement.id] + 1) }))} className="grid h-12 w-12 place-items-center rounded-xl bg-sky" aria-label="Increase reps"><Plus size={20} /></button>
+            </div>
+
+            {rest !== null && rest > 0 ? (
+              <div className="mt-5 flex items-center justify-between rounded-xl bg-ice px-4 py-3">
+                <span className="flex items-center gap-2 text-xs font-semibold"><TimerReset size={16} />{mm ? "နားချိန်" : "Rest"}</span>
+                <button type="button" onClick={() => setRest(0)} className="mono text-lg font-bold">{time}</button>
+              </div>
+            ) : null}
+
+            <button type="button" onClick={next} disabled={saving} className="mt-5 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-charcoal px-5 text-sm font-semibold text-white disabled:opacity-50">
+              {saving ? (mm ? "သိမ်းနေပါတယ်…" : "Saving…") : index === movements.length - 1 ? (mm ? "Baseline သိမ်းမယ်" : "Save baseline") : (mm ? "နောက်တစ်ခု ဆက်မယ်" : "Next movement")}
+              {index === movements.length - 1 ? <Check size={17} /> : <ArrowRight size={17} />}
+            </button>
+            {index > 0 ? <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="mt-2 flex min-h-10 w-full items-center justify-center gap-2 text-xs font-semibold text-charcoal/45"><ArrowLeft size={14} />{mm ? "အရင်တစ်ခု" : "Previous"}</button> : null}
+          </aside>
+        </div>
       </section>
     </div>
   );

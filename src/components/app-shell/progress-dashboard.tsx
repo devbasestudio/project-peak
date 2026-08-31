@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Dumbbell, Droplets, Moon, Trophy, Utensils } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
-import { AscentMark, AscentRule } from "@/components/app-shell/ascent-mark";
+import { AscentMark } from "@/components/app-shell/ascent-mark";
 
 export type AssessmentComparison = {
   position: number;
@@ -53,29 +53,28 @@ export function ProgressDashboard({
   const sleepAverage = habits.filter((habit) => habit.sleepHours != null).reduce((sum, habit, _, rows) => sum + (habit.sleepHours ?? 0) / rows.length, 0);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <section className="relative overflow-hidden border-b-2 border-charcoal bg-white pb-8 pt-3">
-        <AscentMark className="absolute -right-10 top-0 h-48 w-72 text-sky sm:h-64 sm:w-96" />
-        <div className="relative grid gap-9 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div><p className="font-mono text-[10px] font-bold uppercase tracking-[.2em] text-charcoal/45">{program.name} · WEEK {week}</p><h1 className="mt-5 max-w-3xl font-display text-5xl font-black uppercase leading-[.88] tracking-[-.07em] sm:text-8xl">{mm ? "ကိုယ့်တိုးတက်မှု" : "The ascent"}</h1><p className="mt-5 max-w-xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "Workout, habits နဲ့ ပထမနေ့က baseline ကို တစ်နေရာထဲမှာ ပြန်ကြည့်မယ်" : "See your training, daily habits and the proof that started on day one."}</p></div>
-          <div className="flex items-end gap-2"><span className="font-mono text-7xl font-black tracking-[-.09em] text-charcoal">{progress}</span><span className="mb-3 text-sm text-charcoal/38">%</span></div>
+    <div className="mx-auto max-w-4xl">
+      <section className="overflow-hidden rounded-2xl bg-charcoal p-6 text-white shadow-[0_18px_55px_rgba(6,17,26,.11)] sm:p-8">
+        <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div><p className="text-xs font-semibold text-sky">{program.name} · {mm ? `အပတ် ${week}` : `Week ${week}`}</p><h1 className="mt-2 max-w-3xl font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl">{mm ? "တိုးတက်မှုမှတ်တမ်း" : "Your progress"}</h1><p className="mt-3 max-w-xl text-sm leading-7 text-white/55" lang={mm ? "my" : "en"}>{mm ? "Workout ပြီးထားတာနဲ့ နေ့စဉ်မှတ်တမ်းတွေကို ဒီမှာကြည့်နိုင်ပါတယ်။" : "See completed workouts, daily logs, and your baseline comparison."}</p></div>
+          <div className="flex items-end gap-2"><span className="font-display text-5xl font-bold tracking-[-.05em]">{progress}</span><span className="mb-2 text-sm text-white/40">%</span></div>
         </div>
-        <div className="relative mt-8"><AscentRule completed={program.completed} /></div>
-        <div className="relative mt-5 flex flex-wrap gap-x-7 gap-y-2 font-mono text-[10px] uppercase tracking-wider text-charcoal/45"><span><b className="mr-2 text-charcoal">{program.completed}</b>/ 48 sessions</span><span><b className="mr-2 text-charcoal">{Math.max(0, 48 - program.completed)}</b>{mm ? "ကျန်" : "remaining"}</span><span>{program.status}</span></div>
+        <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky" style={{ width: `${progress}%` }} /></div>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/45"><span><b className="mr-1 text-white">{program.completed}</b>/ 48 {mm ? "ပြီး" : "sessions"}</span><span><b className="mr-1 text-white">{Math.max(0, 48 - program.completed)}</b>{mm ? "ခု ကျန်" : "remaining"}</span><span>{program.status}</span></div>
       </section>
 
-      <div className="mt-8 grid grid-cols-3 border-y border-charcoal/15 bg-white">
+      <div className="mt-5 grid grid-cols-3 rounded-xl bg-[#e9edeb] p-1">
         {([
           ["days", mm ? "နေ့စဉ်" : "Daily"],
           ["history", mm ? "လေ့ကျင့်ခန်း" : "Exercises"],
           ["proof", mm ? "နှိုင်းယှဉ်" : "Proof"],
-        ] as Array<[Tab, string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setTab(value)} className={`min-h-12 border-r border-charcoal/15 px-3 font-mono text-[10px] font-bold uppercase tracking-wider transition last:border-r-0 ${tab === value ? "bg-charcoal text-white" : "text-charcoal/45 hover:bg-paper"}`}>{label}</button>)}
+        ] as Array<[Tab, string]>).map(([value, label]) => <button key={value} type="button" onClick={() => setTab(value)} className={`min-h-11 rounded-lg px-2 text-xs font-semibold transition ${tab === value ? "bg-white text-charcoal shadow-sm" : "text-charcoal/45"}`}>{label}</button>)}
       </div>
 
       {tab === "days" ? (
         <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_.38fr]">
-          <div className="border border-charcoal/15 bg-white p-4 sm:p-7">
-            <div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">DAILY GRID</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-tight">{mm ? "တစ်နေ့ချင်းစီ" : "One day at a time"}</h2></div><Link href={`/${locale}/app/habits`} className="flex min-h-11 items-center gap-2 border border-charcoal/15 px-3 text-xs font-bold hover:bg-paper">{mm ? "ဒီနေ့မှတ်မယ်" : "Log today"}<ArrowRight size={14} /></Link></div>
+          <div className="rounded-2xl border border-charcoal/10 bg-white p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-4"><div><p className="text-[10px] font-semibold text-sky">DAILY LOG</p><h2 className="mt-1 text-xl font-bold">{mm ? "နေ့စဉ်မှတ်တမ်း" : "Day by day"}</h2></div><Link href={`/${locale}/app/habits`} className="flex min-h-10 items-center gap-2 rounded-lg border border-charcoal/10 px-3 text-xs font-semibold hover:bg-paper">{mm ? "ဒီနေ့မှတ်မယ်" : "Log today"}<ArrowRight size={14} /></Link></div>
             {cells.length ? <div className="mt-6 grid grid-cols-4 gap-2.5">{cells.map((cell, index) => <DayCell key={cell.date} cell={cell} number={index + 1} />)}</div> : <Empty copy={mm ? "Activity မရှိသေးဘူး" : "No activity yet"} />}
             <div className="mt-5 flex flex-wrap gap-4 text-[10px] font-semibold text-charcoal/42"><Legend fill label={mm ? "ပြီး" : "Done"} /><Legend label={mm ? "မပြီးသေး" : "Not done"} /><Legend dashed label={mm ? "မသက်ဆိုင်" : "Not applicable"} /></div>
           </div>
@@ -88,7 +87,7 @@ export function ProgressDashboard({
       ) : null}
 
       {tab === "history" ? (
-        <section className="mt-4 border border-charcoal/15 bg-white p-5 sm:p-7">
+        <section className="mt-4 rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">EXERCISE HISTORY</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-tight">{mm ? "Session တစ်ခုပြီးတစ်ခု" : "Session by session"}</h2></div><div className="grid grid-cols-2 border border-charcoal/15 bg-paper">{(["push", "pull"] as const).map((value) => <button key={value} type="button" onClick={() => setDayType(value)} className={`min-h-11 border-r border-charcoal/15 px-5 text-xs font-bold uppercase last:border-r-0 ${dayType === value ? "bg-sky text-charcoal" : "text-charcoal/38"}`}>{value}</button>)}</div></div>
           {visibleHistory.length ? <div className="mt-6 space-y-3">{visibleHistory.map((exercise) => <HistoryCard key={exercise.id} locale={locale} exercise={exercise} dayType={dayType} />)}</div> : <Empty copy={mm ? "ဒီ day type အတွက် logs မရှိသေးဘူး" : "No logs for this day type yet"} />}
         </section>
@@ -96,7 +95,7 @@ export function ProgressDashboard({
 
       {tab === "proof" ? (
         <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_.36fr]">
-          <div className="border border-charcoal/15 bg-white p-5 sm:p-7"><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">WEEK 1 → WEEK 12</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-tight">{mm ? "စခဲ့တဲ့နေရာနဲ့ ရောက်နေတဲ့နေရာ" : "Start line / summit"}</h2><div className="mt-6">{comparisons.map((item) => <ComparisonRow key={item.position} locale={locale} item={item} />)}</div></div>
+          <div className="rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6"><p className="text-[10px] font-semibold text-sky">WEEK 1 → WEEK 12</p><h2 className="mt-2 text-xl font-bold">{mm ? "စခဲ့တဲ့နေရာနဲ့ အခုရောက်နေတဲ့နေရာ" : "Starting point and result"}</h2><div className="mt-5">{comparisons.map((item) => <ComparisonRow key={item.position} locale={locale} item={item} />)}</div></div>
           <aside className="relative overflow-hidden bg-charcoal p-6 text-white sm:p-8"><AscentMark className="absolute -right-12 top-0 h-40 w-60 text-sky/20" /><Trophy className="relative text-sky" /><p className="relative mt-16 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-white/35">THE PROOF</p><h3 className="relative mt-3 font-display text-3xl font-black uppercase tracking-[-.045em]">{comparisons.every((item) => item.final != null) ? (mm ? "12 weeks comparison အဆင်သင့်ဖြစ်ပြီ" : "Your 12-week comparison is ready") : (mm ? "Session 48 မှာ ပြန်စမ်းမယ်" : "Retest after session 48")}</h3>{program.completed >= 48 && comparisons.some((item) => item.final == null) ? <Link href={`/${locale}/app/completion`} className="relative mt-7 flex min-h-12 items-center justify-center gap-2 bg-sky px-4 text-sm font-bold text-charcoal">{mm ? "Final flow စမယ်" : "Start final flow"}<ArrowRight size={16} /></Link> : null}</aside>
         </section>
       ) : null}

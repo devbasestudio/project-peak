@@ -117,24 +117,24 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
   const activeDone = activeSets.filter((set) => set.done).length;
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <header className="grid gap-5 border-b-2 border-charcoal pb-5 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div><p className="eyebrow text-charcoal/38">PHASE {phase} · LIVE TRAINING LOG</p><div className="mt-3 flex items-baseline gap-4"><h1 className="font-display text-5xl font-bold tracking-[-.07em] sm:text-7xl">SESSION {String(dayNumber).padStart(2, "0")}</h1><span className="hidden border-l border-charcoal/20 pl-4 text-sm font-bold sm:block">{dayType}</span></div></div>
+    <div className="mx-auto max-w-4xl">
+      <header className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+        <div><p className="text-xs font-semibold text-sky">PHASE {phase} · {dayType}</p><h1 className="mt-2 font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl">{mm ? `ဒီနေ့ Session ${dayNumber}` : `Session ${dayNumber}`}</h1><p className="mt-2 text-sm text-charcoal/48">{mm ? "Set တစ်ခုပြီးတိုင်း ရလဒ်ကို မှတ်ပါ" : "Log each set as you complete it"}</p></div>
         <div className="flex items-center gap-4"><span className={`flex items-center gap-2 text-[10px] font-bold ${online ? "text-charcoal" : "text-charcoal/38"}`}>{online ? <Wifi size={14} className="text-sky" /> : <WifiOff size={14} />}{online ? "ONLINE" : "OFFLINE · SAVING"}</span><span className="mono text-xs font-bold">{completedSets}/{totalSets} SETS</span></div>
       </header>
 
-      <div className="h-1 bg-charcoal/10"><div className="h-full bg-sky transition-[width]" style={{ width: `${(completedSets / totalSets) * 100}%` }} /></div>
-      <nav aria-label="Exercises" className="grid grid-cols-2 border-b border-charcoal/15 bg-white sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-charcoal/[.07]"><div className="h-full rounded-full bg-sky transition-[width]" style={{ width: `${(completedSets / totalSets) * 100}%` }} /></div>
+      <nav aria-label="Exercises" className="mt-4 flex gap-2 overflow-x-auto pb-2">
         {items.map((item, itemIndex) => {
           const count = values[item.id].filter((set) => set.done).length;
           const selected = itemIndex === activeIndex;
-          return <button key={item.id} type="button" onClick={() => setActiveIndex(itemIndex)} className={`relative min-h-20 border-r border-b border-charcoal/10 px-3 py-3 text-left lg:border-b-0 ${selected ? "bg-sky" : "hover:bg-paper"}`}><span className="mono text-[9px] font-bold text-charcoal/35">{String(itemIndex + 1).padStart(2, "0")}</span><span className="mt-1 block truncate text-xs font-bold">{mm ? item.exercise.name_mm : item.exercise.name_en}</span><span className="mono mt-1 block text-[8px] text-charcoal/35">{count}/{item.sets} SETS</span>{count === item.sets ? <Check className="absolute right-2 top-2" size={13} /> : null}</button>;
+          return <button key={item.id} type="button" onClick={() => setActiveIndex(itemIndex)} className={`relative min-h-16 min-w-36 rounded-xl border px-3 py-3 text-left transition ${selected ? "border-charcoal bg-charcoal text-white" : "border-charcoal/10 bg-white hover:border-charcoal/25"}`}><span className={`text-[9px] font-semibold ${selected ? "text-sky" : "text-charcoal/35"}`}>{itemIndex + 1} · {count}/{item.sets} SETS</span><span className="mt-1 block truncate text-xs font-semibold">{mm ? item.exercise.name_mm : item.exercise.name_en}</span>{count === item.sets ? <Check className="absolute right-2 top-2" size={13} /> : null}</button>;
         })}
       </nav>
 
-      <section ref={sheetRef} className="grid border-b border-charcoal/20 bg-white lg:grid-cols-[1fr_300px]">
+      <section ref={sheetRef} className="mt-2 grid overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-[0_16px_45px_rgba(6,17,26,.05)] lg:grid-cols-[1fr_260px]">
         <div>
-          <header className="relative overflow-hidden border-b border-charcoal/15 p-6 sm:p-9"><span aria-hidden className="absolute bottom-0 left-0 top-0 w-2 bg-sky" /><div className="flex items-start justify-between gap-5"><div><p className="mono text-[9px] font-bold tracking-[.2em] text-charcoal/35">EXERCISE {String(activeIndex + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}</p><h2 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-[.9] tracking-[-.06em] sm:text-6xl">{mm ? active.exercise.name_mm : active.exercise.name_en}</h2></div><span className="mono text-xs font-bold">{activeDone}/{active.sets}</span></div><p className="mt-5 max-w-2xl text-sm leading-7 text-charcoal/56" lang={mm ? "my" : "en"}>{mm ? active.exercise.cue_mm : active.exercise.cue_en}</p>{active.exercise.unilateral ? <p className="mt-3 border-l-2 border-sky pl-3 text-xs font-bold">{mm ? "ဘယ်/ညာ နှစ်ဖက် = 1 set" : "Both sides = one set"}</p> : null}</header>
+          <header className="border-b border-charcoal/8 p-5 sm:p-7"><div className="flex items-start justify-between gap-5"><div><p className="text-[10px] font-semibold text-sky">{mm ? `လေ့ကျင့်ခန်း ${activeIndex + 1} / ${items.length}` : `Exercise ${activeIndex + 1} of ${items.length}`}</p><h2 className="mt-2 max-w-3xl font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl">{mm ? active.exercise.name_mm : active.exercise.name_en}</h2></div><span className="rounded-full bg-ice px-3 py-1.5 text-xs font-bold text-aqua">{activeDone}/{active.sets}</span></div><p className="mt-4 max-w-2xl text-sm leading-7 text-charcoal/56" lang={mm ? "my" : "en"}>{mm ? active.exercise.cue_mm : active.exercise.cue_en}</p>{active.exercise.unilateral ? <p className="mt-3 rounded-lg bg-ice px-3 py-2 text-xs font-semibold">{mm ? "ဘယ်/ညာ နှစ်ဖက် = 1 set" : "Both sides = one set"}</p> : null}</header>
 
           <div className="border-t border-charcoal/8">
             <div className="hidden grid-cols-[72px_1fr_1fr_160px] border-b border-charcoal/12 bg-paper px-4 py-3 text-[9px] font-bold uppercase tracking-[.18em] text-charcoal/35 sm:grid"><span>Set</span><span>Load</span><span>Reps</span><span>Status</span></div>
@@ -147,7 +147,7 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
         </aside>
       </section>
 
-      <div className="sticky bottom-20 z-20 mt-4 grid border-2 border-charcoal bg-charcoal text-white shadow-[0_-12px_40px_rgba(6,17,26,.12)] sm:grid-cols-[1fr_auto] lg:bottom-4">
+      <div className="sticky bottom-20 z-20 mt-4 grid overflow-hidden rounded-2xl bg-charcoal text-white shadow-[0_-12px_40px_rgba(6,17,26,.12)] sm:grid-cols-[1fr_auto] lg:bottom-4">
         <div className="flex items-center gap-4 p-3 sm:px-5"><button type="button" onClick={() => setRunning((value) => !value)} className="grid h-12 w-12 place-items-center bg-sky text-charcoal">{running ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><div><p className="mono text-[8px] font-bold tracking-[.18em] text-white/38">REST TIMER</p><p aria-live="polite" className="mono text-2xl font-bold">{restLabel}</p></div><button type="button" onClick={() => { setRest(active.rest_seconds); setRunning(false); }} className="ml-auto grid h-10 w-10 place-items-center text-white/40" aria-label="Reset rest timer"><RotateCcw size={17} /></button></div>
         {completedSets === totalSets ? <button type="button" disabled={finishing} onClick={finishWorkout} className="flex min-h-16 items-center justify-between border-t border-white/15 bg-sky px-5 text-sm font-bold text-charcoal sm:min-w-64 sm:border-l sm:border-t-0"><span>{finishing ? (mm ? "Finish လုပ်နေတယ်…" : "Finishing…") : (mm ? "Session finish" : "Finish session")}</span><Check size={18} /></button> : <div className="hidden min-w-64 items-center justify-center border-l border-white/12 px-5 text-[10px] font-bold uppercase tracking-[.15em] text-white/35 sm:flex">{totalSets - completedSets} sets remaining</div>}
       </div>

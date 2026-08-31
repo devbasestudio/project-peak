@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, CircleAlert, ExternalLink, Image as ImageIcon, Pause, Play, RotateCcw } from "lucide-react";
+import { BookOpen, Check, ChevronDown, CircleAlert, ExternalLink, Image as ImageIcon, Pause, Play, RotateCcw } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 
 export type ProgramBlock = {
@@ -18,7 +18,17 @@ export type ProgramBlock = {
 export function ProgramBlocks({ blocks, locale }: { blocks: ProgramBlock[]; locale: Locale }) {
   const visible = blocks.filter((block) => block.visible);
   if (!visible.length) return null;
-  return <section className="mb-10 border-l-4 border-sky bg-white px-5 py-6 sm:px-8 sm:py-8" aria-label="Coach notes"><div className="mb-6 flex items-center gap-3 border-b border-charcoal/12 pb-3"><span className="h-2 w-2 bg-sky" /><p className="mono text-[9px] font-bold uppercase tracking-[.22em] text-charcoal/35">Coach notes · program document</p></div><div className="space-y-6">{visible.map((block) => <ProgramBlockView block={block} key={block.id} locale={locale} />)}</div></section>;
+  const mm = locale === "mm";
+  return (
+    <details className="group mt-5 overflow-hidden rounded-2xl border border-charcoal/10 bg-white" aria-label="Coach notes">
+      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ice text-aqua"><BookOpen size={18} /></span>
+        <span className="min-w-0 flex-1"><strong className="block text-sm font-semibold" lang={mm ? "my" : "en"}>{mm ? "မစခင် သိထားရန်" : "Before you begin"}</strong><small className="mt-1 block text-[11px] text-charcoal/42" lang={mm ? "my" : "en"}>{mm ? "Coach ထည့်ပေးထားတဲ့ လမ်းညွှန်ချက်များ" : "Notes and guidance from your coach"}</small></span>
+        <ChevronDown className="text-charcoal/35 transition-transform group-open:rotate-180" size={18} />
+      </summary>
+      <div className="space-y-5 border-t border-charcoal/8 px-5 py-5 sm:px-6">{visible.map((block) => <ProgramBlockView block={block} key={block.id} locale={locale} />)}</div>
+    </details>
+  );
 }
 
 function ProgramBlockView({ block, locale }: { block: ProgramBlock; locale: Locale }) {
@@ -27,9 +37,9 @@ function ProgramBlockView({ block, locale }: { block: ProgramBlock; locale: Loca
   const text = stringValue(content.text);
   const caption = stringValue(content.caption);
 
-  if (block.block_type === "heading") return <div className="pt-1"><p className="mono text-[9px] font-bold tracking-[.2em] text-charcoal/30">SECTION</p><h2 className="mt-2 max-w-4xl font-display text-3xl font-bold leading-tight tracking-[-.05em] sm:text-5xl" lang={locale === "mm" ? "my" : "en"}>{title || text}</h2>{title && text ? <p className="mt-4 max-w-3xl leading-8 text-charcoal/58">{text}</p> : null}</div>;
-  if (block.block_type === "rich_text") return <p className="max-w-4xl border-y border-charcoal/10 py-5 leading-8 text-charcoal/64" lang={locale === "mm" ? "my" : "en"}>{text}</p>;
-  if (block.block_type === "callout") return <div className="grid border-y-2 border-charcoal bg-paper sm:grid-cols-[180px_1fr]"><p className="flex items-center gap-2 border-b border-charcoal/15 bg-sky px-4 py-4 text-sm font-bold sm:border-b-0 sm:border-r"><CircleAlert size={17} />{title}</p><p className="px-4 py-4 text-sm leading-7 text-charcoal/62">{text}</p></div>;
+  if (block.block_type === "heading") return <div><h2 className="max-w-3xl font-display text-2xl font-bold leading-tight tracking-[-.035em] sm:text-3xl" lang={locale === "mm" ? "my" : "en"}>{title || text}</h2>{title && text ? <p className="mt-3 max-w-3xl text-sm leading-7 text-charcoal/58">{text}</p> : null}</div>;
+  if (block.block_type === "rich_text") return <p className="max-w-4xl text-sm leading-7 text-charcoal/64" lang={locale === "mm" ? "my" : "en"}>{text}</p>;
+  if (block.block_type === "callout") return <div className="rounded-xl bg-ice p-4"><p className="flex items-center gap-2 text-sm font-semibold"><CircleAlert size={17} />{title}</p><p className="mt-2 text-sm leading-7 text-charcoal/62">{text}</p></div>;
   if (block.block_type === "divider") return <hr className="border-charcoal/20" />;
   if (block.block_type === "spacer") return <div aria-hidden style={{ height: Math.min(160, Math.max(8, numberValue(block.config.height, 24))) }} />;
   if (block.block_type === "image") {
@@ -42,9 +52,9 @@ function ProgramBlockView({ block, locale }: { block: ProgramBlock; locale: Loca
   }
   if (block.block_type === "timer") return <BlockTimer label={stringValue(content.label) || title || "Timer"} seconds={numberValue(block.config.seconds, 90)} />;
   if (block.block_type === "checklist") return <Checklist title={title} items={arrayValue(content.items)} />;
-  if (block.block_type === "exercise" || block.block_type === "exercise_cue") return <div className="border-y-2 border-charcoal bg-white"><div className="grid sm:grid-cols-[1fr_auto]"><div className="p-5"><p className="mono text-[9px] font-bold tracking-[.18em] text-sky">EXERCISE PRESCRIPTION</p><h3 className="mt-2 font-display text-3xl font-bold tracking-[-.045em]">{title}</h3>{text ? <p className="mt-4 max-w-2xl text-sm leading-7 text-charcoal/56">{text}</p> : null}</div><div className="grid grid-cols-3 border-t border-charcoal/15 bg-paper sm:min-w-80 sm:border-l sm:border-t-0"><Measure label="SETS" value={numberValue(block.config.sets, 3)} /><Measure label="REPS" value={stringValue(block.config.reps) || "8–12"} /><Measure label="REST" value={`${numberValue(block.config.restSeconds, 90)}s`} /></div></div></div>;
+  if (block.block_type === "exercise" || block.block_type === "exercise_cue") return <div className="overflow-hidden rounded-xl border border-charcoal/10 bg-white"><div className="grid sm:grid-cols-[1fr_auto]"><div className="p-4"><p className="text-[10px] font-semibold text-sky">EXERCISE</p><h3 className="mt-1 font-display text-xl font-bold">{title}</h3>{text ? <p className="mt-2 max-w-2xl text-sm leading-6 text-charcoal/56">{text}</p> : null}</div><div className="grid grid-cols-3 border-t border-charcoal/8 bg-[#f4f6f5] sm:min-w-72 sm:border-l sm:border-t-0"><Measure label="SETS" value={numberValue(block.config.sets, 3)} /><Measure label="REPS" value={stringValue(block.config.reps) || "8–12"} /><Measure label="REST" value={`${numberValue(block.config.restSeconds, 90)}s`} /></div></div></div>;
   if (block.block_type === "quiz") return <div className="border-y border-charcoal/15 bg-paper p-5"><p className="font-display text-xl font-bold">{stringValue(content.question)}</p><div className="mt-4 divide-y divide-charcoal/10 border-y border-charcoal/10">{arrayValue(content.options).map((item, index) => <div className="grid grid-cols-[36px_1fr] py-3 text-sm" key={`${item}-${index}`}><span className="mono text-charcoal/35">{String.fromCharCode(65 + index)}</span><span>{item}</span></div>)}</div></div>;
-  if (block.block_type === "button" || block.block_type === "link") return <a className="flex min-h-14 w-full items-center justify-between border-2 border-charcoal bg-charcoal px-5 text-sm font-bold text-white" href={safeHref(stringValue(block.config.href))}>{stringValue(content.label) || title || "Continue"}<ExternalLink size={15} /></a>;
+  if (block.block_type === "button" || block.block_type === "link") return <a className="flex min-h-13 w-full items-center justify-between rounded-xl bg-charcoal px-5 text-sm font-semibold text-white" href={safeHref(stringValue(block.config.href))}>{stringValue(content.label) || title || "Continue"}<ExternalLink size={15} /></a>;
   return null;
 }
 
@@ -61,12 +71,12 @@ function BlockTimer({ seconds, label }: { seconds: number; label: string }) {
   }, [endsAt]);
   const running = Boolean(endsAt && remaining > 0);
   const value = useMemo(() => `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`, [remaining]);
-  return <div className="grid border-y-2 border-charcoal bg-paper sm:grid-cols-[1fr_auto]"><div className="p-5"><p className="eyebrow text-charcoal/38">{label}</p><p aria-live="polite" className="mono mt-2 text-5xl font-bold tracking-[-.07em]">{value}</p></div><div className="grid grid-cols-2 border-t border-charcoal/15 sm:min-w-40 sm:border-l sm:border-t-0"><button type="button" className="grid min-h-16 place-items-center border-r border-charcoal/15 bg-sky" onClick={() => running ? setEndsAt(null) : setEndsAt(Date.now() + (remaining || duration) * 1000)} aria-label={running ? "Pause timer" : "Start timer"}>{running ? <Pause size={19} /> : <Play size={19} />}</button><button type="button" className="grid min-h-16 place-items-center bg-white" onClick={() => { setEndsAt(null); setRemaining(duration); }} aria-label="Reset timer"><RotateCcw size={18} /></button></div></div>;
+  return <div className="grid overflow-hidden rounded-xl bg-charcoal text-white sm:grid-cols-[1fr_auto]"><div className="p-4"><p className="text-[11px] font-semibold text-white/45">{label}</p><p aria-live="polite" className="mono mt-1 text-3xl font-bold tracking-[-.04em]">{value}</p></div><div className="grid grid-cols-2 border-t border-white/10 sm:min-w-36 sm:border-l sm:border-t-0"><button type="button" className="grid min-h-14 place-items-center border-r border-white/10 bg-sky text-charcoal" onClick={() => running ? setEndsAt(null) : setEndsAt(Date.now() + (remaining || duration) * 1000)} aria-label={running ? "Pause timer" : "Start timer"}>{running ? <Pause size={19} /> : <Play size={19} />}</button><button type="button" className="grid min-h-14 place-items-center bg-white/5" onClick={() => { setEndsAt(null); setRemaining(duration); }} aria-label="Reset timer"><RotateCcw size={18} /></button></div></div>;
 }
 
 function Checklist({ title, items }: { title: string | null; items: string[] }) {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
-  return <div className="border-y border-charcoal/15 bg-white">{title ? <h3 className="border-b border-charcoal/12 px-5 py-4 font-display text-xl font-bold">{title}</h3> : null}<div className="divide-y divide-charcoal/10">{items.map((item, index) => <button type="button" onClick={() => setChecked((value) => ({ ...value, [index]: !value[index] }))} className="grid min-h-13 w-full grid-cols-[36px_1fr] items-center px-4 text-left text-sm" key={`${item}-${index}`}><span className={`grid h-6 w-6 place-items-center border ${checked[index] ? "border-sky bg-sky" : "border-charcoal/18"}`}>{checked[index] ? <Check size={14} /> : null}</span>{item}</button>)}</div></div>;
+  return <div className="overflow-hidden rounded-xl border border-charcoal/10 bg-white">{title ? <h3 className="border-b border-charcoal/8 px-4 py-3 text-sm font-semibold">{title}</h3> : null}<div className="divide-y divide-charcoal/8">{items.map((item, index) => <button type="button" onClick={() => setChecked((value) => ({ ...value, [index]: !value[index] }))} className="grid min-h-13 w-full grid-cols-[36px_1fr] items-center px-4 text-left text-sm" key={`${item}-${index}`}><span className={`grid h-6 w-6 place-items-center rounded-md border ${checked[index] ? "border-sky bg-sky" : "border-charcoal/18"}`}>{checked[index] ? <Check size={14} /> : null}</span>{item}</button>)}</div></div>;
 }
 
 function Measure({ label, value }: { label: string; value: string | number }) { return <div className="flex min-h-24 flex-col items-center justify-center border-r border-charcoal/12 last:border-r-0"><span className="mono text-lg font-bold">{value}</span><span className="mono mt-1 text-[8px] font-bold tracking-[.14em] text-charcoal/35">{label}</span></div>; }

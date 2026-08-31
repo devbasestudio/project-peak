@@ -25,7 +25,7 @@ const labels = {
   },
 };
 
-export function AppShell({ children, locale, isAdmin, name }: { children: React.ReactNode; locale: Locale; isAdmin: boolean; name: string }) {
+export function AppShell({ children, locale, isAdmin, name, avatarUrl }: { children: React.ReactNode; locale: Locale; isAdmin: boolean; name: string; avatarUrl: string | null }) {
   const pathname = usePathname();
   const copy = labels[locale];
   const base = `/${locale}/app`;
@@ -81,9 +81,11 @@ export function AppShell({ children, locale, isAdmin, name }: { children: React.
             >
               {locale === "mm" ? "EN" : "မြန်မာ"}
             </Link>
-            <Link href={`${base}/account`} className="hidden min-w-0 items-center gap-2 rounded-lg py-1 pl-1 pr-2 sm:flex lg:hidden">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky text-[11px] font-bold">{name.slice(0, 1).toUpperCase()}</span>
-              <span className="max-w-28 truncate text-xs font-semibold">{name}</span>
+            <Link href={`${base}/account`} className="flex min-w-0 items-center gap-2 rounded-lg py-1 pl-1 pr-1 lg:hidden" aria-label={copy.account}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-sky text-[11px] font-bold ring-2 ring-white">
+                {avatarUrl ? <Image src={avatarUrl} alt="" width={36} height={36} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="hidden max-w-28 truncate text-xs font-semibold sm:block">{name}</span>
             </Link>
           </div>
         </div>

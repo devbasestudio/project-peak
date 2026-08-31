@@ -34,6 +34,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
       locale={locale}
       email={viewer.user.email ?? ""}
       displayName={viewer.profile?.display_name ?? viewer.user.user_metadata?.full_name ?? ""}
+      avatarUrl={viewer.profile?.avatar_url || viewer.user.user_metadata?.avatar_url || viewer.user.user_metadata?.picture || null}
       preferredLocale={viewer.profile?.preferred_locale === "en" ? "en" : "mm"}
       program={program ? {
         status: program.status,

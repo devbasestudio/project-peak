@@ -10,5 +10,6 @@ export default async function MemberLayout({ children, params }: { children: Rea
   if (!isLocale(locale)) notFound();
   const viewer = await requireViewer(locale);
   const name = viewer.profile?.display_name || viewer.user.user_metadata?.full_name || viewer.user.email || "Member";
-  return <AppShell locale={locale} isAdmin={viewer.isAdmin} name={name}>{children}</AppShell>;
+  const avatarUrl = viewer.profile?.avatar_url || viewer.user.user_metadata?.avatar_url || viewer.user.user_metadata?.picture || null;
+  return <AppShell locale={locale} isAdmin={viewer.isAdmin} name={name} avatarUrl={avatarUrl}>{children}</AppShell>;
 }

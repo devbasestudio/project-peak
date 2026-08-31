@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Check, ChevronRight, Globe2, LogOut, Mail, Save, ShieldCheck, UserRound } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,6 +14,7 @@ export function AccountPanel({
   locale,
   email,
   displayName,
+  avatarUrl,
   preferredLocale,
   program,
   order,
@@ -20,6 +22,7 @@ export function AccountPanel({
   locale: Locale;
   email: string;
   displayName: string;
+  avatarUrl: string | null;
   preferredLocale: Locale;
   program: { status: string; name: string; assignedDate: string } | null;
   order: { status: string; reference_code: string } | null;
@@ -62,7 +65,9 @@ export function AccountPanel({
 
       <div className="grid gap-4 lg:grid-cols-[.72fr_1fr]">
         <aside className="relative overflow-hidden rounded-2xl bg-charcoal p-6 text-white sm:p-7">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-sky font-display text-xl font-bold text-charcoal">{initials}</div>
+          <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-sky font-display text-xl font-bold text-charcoal ring-4 ring-white/10">
+            {avatarUrl ? <Image src={avatarUrl} alt="" width={80} height={80} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initials}
+          </div>
           <p className="mt-7 text-[10px] font-semibold text-white/35">PROJECT PEAK MEMBER</p>
           <h2 className="mt-2 break-words font-display text-2xl font-bold tracking-[-.03em]">{name || (mm ? "Project Peak Member" : "Project Peak member")}</h2>
           <p className="mt-2 break-all text-sm text-white/42">{email}</p>

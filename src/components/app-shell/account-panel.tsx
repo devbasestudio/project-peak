@@ -66,7 +66,7 @@ export function AccountPanel({
       <div className="grid gap-4 lg:grid-cols-[.72fr_1fr]">
         <aside className="relative overflow-hidden rounded-2xl bg-charcoal p-6 text-white sm:p-7">
           <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-sky font-display text-xl font-bold text-charcoal ring-4 ring-white/10">
-            {avatarUrl ? <Image src={avatarUrl} alt="" width={80} height={80} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initials}
+            {avatarUrl ? <Image src={avatarUrl} alt={`${name || "Project Peak member"} profile photo`} width={80} height={80} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initials}
           </div>
           <p className="mt-7 text-[10px] font-semibold text-white/35">PROJECT PEAK MEMBER</p>
           <h2 className="mt-2 break-words font-display text-2xl font-bold tracking-[-.03em]">{name || (mm ? "Project Peak Member" : "Project Peak member")}</h2>

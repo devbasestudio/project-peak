@@ -79,7 +79,7 @@ export function AppShell(props: { children: React.ReactNode; locale: Locale; nam
             </Link>
             <Link href={`${base}/account`} className="flex min-w-0 items-center gap-2 rounded-lg py-1 pl-1 pr-1" aria-label={copy.account}>
               <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-sky text-[11px] font-bold ring-2 ring-white">
-                {avatarUrl ? <Image src={avatarUrl} alt="" width={36} height={36} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : name.slice(0, 1).toUpperCase()}
+                {avatarUrl ? <Image src={avatarUrl} alt={`${name} profile photo`} width={36} height={36} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : name.slice(0, 1).toUpperCase()}
               </span>
               <span className="hidden max-w-28 truncate text-xs font-semibold sm:block">{name}</span>
             </Link>

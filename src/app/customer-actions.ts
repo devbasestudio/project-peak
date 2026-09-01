@@ -16,7 +16,40 @@ const assessmentValuesSchema = z
   .min(1)
   .max(12);
 
+const weeklyScheduleSchema = z.object({
+  programId: z.string().uuid(),
+  weekNumber: z.number().int().min(1).max(12),
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).length(4),
+  locale: z.enum(["mm", "en"]),
+});
+
 export type CustomerActionResult = { ok: true } | { ok: false; message: string };
+
+export async function saveWeeklySchedule(raw: {
+  programId: string;
+  weekNumber: number;
+  dates: string[];
+  locale: Locale;
+}): Promise<CustomerActionResult> {
+  const parsed = weeklyScheduleSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, message: raw.locale === "mm" ? "ရွေးထားတဲ့ရက်တွေကို ပြန်စစ်ပေးပါ။" : "Please check the selected dates." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${parsed.data.locale}/login?next=${encodeURIComponent(`/${parsed.data.locale}/app/schedule`)}`);
+
+  const { error } = await supabase.rpc("save_weekly_schedule", {
+    p_program_id: parsed.data.programId,
+    p_week_number: parsed.data.weekNumber,
+    p_dates: parsed.data.dates,
+  });
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath(`/${parsed.data.locale}/app`);
+  revalidatePath(`/${parsed.data.locale}/app/schedule`);
+  revalidatePath(`/${parsed.data.locale}/app/workout`);
+  return { ok: true };
+}
 
 export async function updateCustomerProfile(raw: {
   displayName: string;

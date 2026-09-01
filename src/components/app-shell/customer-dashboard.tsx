@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
+  CalendarCheck2,
+  CalendarDays,
   Check,
   ChevronRight,
   Copy,
@@ -20,11 +22,12 @@ import { toast } from "sonner";
 import { createPurchaseOrder } from "@/app/actions";
 import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program-blocks";
 import type { Locale } from "@/lib/i18n";
+import type { WeeklyScheduleDay } from "@/lib/weekly-schedule";
 
 type Order = { reference_code: string; status: string; amount_minor: number; currency: string } | null;
 type Program = { id: string; status: string; name_mm: string; name_en: string; completed: number; hasBaseline: boolean } | null;
 
-export function CustomerDashboard({ locale, order, program, email, habits, programBlocks }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; programBlocks: ProgramBlock[] }) {
+export function CustomerDashboard({ locale, order, program, email, habits, programBlocks, weekSchedule }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; programBlocks: ProgramBlock[]; weekSchedule: WeeklyScheduleDay[] }) {
   const [pending, setPending] = useState(false);
   const mm = locale === "mm";
 
@@ -75,7 +78,8 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
   const week = Math.min(12, Math.floor(completed / 4) + 1);
   const dayType = nextDay === 48 ? (mm ? "နောက်ဆုံးစမ်းသပ်မှု" : "Final challenge") : nextDay % 2 === 1 ? "PUSH" : "PULL";
   const progress = Math.round((completed / 48) * 100);
-  const actionHref = program.hasBaseline ? `/${locale}/app/workout` : `/${locale}/app/baseline`;
+  const scheduleReady = weekSchedule.length === 4 && weekSchedule.every((day) => Boolean(day.scheduledDate));
+  const actionHref = !program.hasBaseline ? `/${locale}/app/baseline` : scheduleReady ? `/${locale}/app/workout` : `/${locale}/app/schedule`;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -97,15 +101,17 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
               <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/70">{mm ? `Session ${nextDay} / 48` : `Session ${nextDay} of 48`}</span>
               <span className="text-xs font-medium text-white/45">{48 - completed} {mm ? "ခု ကျန်" : "remaining"}</span>
             </div>
-            <h2 className="mt-8 font-display text-5xl font-bold tracking-[-.05em] sm:text-6xl">{program.hasBaseline ? dayType : (mm ? "Baseline Test" : "Baseline test")}</h2>
+            <h2 className="mt-8 font-display text-5xl font-bold tracking-[-.05em] sm:text-6xl">{!program.hasBaseline ? (mm ? "Baseline Test" : "Baseline test") : scheduleReady ? dayType : (mm ? `အပတ် ${week} စီစဉ်မယ်` : `Plan week ${week}`)}</h2>
             <p className="mt-3 max-w-lg text-sm leading-7 text-white/55" lang={mm ? "my" : "en"}>
-              {program.hasBaseline
-                ? (mm ? "ဒီနေ့ session ကို ဖွင့်ပြီး set တစ်ခုပြီးတိုင်း reps နဲ့ weight ကို မှတ်ပါ။" : "Open today’s session and log each set as you train.")
-                : (mm ? "Workout မစခင် လက်ရှိအားကို တိုင်းပြီး Week 12 မှာ ပြန်နှိုင်းယှဉ်ပါမယ်။" : "Measure your starting point before your first workout.")}
+              {!program.hasBaseline
+                ? (mm ? "Workout မစခင် လက်ရှိအားကို တိုင်းပြီး Week 12 မှာ ပြန်နှိုင်းယှဉ်ပါမယ်။" : "Measure your starting point before your first workout.")
+                : scheduleReady
+                  ? (mm ? "ဒီနေ့ session ကို ဖွင့်ပြီး set တစ်ခုပြီးတိုင်း reps နဲ့ weight ကို မှတ်ပါ။" : "Open today’s session and log each set as you train.")
+                  : (mm ? "ဒီအပတ်မှာ ဆော့ရမယ့် session ၄ ခုကို ကြည့်ပြီး ကိုယ်အားတဲ့ရက်တွေ ရွေးပါ။ အချိန်ဇယားသိမ်းပြီးမှ Workout ဖွင့်ပေးပါမယ်။" : "Review all four sessions, choose the days you are free, and save the week before training.")}
             </p>
             <Link href={actionHref} className="mt-7 flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-sky px-5 text-sm font-bold text-charcoal sm:w-fit sm:min-w-64">
-              <Play size={17} fill="currentColor" />
-              {program.hasBaseline ? (mm ? "ဒီနေ့ Workout စမယ်" : "Start today’s workout") : (mm ? "Baseline Test စမယ်" : "Start baseline test")}
+              {program.hasBaseline && !scheduleReady ? <CalendarDays size={18} /> : <Play size={17} fill="currentColor" />}
+              {!program.hasBaseline ? (mm ? "Baseline Test စမယ်" : "Start baseline test") : scheduleReady ? (mm ? "ဒီနေ့ Workout စမယ်" : "Start today’s workout") : (mm ? "အားတဲ့ရက်တွေ ရွေးမယ်" : "Choose training days")}
               <ArrowRight size={17} />
             </Link>
           </div>
@@ -117,6 +123,8 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
           </div>
         </div>
       </section>
+
+      {program.hasBaseline ? <WeeklyScheduleOverview locale={locale} week={week} days={weekSchedule} ready={scheduleReady} /> : null}
 
       <ProgramBlocks locale={locale} blocks={programBlocks} />
 
@@ -137,6 +145,40 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
         {mm ? "Internet မရှိချိန်မှာလည်း workout မှတ်တမ်းကို ဒီ device မှာ သိမ်းထားပေးပါတယ်။" : "Workout logs are saved on this device when your connection drops."}
       </div>
     </div>
+  );
+}
+
+function WeeklyScheduleOverview({ locale, week, days, ready }: { locale: Locale; week: number; days: WeeklyScheduleDay[]; ready: boolean }) {
+  const mm = locale === "mm";
+  return (
+    <section className="mt-5 overflow-hidden rounded-2xl border border-charcoal/10 bg-white">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-charcoal/8 px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <span className={`grid h-10 w-10 place-items-center rounded-xl ${ready ? "bg-ice text-aqua" : "bg-charcoal text-white"}`}>{ready ? <CalendarCheck2 size={19} /> : <CalendarDays size={19} />}</span>
+          <div>
+            <h2 className="text-base font-bold" lang={mm ? "my" : "en"}>{mm ? `အပတ် ${week} အချိန်ဇယား` : `Week ${week} schedule`}</h2>
+            <p className="mt-1 text-xs text-charcoal/45" lang={mm ? "my" : "en"}>{ready ? (mm ? "ရက် ၄ ရက်လုံး စီစဉ်ပြီးပါပြီ" : "All four training days are planned") : (mm ? "Save ပြီးမှ ဒီအပတ် Workout စနိုင်ပါမယ်" : "Save your dates to unlock this week")}</p>
+          </div>
+        </div>
+        <Link href={`/${locale}/app/schedule`} className="flex min-h-10 items-center gap-2 rounded-lg border border-charcoal/10 bg-[#f4f6f5] px-4 text-xs font-semibold">
+          {ready ? (mm ? "ရက်ပြင်မယ်" : "Adjust dates") : (mm ? "ရက်ရွေးမယ်" : "Choose dates")}<ChevronRight size={14} />
+        </Link>
+      </header>
+
+      <div className="grid gap-px bg-charcoal/8 sm:grid-cols-2 lg:grid-cols-4">
+        {days.map((day, index) => {
+          const formatted = day.scheduledDate ? new Intl.DateTimeFormat(mm ? "my-MM" : "en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${day.scheduledDate}T12:00:00`)) : (mm ? "ရက်မရွေးရသေး" : "Date not chosen");
+          return <article key={day.id} className="relative bg-white px-5 py-5">
+            <div className="flex items-center justify-between gap-3"><span className="text-[10px] font-bold text-charcoal/35">SESSION {day.dayNumber}</span><span className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${day.dayType === "push" ? "bg-sky text-charcoal" : "bg-[#f1f3f2] text-charcoal"}`}>{day.dayType.toUpperCase()}</span></div>
+            <p className={`mt-4 text-sm font-bold ${day.scheduledDate ? "text-charcoal" : "text-charcoal/35"}`} lang={mm ? "my" : "en"}>{formatted}</p>
+            <p className="mt-1 truncate text-xs text-charcoal/40" lang={mm ? "my" : "en"}>{(mm ? day.titleMm : day.titleEn) || `${day.dayType.toUpperCase()} session`}</p>
+            {day.completed ? <span className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-aqua"><Check size={13} />{mm ? "ပြီးပါပြီ" : "COMPLETED"}</span> : null}
+            {index === 1 ? <span className="absolute -bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-charcoal px-3 py-1 text-[8px] font-bold tracking-wider text-white sm:hidden">REST</span> : null}
+          </article>;
+        })}
+      </div>
+      <div className="flex items-center justify-center gap-2 border-t border-charcoal/8 bg-ice/45 px-4 py-2.5 text-[10px] font-bold text-aqua"><Moon size={14} />{mm ? "Session 2 ပြီးရင် အနည်းဆုံး တစ်ရက်နားပါ" : "At least one recovery day after session 2"}</div>
+    </section>
   );
 }
 

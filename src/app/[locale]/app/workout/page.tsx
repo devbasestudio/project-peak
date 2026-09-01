@@ -4,6 +4,7 @@ import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program
 import { isLocale } from "@/lib/i18n";
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProgramWeek } from "@/lib/weekly-schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,13 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
   if (!baselineCount) redirect(`/${locale}/app/baseline`);
   if ((completed ?? 0) >= 48) redirect(`/${locale}/app/progress`);
   const dayNumber = (completed ?? 0) + 1;
+  const weekNumber = getCurrentProgramWeek(completed ?? 0);
+  const { count: scheduledSlots } = await supabase
+    .from("weekly_schedule_slots")
+    .select("id", { count: "exact", head: true })
+    .eq("program_id", program.id)
+    .eq("week_number", weekNumber);
+  if ((scheduledSlots ?? 0) !== 4) redirect(`/${locale}/app/schedule`);
 
   const { data: day } = await supabase.from("program_days").select("id,day_number,day_type,phase").eq("program_id", program.id).eq("day_number", dayNumber).single();
   if (!day) throw new Error("The next program day is not configured");

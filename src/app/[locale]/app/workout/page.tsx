@@ -46,7 +46,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
 
   const { data: day } = await supabase.from("program_days").select("id,day_number,day_type,phase").eq("program_id", program.id).eq("day_number", dayNumber).single();
   if (!day) throw new Error("The next program day is not configured");
-  const { data: rawItems } = await supabase.from("program_day_items").select("id,position,sets,reps_min,reps_max,target_kg,rest_seconds,program_exercises(id,name_mm,name_en,cue_mm,cue_en,unilateral)").eq("program_day_id", day.id).order("position");
+  const { data: rawItems } = await supabase.from("program_day_items").select("id,position,sets,reps_min,reps_max,target_kg,rest_seconds,program_exercises(id,name_mm,name_en,cue_mm,cue_en,equipment_mm,equipment_en,kg_increment,unilateral)").eq("program_day_id", day.id).order("position");
   const exerciseIds = ((rawItems ?? []) as RawItem[]).map((item) => {
     const exercise = Array.isArray(item.program_exercises) ? item.program_exercises[0] : item.program_exercises;
     return exercise?.id;

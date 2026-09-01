@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, CheckCircle2, ChevronLeft, ChevronRight, Minus, Pause, Play, Plus, Video, WifiOff } from "lucide-react";
 import { toast } from "sonner";
@@ -206,8 +206,8 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
                   {setValue.done ? <span className="flex items-center gap-1.5 text-xs font-bold text-aqua"><CheckCircle2 size={17} />{mm ? "ပြီးပြီ" : "Done"}</span> : null}
                 </div>
                 <div className={`mt-4 grid gap-3 ${activeUsesLoad ? "sm:grid-cols-[1fr_1fr_190px]" : "sm:grid-cols-[1fr_190px]"}`}>
-                  {activeUsesLoad ? <ValueControl label={mm ? "အလေးချိန်" : "Weight"} suffix="KG" value={setValue.weight} step={0.5} onChange={(value) => updateSet(setIndex, { weight: value, done: false })} /> : null}
-                  <ValueControl label={mm ? "အကြိမ်ရေ" : "Reps"} suffix={mm ? "ကြိမ်" : "REPS"} value={setValue.reps} step={1} onChange={(value) => updateSet(setIndex, { reps: value, done: false })} />
+                  {activeUsesLoad ? <ValueControl key={`${active.id}-${setIndex}-weight`} label={mm ? "အလေးချိန်" : "Weight"} suffix="KG" value={setValue.weight} step={0.5} onChange={(value) => updateSet(setIndex, { weight: value, done: false })} /> : null}
+                  <ValueControl key={`${active.id}-${setIndex}-reps`} label={mm ? "အကြိမ်ရေ" : "Reps"} suffix={mm ? "ကြိမ်" : "REPS"} value={setValue.reps} step={1} onChange={(value) => updateSet(setIndex, { reps: value, done: false })} />
                   <button type="button" disabled={setValue.done} onClick={() => completeSet(setIndex)} className={`flex min-h-14 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition ${setValue.done ? "cursor-default bg-white text-aqua ring-1 ring-sky/25" : "bg-sky text-charcoal hover:bg-charcoal hover:text-white"}`}><CheckCircle2 size={18} /><span>{setValue.done ? (mm ? "ဒီ Set ပြီးပါပြီ" : "Set completed") : (mm ? "ဒီ Set ပြီးပြီ" : "Mark set done")}</span></button>
                 </div>
               </article>
@@ -265,5 +265,31 @@ function ExerciseVideoCarousel({ locale, videos }: { locale: Locale; videos: Wor
 }
 
 function ValueControl({ label, suffix, value, step, onChange }: { label: string; suffix: string; value: number; step: number; onChange: (value: number) => void }) {
-  return <div className="overflow-hidden rounded-lg border border-charcoal/12 bg-white"><p className="border-b border-charcoal/8 px-3 py-1.5 text-[9px] font-semibold text-charcoal/40">{label}</p><div className="grid grid-cols-[48px_1fr_48px]"><button type="button" onClick={() => onChange(Math.max(0, value - step))} className="grid min-h-12 place-items-center border-r border-charcoal/10 bg-[#f4f6f5] hover:bg-ice" aria-label={`Decrease ${label}`}><Minus size={16} /></button><div className="grid place-items-center"><span className="text-lg font-bold">{Number.isInteger(value) ? value : value.toFixed(1)} <small className="text-[9px] font-semibold text-charcoal/35">{suffix}</small></span></div><button type="button" onClick={() => onChange(value + step)} className="grid min-h-12 place-items-center border-l border-charcoal/10 bg-[#f4f6f5] hover:bg-ice" aria-label={`Increase ${label}`}><Plus size={16} /></button></div></div>;
+  const inputId = useId();
+  const format = (next: number) => Number.isInteger(next) ? String(next) : String(Number(next.toFixed(2)));
+  const normalize = (next: number) => Math.min(999, Math.max(0, step === 1 ? Math.round(next) : Math.round(next * 100) / 100));
+  const [draft, setDraft] = useState(() => format(value));
+
+  const updateDraft = (raw: string) => {
+    setDraft(raw);
+    if (raw.trim() === "") return;
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed)) onChange(normalize(parsed));
+  };
+
+  const commitDraft = () => {
+    const parsed = Number(draft);
+    const next = draft.trim() === "" || !Number.isFinite(parsed) ? value : normalize(parsed);
+    setDraft(format(next));
+    onChange(next);
+  };
+
+  const adjust = (amount: number) => {
+    const parsed = Number(draft);
+    const next = normalize((Number.isFinite(parsed) ? parsed : value) + amount);
+    setDraft(format(next));
+    onChange(next);
+  };
+
+  return <div className="overflow-hidden rounded-lg border border-charcoal/12 bg-white"><label className="block border-b border-charcoal/8 px-3 py-1.5 text-[9px] font-semibold text-charcoal/40" htmlFor={inputId}>{label} · {suffix}</label><div className="grid grid-cols-[48px_1fr_48px]"><button type="button" onClick={() => adjust(-step)} className="grid min-h-12 place-items-center border-r border-charcoal/10 bg-[#f4f6f5] hover:bg-ice" aria-label={`Decrease ${label}`}><Minus size={16} /></button><div className="grid grid-cols-[1fr_auto] items-center gap-1 px-2"><input id={inputId} type="number" inputMode={step === 1 ? "numeric" : "decimal"} min={0} max={999} step={step} value={draft} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateDraft(event.currentTarget.value)} onBlur={commitDraft} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} className="min-w-0 appearance-none bg-transparent text-center text-lg font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" aria-label={`${label} manual input`} /><span className="text-[9px] font-semibold text-charcoal/35">{suffix}</span></div><button type="button" onClick={() => adjust(step)} className="grid min-h-12 place-items-center border-l border-charcoal/10 bg-[#f4f6f5] hover:bg-ice" aria-label={`Increase ${label}`}><Plus size={16} /></button></div></div>;
 }

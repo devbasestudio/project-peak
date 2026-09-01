@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { headers } from "next/headers";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -80,9 +81,11 @@ export const viewport: Viewport = {
   themeColor: "#f6f5ef",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = (await headers()).get("x-project-peak-locale") === "en" ? "en" : "my";
+
   return (
-    <html lang="my" className={`${archivo.variable} ${geist.variable} ${geistMono.variable} ${myanmarSagar.variable}`}>
+    <html lang={locale} className={`${archivo.variable} ${geist.variable} ${geistMono.variable} ${myanmarSagar.variable}`}>
       <body>
         {children}
         <Toaster position="top-center" richColors={false} closeButton />

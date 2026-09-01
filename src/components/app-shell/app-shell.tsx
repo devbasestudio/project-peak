@@ -25,7 +25,7 @@ const labels = {
   },
 };
 
-export function AppShell(props: { children: React.ReactNode; locale: Locale; isAdmin: boolean; name: string; avatarUrl: string | null }) {
+export function AppShell(props: { children: React.ReactNode; locale: Locale; name: string; avatarUrl: string | null }) {
   const { children, locale, name, avatarUrl } = props;
   const pathname = usePathname();
   const copy = labels[locale];

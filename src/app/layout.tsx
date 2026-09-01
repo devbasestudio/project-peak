@@ -62,6 +62,15 @@ export const metadata: Metadata = {
     description: "Knowledge. Habits. A stronger identity in 12 weeks.",
     images: ["/brand/project-peak-social-2026.jpg"],
   },
+  icons: {
+    icon: [
+      { url: "/brand/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon-48.png", sizes: "48x48", type: "image/png" },
+    ],
+    shortcut: "/brand/favicon-32.png",
+    apple: "/brand/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

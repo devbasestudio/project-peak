@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Minus, Pause, Play, Plus, RotateCcw, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Minus, Pause, Play, Plus, RotateCcw, Video, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import gsap from "gsap";
 import { createClient } from "@/lib/supabase/client";
@@ -17,7 +17,24 @@ export type WorkoutItem = {
   reps_max: number;
   target_kg: number;
   rest_seconds: number;
-  exercise: { id: string; name_mm: string; name_en: string; cue_mm: string | null; cue_en: string | null; unilateral: boolean };
+  exercise: {
+    id: string;
+    name_mm: string;
+    name_en: string;
+    cue_mm: string | null;
+    cue_en: string | null;
+    unilateral: boolean;
+    videos: Array<{
+      id: string;
+      position: number;
+      role: "primary" | "alternative";
+      title_mm: string;
+      title_en: string;
+      cue_mm: string | null;
+      cue_en: string | null;
+      url: string;
+    }>;
+  };
 };
 
 type SetValue = { weight: number; reps: number; done: boolean; synced: boolean };
@@ -134,6 +151,7 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
 
       <section ref={sheetRef} className="mt-2 grid overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-[0_16px_45px_rgba(6,17,26,.05)] lg:grid-cols-[1fr_260px]">
         <div>
+          <ExerciseVideoCarousel key={active.exercise.id} locale={locale} videos={active.exercise.videos} />
           <header className="border-b border-charcoal/8 p-5 sm:p-7"><div className="flex items-start justify-between gap-5"><div><p className="text-[10px] font-semibold text-sky">{mm ? `လေ့ကျင့်ခန်း ${activeIndex + 1} / ${items.length}` : `Exercise ${activeIndex + 1} of ${items.length}`}</p><h2 className="mt-2 max-w-3xl font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl">{mm ? active.exercise.name_mm : active.exercise.name_en}</h2></div><span className="rounded-full bg-ice px-3 py-1.5 text-xs font-bold text-aqua">{activeDone}/{active.sets}</span></div><p className="mt-4 max-w-2xl text-sm leading-7 text-charcoal/56" lang={mm ? "my" : "en"}>{mm ? active.exercise.cue_mm : active.exercise.cue_en}</p>{active.exercise.unilateral ? <p className="mt-3 rounded-lg bg-ice px-3 py-2 text-xs font-semibold">{mm ? "ဘယ်/ညာ နှစ်ဖက် = 1 set" : "Both sides = one set"}</p> : null}</header>
 
           <div className="border-t border-charcoal/8">
@@ -148,11 +166,38 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
       </section>
 
       <div className="sticky bottom-20 z-20 mt-4 grid overflow-hidden rounded-2xl bg-charcoal text-white shadow-[0_-12px_40px_rgba(6,17,26,.12)] sm:grid-cols-[1fr_auto] lg:bottom-4">
-        <div className="flex items-center gap-4 p-3 sm:px-5"><button type="button" onClick={() => setRunning((value) => !value)} className="grid h-12 w-12 place-items-center bg-sky text-charcoal">{running ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><div><p className="mono text-[8px] font-bold tracking-[.18em] text-white/38">REST TIMER</p><p aria-live="polite" className="mono text-2xl font-bold">{restLabel}</p></div><button type="button" onClick={() => { setRest(active.rest_seconds); setRunning(false); }} className="ml-auto grid h-10 w-10 place-items-center text-white/40" aria-label="Reset rest timer"><RotateCcw size={17} /></button></div>
-        {completedSets === totalSets ? <button type="button" disabled={finishing} onClick={finishWorkout} className="flex min-h-16 items-center justify-between border-t border-white/15 bg-sky px-5 text-sm font-bold text-charcoal sm:min-w-64 sm:border-l sm:border-t-0"><span>{finishing ? (mm ? "Finish လုပ်နေတယ်…" : "Finishing…") : (mm ? "Session finish" : "Finish session")}</span><Check size={18} /></button> : <div className="hidden min-w-64 items-center justify-center border-l border-white/12 px-5 text-[10px] font-bold uppercase tracking-[.15em] text-white/35 sm:flex">{totalSets - completedSets} sets remaining</div>}
+        <div className="flex items-center gap-3 p-3 sm:px-5"><button type="button" onClick={() => { if (rest <= 0) setRest(active.rest_seconds); setRunning((value) => rest <= 0 ? true : !value); }} className="grid h-12 w-12 flex-none place-items-center bg-sky text-charcoal" aria-label={running ? (mm ? "နားချိန်ခဏရပ်မယ်" : "Pause rest timer") : (mm ? "နားချိန်စမယ်" : "Start rest timer")}>{running ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><div className="min-w-0"><p className="mono text-[8px] font-bold tracking-[.18em] text-white/38">{mm ? "နားချိန်" : "REST TIMER"}</p><div className="flex items-baseline gap-2"><p aria-live="polite" className="mono text-2xl font-bold">{restLabel}</p><span className="truncate text-[10px] text-white/42">{rest > 0 ? (running ? (mm ? "ရေတွက်နေတယ်" : "counting down") : (mm ? "ခဏရပ်ထားတယ်" : "paused")) : (mm ? "Set ပြီးရင် အလိုအလျောက်စမယ်" : "starts after each set")}</span></div></div><button type="button" onClick={() => { setRest(active.rest_seconds); setRunning(false); }} className="ml-auto grid h-10 w-10 flex-none place-items-center text-white/50 hover:text-white" aria-label={mm ? "နားချိန်ပြန်သတ်မှတ်မယ်" : "Reset rest timer"}><RotateCcw size={17} /></button></div>
+        {completedSets === totalSets ? <button type="button" disabled={finishing} onClick={finishWorkout} className="flex min-h-16 items-center justify-between border-t border-white/15 bg-sky px-5 text-sm font-bold text-charcoal sm:min-w-64 sm:border-l sm:border-t-0"><span>{finishing ? (mm ? "သိမ်းနေပါတယ်…" : "Finishing…") : (mm ? "အားလုံးပြီးပြီ · Session သိမ်းမယ်" : "All done · Finish session")}</span><Check size={18} /></button> : <div className="flex min-w-52 items-center justify-center border-t border-white/12 px-5 py-3 text-[10px] font-bold tracking-[.1em] text-white/50 sm:border-l sm:border-t-0">{mm ? `${totalSets - completedSets} Sets ကျန်သေးတယ်` : `${totalSets - completedSets} sets remaining`}</div>}
       </div>
     </div>
   );
+}
+
+function ExerciseVideoCarousel({ locale, videos }: { locale: Locale; videos: WorkoutItem["exercise"]["videos"] }) {
+  const mm = locale === "mm";
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [index, setIndex] = useState(0);
+  if (!videos.length) return null;
+
+  const moveTo = (next: number) => {
+    const safe = Math.max(0, Math.min(videos.length - 1, next));
+    setIndex(safe);
+    const track = trackRef.current;
+    if (track) track.scrollTo({ left: safe * track.clientWidth, behavior: "smooth" });
+  };
+
+  return <section className="border-b border-charcoal/10 bg-charcoal text-white">
+    <div ref={trackRef} onScroll={(event) => {
+      const track = event.currentTarget;
+      if (track.clientWidth) setIndex(Math.round(track.scrollLeft / track.clientWidth));
+    }} className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {videos.map((video) => <article key={video.id} className="min-w-full snap-center">
+        <div className="relative aspect-video overflow-hidden bg-black"><video className="h-full w-full object-contain" controls playsInline preload="metadata" src={video.url} /></div>
+        <div className="flex items-start gap-3 p-4 sm:p-5"><span className={`mt-0.5 grid h-8 w-8 flex-none place-items-center ${video.role === "alternative" ? "bg-white text-charcoal" : "bg-sky text-charcoal"}`}><Video size={15} /></span><div><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">{mm ? video.title_mm : video.title_en}</strong><span className="rounded-full border border-white/15 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white/48">{video.role}</span></div>{(mm ? video.cue_mm : video.cue_en) ? <p className="mt-1 text-xs leading-5 text-white/55" lang={mm ? "my" : "en"}>{mm ? video.cue_mm : video.cue_en}</p> : null}</div></div>
+      </article>)}
+    </div>
+    {videos.length > 1 ? <div className="flex items-center justify-between border-t border-white/10 px-4 py-3"><button type="button" onClick={() => moveTo(index - 1)} disabled={index === 0} className="flex items-center gap-2 text-[10px] font-bold text-white/62 disabled:opacity-20"><ChevronLeft size={15} />{mm ? "အရင်နည်း" : "Previous"}</button><div className="flex gap-1.5" aria-label={mm ? "Video ရွေးမယ်" : "Choose video"}>{videos.map((video, dot) => <button key={video.id} type="button" onClick={() => moveTo(dot)} aria-label={`${dot + 1}`} className={`h-1.5 rounded-full transition-all ${dot === index ? "w-7 bg-sky" : "w-1.5 bg-white/25"}`} />)}</div><button type="button" onClick={() => moveTo(index + 1)} disabled={index === videos.length - 1} className="flex items-center gap-2 text-[10px] font-bold text-white/62 disabled:opacity-20">{mm ? "နောက်နည်း" : "Next"}<ChevronRight size={15} /></button></div> : null}
+  </section>;
 }
 
 function Stepper({ label, value, step, onChange }: { label: string; value: number; step: number; onChange: (value: number) => void }) {

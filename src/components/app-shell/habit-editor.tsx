@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Cloud, CloudOff, Droplets, Minus, Moon, Plus, Save, Utensils } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, Cloud, CloudOff, Droplets, Minus, Moon, Plus, Save, Utensils } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { enqueueMutation, flushQueue } from "@/lib/offline/mutation-queue";
@@ -22,19 +23,28 @@ export function HabitEditor({
   programId,
   userId,
   localDate,
+  today,
   initialHabit,
 }: {
   locale: Locale;
   programId: string;
   userId: string;
   localDate: string;
+  today: string;
   initialHabit: HabitValue;
 }) {
   const mm = locale === "mm";
+  const router = useRouter();
   const [habit, setHabit] = useState(initialHabit);
   const [saving, setSaving] = useState(false);
   const [syncState, setSyncState] = useState<"idle" | "offline" | "synced">("idle");
   const prettyDate = useMemo(() => dayFormatter.format(new Date(`${localDate}T00:00:00Z`)), [localDate]);
+  const moveDate = (days: number) => {
+    const date = new Date(`${localDate}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    const next = date.toISOString().slice(0, 10);
+    if (next <= today) router.push(`/${locale}/app/habits?date=${next}`);
+  };
 
   useEffect(() => {
     const onOnline = async () => {
@@ -101,7 +111,14 @@ export function HabitEditor({
       </div>
 
       <header className="mb-6">
-        <p className="text-xs font-semibold text-sky">{prettyDate}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-semibold text-sky">{prettyDate}</p>
+          <div className="flex items-center overflow-hidden rounded-xl border border-charcoal/10 bg-white">
+            <button type="button" onClick={() => moveDate(-1)} className="grid h-10 w-10 place-items-center border-r border-charcoal/10" aria-label={mm ? "မနေ့က" : "Previous day"}><ChevronLeft size={16} /></button>
+            <label className="relative flex h-10 items-center gap-2 px-3 text-[10px] font-semibold"><CalendarDays size={14} className="text-sky" /><span>{localDate === today ? (mm ? "ဒီနေ့" : "Today") : localDate}</span><input type="date" max={today} value={localDate} onChange={(event) => router.push(`/${locale}/app/habits?date=${event.target.value}`)} className="absolute inset-0 cursor-pointer opacity-0" aria-label={mm ? "မှတ်တမ်းရက် ရွေးမယ်" : "Choose log date"} /></label>
+            <button type="button" onClick={() => moveDate(1)} disabled={localDate >= today} className="grid h-10 w-10 place-items-center border-l border-charcoal/10 disabled:opacity-25" aria-label={mm ? "နောက်ရက်" : "Next day"}><ChevronRight size={16} /></button>
+          </div>
+        </div>
         <h1 className="mt-2 max-w-2xl font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl">{mm ? "ဒီနေ့ နေထိုင်မှုပုံစံ" : "Today’s daily log"}</h1>
         <p className="mt-3 max-w-xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "Protein၊ ရေသောက်တာနဲ့ အိပ်ချိန်—သုံးခုလောက်ပဲ အလွယ်မှတ်ပါ။" : "A quick check for protein, water, and sleep. Nothing complicated."}</p>
       </header>
@@ -134,7 +151,7 @@ export function HabitEditor({
         </div>
       </section>
 
-      <button type="button" disabled={saving} onClick={save} className="mt-5 flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-charcoal px-5 text-sm font-semibold text-white transition hover:bg-charcoal/90 disabled:opacity-45"><Save size={17} />{saving ? (mm ? "သိမ်းနေပါတယ်…" : "Saving…") : (mm ? "ဒီနေ့ မှတ်တမ်းသိမ်းမယ်" : "Save today’s log")}</button>
+      <button type="button" disabled={saving} onClick={save} className="mt-5 flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-charcoal px-5 text-sm font-semibold text-white transition hover:bg-charcoal/90 disabled:opacity-45"><Save size={17} />{saving ? (mm ? "သိမ်းနေပါတယ်…" : "Saving…") : (mm ? `${localDate === today ? "ဒီနေ့" : "ရွေးထားတဲ့ရက်"} မှတ်တမ်းသိမ်းမယ်` : `Save ${localDate === today ? "today’s" : "this day’s"} log`)}</button>
       <Link href={`/${locale}/app/progress`} className="mt-3 flex min-h-12 w-full items-center justify-center rounded-xl border border-charcoal/10 bg-white text-sm font-semibold transition hover:bg-paper">{mm ? "အရင်မှတ်တမ်းတွေ ကြည့်မယ်" : "View previous logs"}</Link>
     </div>
   );

@@ -54,6 +54,7 @@ export async function saveBaseline(programId: string, rawValues: Array<{ movemen
   const localDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
   const { data: attempt, error: attemptError } = await supabase.from("assessment_attempts").upsert({
     program_id: programId,
+    user_id: user.id,
     kind: "baseline",
     status: "completed",
     local_date: localDate,

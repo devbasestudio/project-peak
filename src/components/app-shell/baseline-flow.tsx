@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Minus, Plus, TimerReset } from "lucide-react";
+import { toast } from "sonner";
 import { saveBaseline } from "@/app/actions";
 import type { Locale } from "@/lib/i18n";
 
@@ -36,7 +37,15 @@ export function BaselineFlow({ locale, programId, movements }: { locale: Locale;
       return;
     }
     setSaving(true);
-    await saveBaseline(programId, movements.map((item) => ({ movementId: item.id, value: values[item.id] ?? 0 })), locale);
+    try {
+      await saveBaseline(programId, movements.map((item) => ({ movementId: item.id, value: values[item.id] ?? 0 })), locale);
+    } catch (error) {
+      toast.error(mm ? "Baseline ကို မသိမ်းနိုင်သေးပါ" : "Could not save your baseline", {
+        description: mm ? "Internet connection စစ်ပြီး ထပ်နှိပ်ပါ။ ထည့်ထားတဲ့အကြိမ်ရေ မပျောက်ပါဘူး။" : "Check your connection and try again. Your entered reps are still here.",
+      });
+      setSaving(false);
+      console.error(error);
+    }
   }
 
   return (

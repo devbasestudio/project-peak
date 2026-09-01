@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function HabitsPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function HabitsPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ date?: string }> }) {
   const { locale } = await params;
+  const { date } = await searchParams;
   if (!isLocale(locale)) notFound();
   const viewer = await requireViewer(locale, `/${locale}/app/habits`);
   const supabase = await createClient();
@@ -22,11 +23,12 @@ export default async function HabitsPage({ params }: { params: Promise<{ locale:
   if (!program) redirect(`/${locale}/app`);
 
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(date ?? "") && (date as string) <= today ? date as string : today;
   const { data: habit } = await supabase
     .from("habit_logs")
     .select("protein,water,sleep_hours")
     .eq("program_id", program.id)
-    .eq("local_date", today)
+    .eq("local_date", selectedDate)
     .maybeSingle();
 
   return (
@@ -34,7 +36,8 @@ export default async function HabitsPage({ params }: { params: Promise<{ locale:
       locale={locale}
       programId={program.id}
       userId={viewer.user.id}
-      localDate={today}
+      localDate={selectedDate}
+      today={today}
       initialHabit={{
         protein: habit?.protein ?? false,
         water: habit?.water ?? false,

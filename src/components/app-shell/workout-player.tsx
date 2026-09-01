@@ -25,7 +25,6 @@ export type WorkoutItem = {
     cue_en: string | null;
     equipment_mm: string | null;
     equipment_en: string | null;
-    kg_increment: number;
     unilateral: boolean;
     videos: Array<{
       id: string;
@@ -59,7 +58,7 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
   const [sessionId] = useState(() => existingSessionId ?? crypto.randomUUID());
   const [rest, setRest] = useState(0);
   const [running, setRunning] = useState(false);
-  const [online, setOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
+  const [online, setOnline] = useState(true);
   const [finishing, setFinishing] = useState(false);
   const [values, setValues] = useState<Record<string, SetValue[]>>(() => Object.fromEntries(items.map((item) => [item.id, Array.from({ length: item.sets }, (_, index) => {
     const log = initialLogs.find((row) => row.program_day_item_id === item.id && row.set_index === index + 1);
@@ -75,6 +74,7 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
     const supabase = createClient();
     const localDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
     supabase.from("workout_sessions").upsert({ id: sessionId, program_id: programId, day_number: dayNumber, session_type: dayType.toLowerCase(), status: "in_progress", local_date: localDate, started_at: new Date().toISOString() }, { onConflict: "program_id,day_number" }).then(() => undefined);
+    queueMicrotask(() => setOnline(navigator.onLine));
     const onOnline = async () => { setOnline(true); const result = await flushQueue(supabase); if (result.synced) toast.success(mm ? `${result.synced} ခု sync ပြီးပြီ` : `${result.synced} offline logs synced`); };
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
@@ -135,7 +135,7 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
 
   if (!active) return null;
   const activeDone = activeSets.filter((set) => set.done).length;
-  const activeUsesLoad = active.target_kg > 0 || active.exercise.kg_increment > 0;
+  const activeUsesLoad = active.target_kg > 0;
   const activeRemaining = active.sets - activeDone;
   const progress = Math.round((completedSets / totalSets) * 100);
   const targetReps = active.reps_min === active.reps_max ? String(active.reps_min) : `${active.reps_min}–${active.reps_max}`;

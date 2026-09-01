@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CircleUserRound, Dumbbell, LayoutDashboard, NotebookTabs, ShieldCheck } from "lucide-react";
+import { BarChart3, CircleUserRound, Dumbbell, NotebookTabs } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 
 const labels = {
@@ -25,7 +25,8 @@ const labels = {
   },
 };
 
-export function AppShell({ children, locale, isAdmin, name, avatarUrl }: { children: React.ReactNode; locale: Locale; isAdmin: boolean; name: string; avatarUrl: string | null }) {
+export function AppShell(props: { children: React.ReactNode; locale: Locale; isAdmin: boolean; name: string; avatarUrl: string | null }) {
+  const { children, locale, name, avatarUrl } = props;
   const pathname = usePathname();
   const copy = labels[locale];
   const base = `/${locale}/app`;
@@ -69,11 +70,6 @@ export function AppShell({ children, locale, isAdmin, name, avatarUrl }: { child
           </nav>
 
           <div className="flex items-center gap-2">
-            {isAdmin ? (
-              <Link href={`/${locale}/admin`} className="hidden h-10 items-center gap-2 rounded-lg border border-charcoal/10 bg-white px-3 text-[11px] font-semibold sm:flex">
-                <ShieldCheck size={15} />{copy.admin}<LayoutDashboard size={14} />
-              </Link>
-            ) : null}
             <Link
               href={`/${otherLocale}${pathname.replace(/^\/(mm|en)/, "")}`}
               className="grid h-10 min-w-12 place-items-center rounded-lg border border-charcoal/10 bg-white px-3 text-[10px] font-bold"

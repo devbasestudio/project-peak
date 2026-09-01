@@ -170,7 +170,7 @@ function WeeklyScheduleOverview({ locale, week, days, ready }: { locale: Locale;
           const formatted = day.scheduledDate ? new Intl.DateTimeFormat(mm ? "my-MM" : "en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${day.scheduledDate}T12:00:00`)) : (mm ? "ရက်မရွေးရသေး" : "Date not chosen");
           return <article key={day.id} className="relative bg-white px-5 py-5">
             <div className="flex items-center justify-between gap-3"><span className="text-[10px] font-bold text-charcoal/35">SESSION {day.dayNumber}</span><span className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${day.dayType === "push" ? "bg-sky text-charcoal" : "bg-[#f1f3f2] text-charcoal"}`}>{day.dayType.toUpperCase()}</span></div>
-            <p className={`mt-4 text-sm font-bold ${day.scheduledDate ? "text-charcoal" : "text-charcoal/35"}`} lang={mm ? "my" : "en"}>{formatted}</p>
+            <p suppressHydrationWarning className={`mt-4 text-sm font-bold ${day.scheduledDate ? "text-charcoal" : "text-charcoal/35"}`} lang={mm ? "my" : "en"}>{formatted}</p>
             <p className="mt-1 truncate text-xs text-charcoal/40" lang={mm ? "my" : "en"}>{(mm ? day.titleMm : day.titleEn) || `${day.dayType.toUpperCase()} session`}</p>
             {day.completed ? <span className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-aqua"><Check size={13} />{mm ? "ပြီးပါပြီ" : "COMPLETED"}</span> : null}
             {index === 1 ? <span className="absolute -bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-charcoal px-3 py-1 text-[8px] font-bold tracking-wider text-white sm:hidden">REST</span> : null}

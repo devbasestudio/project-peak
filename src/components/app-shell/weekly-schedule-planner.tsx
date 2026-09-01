@@ -138,7 +138,7 @@ export function WeeklySchedulePlanner({ locale, programId, weekNumber, days, tod
                         aria-label={mm ? `Session ${day.dayNumber} ရက်ရွေးမယ်` : `Choose date for session ${day.dayNumber}`}
                       />
                     </label>
-                    <p className="mt-2 min-h-5 text-xs text-charcoal/45" lang={mm ? "my" : "en"}>{formatted}</p>
+                    <p suppressHydrationWarning className="mt-2 min-h-5 text-xs text-charcoal/45" lang={mm ? "my" : "en"}>{formatted}</p>
                     {day.completed ? <p className="mt-3 flex items-center gap-2 text-[10px] font-bold text-aqua"><Check size={14} />{mm ? "ပြီးပါပြီ" : "COMPLETED"}</p> : null}
                   </article>
                 </div>

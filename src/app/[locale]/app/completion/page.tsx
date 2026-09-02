@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { CompletionFlow, type CompletionComparison, type CompletionQuestion, type FinalMovement } from "@/components/app-shell/completion-flow";
-import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program-blocks";
+import { FixedGuideScreen } from "@/components/app-shell/fixed-guide-screen";
 import { requireUser } from "@/lib/auth";
 import { isLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
@@ -106,11 +106,8 @@ export default async function CompletionPage({ params }: { params: Promise<{ loc
       .map((option) => ({ id: option.id, position: option.position, textMm: option.text_mm, textEn: option.text_en })),
   }));
 
-  const { data: completionDocument } = await supabase.from("program_documents").select("id").eq("program_id", program.id).eq("screen_key", "program_complete").maybeSingle();
-  const { data: completionBlocks } = completionDocument ? await supabase.from("program_blocks").select("id,block_type,title_mm,title_en,content_mm,content_en,config,visible").eq("document_id", completionDocument.id).order("position") : { data: [] };
-
   return (
-    <><ProgramBlocks locale={locale} blocks={(completionBlocks ?? []) as ProgramBlock[]} /><CompletionFlow
+    <><FixedGuideScreen locale={locale} variant="completion" /><CompletionFlow
       locale={locale}
       programId={program.id}
       programName={locale === "mm" ? program.name_mm : program.name_en}

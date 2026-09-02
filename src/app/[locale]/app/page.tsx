@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { CustomerDashboard } from "@/components/app-shell/customer-dashboard";
+import { FixedGuideScreen } from "@/components/app-shell/fixed-guide-screen";
 import { isLocale } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { ProgramBlock } from "@/components/app-shell/program-blocks";
 import { getCurrentProgramWeek, getWeekDayRange, type WeeklyScheduleDay } from "@/lib/weekly-schedule";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,6 @@ export default async function MemberHome({ params }: { params: Promise<{ locale:
 
   let program = null;
   let habits = null;
-  let programBlocks: ProgramBlock[] = [];
   let weekSchedule: WeeklyScheduleDay[] = [];
   if (rawProgram) {
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
@@ -52,14 +51,7 @@ export default async function MemberHome({ params }: { params: Promise<{ locale:
         completed: completedByDay.has(day.day_number),
       }));
     }
-    if ((count ?? 0) === 12) {
-      const { data: document } = await supabase.from("program_documents").select("id").eq("program_id", rawProgram.id).eq("screen_key", "phase_2_transition").maybeSingle();
-      if (document) {
-        const { data } = await supabase.from("program_blocks").select("id,block_type,title_mm,title_en,content_mm,content_en,config,visible").eq("document_id", document.id).order("position");
-        programBlocks = (data ?? []) as ProgramBlock[];
-      }
-    }
   }
 
-  return <CustomerDashboard locale={locale} order={order} program={program} email={user.email ?? ""} habits={habits} programBlocks={programBlocks} weekSchedule={weekSchedule} />;
+  return <CustomerDashboard locale={locale} order={order} program={program} email={user.email ?? ""} habits={habits} weekSchedule={weekSchedule} milestoneGuide={program?.completed === 12 ? <FixedGuideScreen locale={locale} variant="phase2" /> : null} />;
 }

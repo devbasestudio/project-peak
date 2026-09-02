@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { BaselineFlow } from "@/components/app-shell/baseline-flow";
-import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program-blocks";
+import { FixedGuideScreen } from "@/components/app-shell/fixed-guide-screen";
 import { isLocale } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -18,7 +18,5 @@ export default async function BaselinePage({ params }: { params: Promise<{ local
   if (count) redirect(`/${locale}/app`);
   const { data: movements } = await supabase.from("program_assessment_movements").select("id,name_mm,name_en,equipment_mm,equipment_en").eq("program_id", program.id).eq("assessment_kind", "baseline").order("position");
   if (!movements?.length) throw new Error("Baseline movements are not configured");
-  const { data: document } = await supabase.from("program_documents").select("id").eq("program_id", program.id).eq("screen_key", "baseline_intro").maybeSingle();
-  const { data: blocks } = document ? await supabase.from("program_blocks").select("id,block_type,title_mm,title_en,content_mm,content_en,config,visible").eq("document_id", document.id).order("position") : { data: [] };
-  return <><ProgramBlocks locale={locale} blocks={(blocks ?? []) as ProgramBlock[]} /><BaselineFlow locale={locale} programId={program.id} movements={movements} /></>;
+  return <><FixedGuideScreen locale={locale} variant="baseline" /><BaselineFlow locale={locale} programId={program.id} movements={movements} /></>;
 }

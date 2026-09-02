@@ -16,6 +16,24 @@ test("Burmese locale is consistently mm", async () => {
   assert.match(proxy, /\"mm\"/);
 });
 
+test("member guidance is fixed in the app instead of admin-authored blocks", async () => {
+  const guide = await read("src/components/app-shell/fixed-guide-screen.tsx");
+  for (const variant of ["baseline", "workout", "phase2", "completion"]) {
+    assert.match(guide, new RegExp(`${variant}:`));
+  }
+  assert.match(guide, /စမ်းပြဖို့ မဟုတ်ဘူး/);
+  assert.match(guide, /လုပ်ရမှာ သုံးခုပဲ/);
+  for (const route of [
+    "src/app/[locale]/app/page.tsx",
+    "src/app/[locale]/app/baseline/page.tsx",
+    "src/app/[locale]/app/workout/page.tsx",
+    "src/app/[locale]/app/completion/page.tsx",
+  ]) {
+    const source = await read(route);
+    assert.doesNotMatch(source, /program_blocks|program_documents/);
+  }
+});
+
 test("production hardening migration owns the critical transactions", async () => {
   const migration = await read("supabase/migrations/20260902112631_harden_project_peak_transactions_and_rls.sql");
   for (const fn of [

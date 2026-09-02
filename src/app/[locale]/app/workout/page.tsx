@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { WorkoutPlayer, type WorkoutItem } from "@/components/app-shell/workout-player";
-import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program-blocks";
+import { FixedGuideScreen } from "@/components/app-shell/fixed-guide-screen";
 import { isLocale } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -93,7 +93,5 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
   const { data: session } = await supabase.from("workout_sessions").select("id").eq("program_id", program.id).eq("day_number", dayNumber).maybeSingle();
   const { data: logs } = session ? await supabase.from("set_logs").select("program_day_item_id,set_index,weight_kg,reps").eq("session_id", session.id) : { data: [] };
 
-  const { data: document } = await supabase.from("program_documents").select("id").eq("program_id", program.id).eq("day_number", dayNumber).maybeSingle();
-  const { data: blocks } = document ? await supabase.from("program_blocks").select("id,block_type,title_mm,title_en,content_mm,content_en,config,visible").eq("document_id", document.id).order("position") : { data: [] };
-  return <><ProgramBlocks locale={locale} blocks={(blocks ?? []) as ProgramBlock[]} /><WorkoutPlayer locale={locale} programId={program.id} dayNumber={dayNumber} dayType={day.day_type.toUpperCase()} phase={day.phase} items={items} existingSessionId={session?.id ?? null} initialLogs={logs ?? []} /></>;
+  return <><FixedGuideScreen dayNumber={dayNumber} dayType={day.day_type.toUpperCase()} locale={locale} variant="workout" /><WorkoutPlayer locale={locale} programId={program.id} dayNumber={dayNumber} dayType={day.day_type.toUpperCase()} phase={day.phase} items={items} existingSessionId={session?.id ?? null} initialLogs={logs ?? []} /></>;
 }

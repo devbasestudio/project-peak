@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,14 +21,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { createPurchaseOrder } from "@/app/actions";
-import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program-blocks";
 import type { Locale } from "@/lib/i18n";
 import type { WeeklyScheduleDay } from "@/lib/weekly-schedule";
 
 type Order = { reference_code: string; status: string; amount_minor: number; currency: string } | null;
 type Program = { id: string; status: string; name_mm: string; name_en: string; completed: number; hasBaseline: boolean } | null;
 
-export function CustomerDashboard({ locale, order, program, email, habits, programBlocks, weekSchedule }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; programBlocks: ProgramBlock[]; weekSchedule: WeeklyScheduleDay[] }) {
+export function CustomerDashboard({ locale, order, program, email, habits, weekSchedule, milestoneGuide }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; weekSchedule: WeeklyScheduleDay[]; milestoneGuide?: ReactNode }) {
   const [pending, setPending] = useState(false);
   const mm = locale === "mm";
 
@@ -126,7 +126,7 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
 
       {program.hasBaseline ? <WeeklyScheduleOverview locale={locale} week={week} days={weekSchedule} ready={scheduleReady} /> : null}
 
-      <ProgramBlocks locale={locale} blocks={programBlocks} />
+      {milestoneGuide}
 
       <section className="mt-5 overflow-hidden rounded-2xl border border-charcoal/10 bg-white">
         <div className="flex items-center justify-between gap-4 border-b border-charcoal/8 px-5 py-4">

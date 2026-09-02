@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { WorkoutPlayer, type WorkoutItem } from "@/components/app-shell/workout-player";
 import { ProgramBlocks, type ProgramBlock } from "@/components/app-shell/program-blocks";
 import { isLocale } from "@/lib/i18n";
-import { requireViewer } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProgramWeek } from "@/lib/weekly-schedule";
 
@@ -24,9 +24,9 @@ type RawExerciseVideo = {
 export default async function WorkoutPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const viewer = await requireViewer(locale, `/${locale}/app/workout`);
+  const user = await requireUser(locale, `/${locale}/app/workout`);
   const supabase = await createClient();
-  const { data: program } = await supabase.from("programs").select("id").eq("user_id", viewer.user.id).eq("status", "active").limit(1).maybeSingle();
+  const { data: program } = await supabase.from("programs").select("id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
   if (!program) redirect(`/${locale}/app`);
 
   const [{ count: baselineCount }, { count: completed }] = await Promise.all([

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { HabitEditor } from "@/components/app-shell/habit-editor";
-import { requireViewer } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { isLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,12 +10,12 @@ export default async function HabitsPage({ params, searchParams }: { params: Pro
   const { locale } = await params;
   const { date } = await searchParams;
   if (!isLocale(locale)) notFound();
-  const viewer = await requireViewer(locale, `/${locale}/app/habits`);
+  const user = await requireUser(locale, `/${locale}/app/habits`);
   const supabase = await createClient();
   const { data: program } = await supabase
     .from("programs")
     .select("id")
-    .eq("user_id", viewer.user.id)
+    .eq("user_id", user.id)
     .eq("status", "active")
     .order("assigned_at", { ascending: false })
     .limit(1)
@@ -35,7 +35,7 @@ export default async function HabitsPage({ params, searchParams }: { params: Pro
     <HabitEditor
       locale={locale}
       programId={program.id}
-      userId={viewer.user.id}
+      userId={user.id}
       localDate={selectedDate}
       today={today}
       initialHabit={{

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { WeeklySchedulePlanner } from "@/components/app-shell/weekly-schedule-planner";
-import { requireViewer } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { isLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProgramWeek, getWeekDayRange, type WeeklyScheduleDay } from "@/lib/weekly-schedule";
@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 export default async function SchedulePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const viewer = await requireViewer(locale, `/${locale}/app/schedule`);
+  const user = await requireUser(locale, `/${locale}/app/schedule`);
   const supabase = await createClient();
-  const { data: program } = await supabase.from("programs").select("id").eq("user_id", viewer.user.id).eq("status", "active").limit(1).maybeSingle();
+  const { data: program } = await supabase.from("programs").select("id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
   if (!program) redirect(`/${locale}/app`);
 
   const [{ count: baselineCount }, { count: completed }] = await Promise.all([
@@ -46,4 +46,3 @@ export default async function SchedulePage({ params }: { params: Promise<{ local
 
   return <WeeklySchedulePlanner locale={locale} programId={program.id} weekNumber={weekNumber} days={days} today={today} />;
 }
-

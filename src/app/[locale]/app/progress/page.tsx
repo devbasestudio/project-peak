@@ -1,23 +1,44 @@
 import { notFound, redirect } from "next/navigation";
 import { ProgressDashboard, type AssessmentComparison, type ExerciseHistory } from "@/components/app-shell/progress-dashboard";
-import { requireViewer } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { isLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 type SessionRow = { id: string; day_number: number; session_type: string; local_date: string };
-type SetRow = { session_id: string; program_day_item_id: string; set_index: number; weight_kg: number | string; reps: number };
+type ExerciseRow = { id: string; name_mm: string; name_en: string; position: number };
+type DayItemRelation = { program_exercise_id: string; program_exercises: ExerciseRow | ExerciseRow[] | null };
+type SetRow = {
+  session_id: string;
+  program_day_item_id: string;
+  set_index: number;
+  weight_kg: number | string;
+  reps: number;
+  program_day_items: DayItemRelation | DayItemRelation[] | null;
+};
+type AssessmentResultRow = { movement_id: string; value: number };
+type AttemptRow = {
+  id: string;
+  kind: string;
+  local_date: string;
+  status: string;
+  assessment_results: AssessmentResultRow[];
+};
+
+function firstRelation<T>(relation: T | T[] | null | undefined) {
+  return Array.isArray(relation) ? relation[0] : relation ?? undefined;
+}
 
 export default async function ProgressPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const viewer = await requireViewer(locale, `/${locale}/app/progress`);
+  const user = await requireUser(locale, `/${locale}/app/progress`);
   const supabase = await createClient();
   const { data: program } = await supabase
     .from("programs")
     .select("id,status,name_mm,name_en,assigned_at")
-    .eq("user_id", viewer.user.id)
+    .eq("user_id", user.id)
     .in("status", ["active", "completed", "paused"])
     .order("assigned_at", { ascending: false })
     .limit(1)
@@ -38,7 +59,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ local
       .order("local_date"),
     supabase
       .from("assessment_attempts")
-      .select("id,kind,local_date,status")
+      .select("id,kind,local_date,status,assessment_results(movement_id,value)")
       .eq("program_id", program.id)
       .eq("status", "completed"),
     supabase
@@ -48,23 +69,19 @@ export default async function ProgressPage({ params }: { params: Promise<{ local
       .order("position"),
     supabase
       .from("set_logs")
-      .select("session_id,program_day_item_id,set_index,weight_kg,reps")
+      .select("session_id,program_day_item_id,set_index,weight_kg,reps,program_day_items(program_exercise_id,program_exercises(id,name_mm,name_en,position))")
       .eq("program_id", program.id),
   ]);
 
   const sessions = (sessionsResult.data ?? []) as SessionRow[];
-  const attempts = attemptsResult.data ?? [];
+  const attempts = (attemptsResult.data ?? []) as AttemptRow[];
   const movements = movementsResult.data ?? [];
-  const setLogs = (setLogsResult.data ?? []) as SetRow[];
-  const attemptIds = attempts.map((attempt) => attempt.id);
-  const { data: resultRows } = attemptIds.length
-    ? await supabase.from("assessment_results").select("attempt_id,movement_id,value").in("attempt_id", attemptIds)
-    : { data: [] };
+  const setLogs = (setLogsResult.data ?? []) as unknown as SetRow[];
 
   const baselineAttempt = attempts.find((attempt) => attempt.kind === "baseline");
   const finalAttempt = attempts.find((attempt) => attempt.kind === "final");
-  const baselineValues = new Map((resultRows ?? []).filter((row) => row.attempt_id === baselineAttempt?.id).map((row) => [row.movement_id, row.value]));
-  const finalValues = new Map((resultRows ?? []).filter((row) => row.attempt_id === finalAttempt?.id).map((row) => [row.movement_id, row.value]));
+  const baselineValues = new Map((baselineAttempt?.assessment_results ?? []).map((row) => [row.movement_id, row.value]));
+  const finalValues = new Map((finalAttempt?.assessment_results ?? []).map((row) => [row.movement_id, row.value]));
   const baselineMovements = movements.filter((movement) => movement.assessment_kind === "baseline");
   const finalMovements = movements.filter((movement) => movement.assessment_kind === "final");
   const comparisons: AssessmentComparison[] = baselineMovements.map((movement) => {
@@ -80,16 +97,15 @@ export default async function ProgressPage({ params }: { params: Promise<{ local
     };
   });
 
-  const itemIds = [...new Set(setLogs.map((log) => log.program_day_item_id))];
-  const { data: dayItems } = itemIds.length
-    ? await supabase.from("program_day_items").select("id,program_exercise_id").in("id", itemIds)
-    : { data: [] };
-  const exerciseIds = [...new Set((dayItems ?? []).map((item) => item.program_exercise_id))];
-  const { data: exercises } = exerciseIds.length
-    ? await supabase.from("program_exercises").select("id,name_mm,name_en,position").in("id", exerciseIds).order("position")
-    : { data: [] };
-
-  const itemExercise = new Map((dayItems ?? []).map((item) => [item.id, item.program_exercise_id]));
+  const itemExercise = new Map<string, string>();
+  const exerciseMap = new Map<string, ExerciseRow>();
+  for (const log of setLogs) {
+    const dayItem = firstRelation(log.program_day_items);
+    const exercise = firstRelation(dayItem?.program_exercises);
+    if (!dayItem || !exercise) continue;
+    itemExercise.set(log.program_day_item_id, dayItem.program_exercise_id);
+    exerciseMap.set(exercise.id, exercise);
+  }
   const sessionMap = new Map(sessions.map((session) => [session.id, session]));
   const grouped = new Map<string, Map<string, SetRow[]>>();
   for (const log of setLogs) {
@@ -102,7 +118,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ local
     grouped.set(exerciseId, bySession);
   }
 
-  const histories: ExerciseHistory[] = (exercises ?? []).map((exercise) => ({
+  const histories: ExerciseHistory[] = [...exerciseMap.values()].sort((a, b) => a.position - b.position).map((exercise) => ({
     id: exercise.id,
     nameMm: exercise.name_mm,
     nameEn: exercise.name_en,

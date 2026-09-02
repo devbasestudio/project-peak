@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CustomerDashboard } from "@/components/app-shell/customer-dashboard";
 import { isLocale } from "@/lib/i18n";
-import { requireViewer } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { ProgramBlock } from "@/components/app-shell/program-blocks";
 import { getCurrentProgramWeek, getWeekDayRange, type WeeklyScheduleDay } from "@/lib/weekly-schedule";
@@ -11,12 +11,12 @@ export const dynamic = "force-dynamic";
 export default async function MemberHome({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const viewer = await requireViewer(locale);
+  const user = await requireUser(locale);
   const supabase = await createClient();
 
   const [{ data: order }, { data: rawProgram }] = await Promise.all([
-    supabase.from("payment_orders").select("reference_code,status,amount_minor,currency").eq("user_id", viewer.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("programs").select("id,status,name_mm,name_en").eq("user_id", viewer.user.id).eq("status", "active").order("assigned_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("payment_orders").select("reference_code,status,amount_minor,currency").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("programs").select("id,status,name_mm,name_en").eq("user_id", user.id).eq("status", "active").order("assigned_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   let program = null;
@@ -61,5 +61,5 @@ export default async function MemberHome({ params }: { params: Promise<{ locale:
     }
   }
 
-  return <CustomerDashboard locale={locale} order={order} program={program} email={viewer.user.email ?? ""} habits={habits} programBlocks={programBlocks} weekSchedule={weekSchedule} />;
+  return <CustomerDashboard locale={locale} order={order} program={program} email={user.email ?? ""} habits={habits} programBlocks={programBlocks} weekSchedule={weekSchedule} />;
 }

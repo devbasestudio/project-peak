@@ -82,7 +82,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const locale = (await headers()).get("x-project-peak-locale") === "en" ? "en" : "my";
+  const locale = (await headers()).get("x-project-peak-locale") === "en" ? "en" : "mm";
 
   return (
     <html lang={locale} className={`${archivo.variable} ${geist.variable} ${geistMono.variable} ${myanmarSagar.variable}`}>

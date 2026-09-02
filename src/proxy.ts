@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
-  const routeLocale = request.nextUrl.pathname.split("/")[1] === "en" ? "en" : "my";
+  const routeLocale = request.nextUrl.pathname.split("/")[1] === "en" ? "en" : "mm";
   requestHeaders.set("x-project-peak-locale", routeLocale);
 
   let response = NextResponse.next({ request: { headers: requestHeaders } });

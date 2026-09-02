@@ -171,11 +171,11 @@
   .brand img { width: 145px; height: auto; }
   .nav { display: none; }
   .language,.login { min-height: 40px; padding: 0 11px; }
-  .hero { min-height: 940px; align-items: flex-start; padding: 106px 18px 40px; }
-  .heroPhoto { inset: 68px 0 0; }
-  .heroPhoto img { object-position: 62% center; }
-  .heroShade { inset: 68px 0 0; background: linear-gradient(90deg,rgba(246,245,239,.98) 0%,rgba(246,245,239,.88) 39%,rgba(246,245,239,.04) 78%),linear-gradient(0deg,rgba(6,17,26,.42),transparent 38%); }
-  .heroContent { width: 100%; padding-top: 24px; }
+  .hero { min-height: 1040px; align-items: flex-start; padding: 330px 18px 40px; }
+  .heroPhoto { inset: 68px 0 auto; height: auto; aspect-ratio: 1672 / 941; background: #e9e6de; }
+  .heroPhoto img { object-fit: contain; object-position: center top; }
+  .heroShade { inset: 68px 0 auto; height: auto; aspect-ratio: 1672 / 941; background: linear-gradient(0deg,rgba(246,245,239,.72),transparent 44%); }
+  .heroContent { width: 100%; padding-top: 0; }
   .heroTitle { font-size: clamp(4.5rem,22vw,7rem); }
   .page[lang="my"] .heroTitle { max-width: 8ch; font-size: clamp(3.8rem,17vw,6rem); }
   .heroCopy { max-width: 90%; font-size: 14px; }
@@ -207,7 +207,7 @@
 @media (max-width: 520px) {
   .login { font-size: 0; }
   .login svg { margin: 0; }
-  .hero { min-height: 860px; }
+  .hero { min-height: 980px; }
   .heroActions { align-items: flex-start; flex-direction: column; gap: 16px; }
   .primary { width: 100%; }
   .heroIndex span { display: none; }

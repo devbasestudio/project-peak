@@ -42,7 +42,7 @@ export function CustomerDashboard({ locale, order, program, email, habits, progr
           <p className="mt-3 max-w-2xl text-sm leading-7 text-charcoal/58" lang={mm ? "my" : "en"}>
             {order
               ? (mm ? "Admin အတည်ပြုပြီးတာနဲ့ Baseline Test ကနေ စနိုင်ပါပြီ။" : "Once approved, your program opens at the baseline test.")
-              : (mm ? "ငွေပေးချေရန် reference code ထုတ်ပြီး KBZPay screenshot နဲ့အတူ ပို့ပေးပါ။" : "Create your reference code, pay by KBZPay, and send the screenshot for approval.")}
+              : (mm ? "Reference code ထုတ်ပြီး KBZPay နဲ့ ငွေပေးချေပါ။ ပြီးရင် code နဲ့ email ကို Admin ဆီပို့ရုံပါပဲ။" : "Create your reference, pay by KBZPay, then send the code and your email to the admin.")}
           </p>
         </header>
 
@@ -194,6 +194,10 @@ function HabitStatus({ icon: Icon, label, value, done }: { icon: typeof Utensils
 
 function PaymentCard({ locale, order, email }: { locale: Locale; order: NonNullable<Order>; email: string }) {
   const mm = locale === "mm";
+  const message = mm
+    ? `Project Peak Home Workout အတွက် ငွေပေးချေပြီးပါပြီ။\nReference: ${order.reference_code}\nEmail: ${email}`
+    : `I have paid for Project Peak Home Workout.\nReference: ${order.reference_code}\nEmail: ${email}`;
+  const adminMessageHref = `https://t.me/wayneax21?text=${encodeURIComponent(message)}`;
   return (
     <section className="overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-[0_16px_50px_rgba(6,17,26,.06)]">
       <div className="grid lg:grid-cols-[300px_1fr]">
@@ -206,11 +210,11 @@ function PaymentCard({ locale, order, email }: { locale: Locale; order: NonNulla
           <button type="button" onClick={() => { navigator.clipboard.writeText(order.reference_code); toast.success(mm ? "Reference code ကူးပြီးပါပြီ" : "Reference copied"); }} className="mt-6 flex w-full items-center justify-between gap-3 rounded-xl border border-charcoal/10 bg-[#f4f6f5] px-4 py-4 text-left"><span className="mono break-all text-lg font-bold sm:text-2xl">{order.reference_code}</span><Copy className="shrink-0" size={17} /></button>
           <ol className="mt-6 space-y-3 text-sm leading-6 text-charcoal/60">
             <li className="flex gap-3"><span className="font-bold text-sky">1.</span>{mm ? "QR scan ဖတ်ပြီး ငွေပေးချေပါ။" : "Scan the QR and complete the payment."}</li>
-            <li className="flex gap-3"><span className="font-bold text-sky">2.</span>{mm ? "ငွေလွှဲအောင်မြင်တဲ့ screenshot ကို သိမ်းပါ။" : "Save the successful payment screenshot."}</li>
-            <li className="flex gap-3"><span className="font-bold text-sky">3.</span>{mm ? "Screenshot၊ reference code နဲ့ email ကို Telegram ပို့ပါ။" : "Send the screenshot, reference and email on Telegram."}</li>
+            <li className="flex gap-3"><span className="font-bold text-sky">2.</span>{mm ? "အောက်က button ကိုနှိပ်ပါ။ Reference code နဲ့ email ကို အလိုအလျောက်ထည့်ပေးထားပါတယ်။" : "Tap the button below. Your reference and email are already included."}</li>
+            <li className="flex gap-3"><span className="font-bold text-sky">3.</span>{mm ? "Admin ဆီ message ပို့ပြီး အတည်ပြုချက်ကို စောင့်ပါ။ Screenshot တင်စရာမလိုပါ။" : "Send the message and wait for approval. No screenshot upload is needed."}</li>
           </ol>
           <div className="mt-5 rounded-xl bg-[#f4f6f5] px-4 py-3 text-xs"><span className="text-charcoal/40">Email · </span><span className="break-all font-semibold">{email}</span></div>
-          <a href="https://t.me/wayneax21" target="_blank" rel="noreferrer" className="mt-5 flex min-h-13 items-center justify-center gap-3 rounded-xl bg-charcoal px-5 text-sm font-semibold text-white"><Send size={17} />{mm ? "Payment screenshot ပို့မယ်" : "Send payment screenshot"}<ArrowRight size={16} /></a>
+          <a href={adminMessageHref} target="_blank" rel="noreferrer" className="mt-5 flex min-h-13 items-center justify-center gap-3 rounded-xl bg-charcoal px-5 text-sm font-semibold text-white"><Send size={17} />{mm ? "Admin ကို အသိပေးမယ်" : "Notify the admin"}<ArrowRight size={16} /></a>
         </div>
       </div>
       <div className="flex items-start gap-3 border-t border-charcoal/8 bg-[#f4f6f5] px-5 py-4 text-xs leading-5 text-charcoal/55"><LockKeyhole className="mt-0.5 shrink-0" size={16} />{mm ? "Admin အတည်ပြုပြီးတာနဲ့ ကိုယ်ပိုင် Program ဖွင့်ပေးပါမယ်။" : "Your personal program opens as soon as the payment is approved."}</div>

@@ -57,16 +57,9 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
   const videos = (videoRows ?? []) as RawExerciseVideo[];
   const assetIds = [...new Set(videos.map((video) => video.asset_id))];
   const { data: assets } = assetIds.length
-    ? await supabase.from("media_assets").select("id,bucket_id,object_path").in("id", assetIds)
+    ? await supabase.from("media_assets").select("id").in("id", assetIds)
     : { data: [] };
-  const assetById = new Map((assets ?? []).map((asset) => [asset.id, asset]));
-  const signedByVideoId = new Map<string, string>();
-  await Promise.all(videos.map(async (video) => {
-    const asset = assetById.get(video.asset_id);
-    if (!asset) return;
-    const { data } = await supabase.storage.from(asset.bucket_id).createSignedUrl(asset.object_path, 3600);
-    if (data?.signedUrl) signedByVideoId.set(video.id, data.signedUrl);
-  }));
+  const availableAssetIds = new Set((assets ?? []).map((asset) => asset.id));
   const items: WorkoutItem[] = ((rawItems ?? []) as RawItem[]).map((item) => {
     const rawExercise = Array.isArray(item.program_exercises) ? item.program_exercises[0] : item.program_exercises;
     return {
@@ -74,7 +67,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
       exercise: {
         ...rawExercise,
         videos: videos
-          .filter((video) => video.program_exercise_id === rawExercise.id && signedByVideoId.has(video.id))
+          .filter((video) => video.program_exercise_id === rawExercise.id && availableAssetIds.has(video.asset_id))
           .map((video) => ({
             id: video.id,
             position: video.position,
@@ -83,7 +76,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
             title_en: video.title_en,
             cue_mm: video.cue_mm,
             cue_en: video.cue_en,
-            url: signedByVideoId.get(video.id)!,
+            url: `/api/member-media/${video.asset_id}`,
           })),
       },
     };

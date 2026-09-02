@@ -34,6 +34,18 @@ test("member guidance is fixed in the app instead of admin-authored blocks", asy
   }
 });
 
+test("member exercise videos stream through an authenticated same-origin range endpoint", async () => {
+  const workout = await read("src/app/[locale]/app/workout/page.tsx");
+  const mediaRoute = await read("src/app/api/member-media/[assetId]/route.ts");
+  assert.match(workout, /\/api\/member-media\/\$\{video\.asset_id\}/);
+  assert.doesNotMatch(workout, /createSignedUrl/);
+  assert.match(mediaRoute, /auth\.getUser\(\)/);
+  assert.match(mediaRoute, /from\("media_assets"\)/);
+  assert.match(mediaRoute, /request\.headers\.get\("range"\)/);
+  assert.match(mediaRoute, /upstream\.body/);
+  assert.match(mediaRoute, /private, max-age=300/);
+});
+
 test("production hardening migration owns the critical transactions", async () => {
   const migration = await read("supabase/migrations/20260902112631_harden_project_peak_transactions_and_rls.sql");
   for (const fn of [

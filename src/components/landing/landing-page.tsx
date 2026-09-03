@@ -4,15 +4,9 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, Check, ChevronRight } from "lucide-react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
 import type { Locale } from "@/lib/i18n";
 import { landingCopy } from "@/lib/landing-content";
 import styles from "./landing.module.css";
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const weeks = Array.from({ length: 12 }, (_, index) => ({ week: index + 1, from: index * 4 + 1, to: index * 4 + 4 }));
 const movements = ["Push up", "Wide pull up", "Lateral raise · 4 L", "Sissy squat"];
@@ -39,37 +33,67 @@ export function LandingPage({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const lenis = new Lenis({ duration: 1.08, smoothWheel: true, wheelMultiplier: 0.9 });
-    const raf = (time: number) => lenis.raf(time * 1000);
-    lenis.on("scroll", ScrollTrigger.update);
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
-    return () => { gsap.ticker.remove(raf); lenis.destroy(); };
+    let disposed = false;
+    let cleanup: (() => void) | undefined;
+    void Promise.all([import("gsap"), import("gsap/ScrollTrigger"), import("lenis")]).then(([gsapModule, scrollTriggerModule, lenisModule]) => {
+      if (disposed) return;
+      const gsap = gsapModule.default;
+      const ScrollTrigger = scrollTriggerModule.ScrollTrigger;
+      const Lenis = lenisModule.default;
+      gsap.registerPlugin(ScrollTrigger);
+      const lenis = new Lenis({ duration: 1.08, smoothWheel: true, wheelMultiplier: 0.9 });
+      const raf = (time: number) => lenis.raf(time * 1000);
+      lenis.on("scroll", ScrollTrigger.update);
+      gsap.ticker.add(raf);
+      gsap.ticker.lagSmoothing(0);
+      cleanup = () => { gsap.ticker.remove(raf); lenis.destroy(); };
+    });
+    return () => { disposed = true; cleanup?.(); };
   }, []);
 
   useEffect(() => {
     const dot = cursor.current;
     const container = root.current;
     if (!dot || !container || window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const move = (event: MouseEvent) => {
-      dot.classList.add(styles.cursorVisible);
-      gsap.to(dot, { x: event.clientX, y: event.clientY, duration: 0.16, ease: "power2.out", overwrite: "auto" });
-    };
-    const grow = () => dot.classList.add(styles.cursorActive);
-    const shrink = () => dot.classList.remove(styles.cursorActive);
-    const targets = container.querySelectorAll("a, button, summary");
-    window.addEventListener("mousemove", move);
-    targets.forEach((target) => { target.addEventListener("mouseenter", grow); target.addEventListener("mouseleave", shrink); });
-    return () => {
-      window.removeEventListener("mousemove", move);
-      targets.forEach((target) => { target.removeEventListener("mouseenter", grow); target.removeEventListener("mouseleave", shrink); });
-    };
+    let disposed = false;
+    let cleanup: (() => void) | undefined;
+    void import("gsap").then(({ default: gsap }) => {
+      if (disposed) return;
+      const move = (event: MouseEvent) => {
+        dot.classList.add(styles.cursorVisible);
+        gsap.to(dot, { x: event.clientX, y: event.clientY, duration: 0.16, ease: "power2.out", overwrite: "auto" });
+      };
+      const grow = () => dot.classList.add(styles.cursorActive);
+      const shrink = () => dot.classList.remove(styles.cursorActive);
+      const targets = container.querySelectorAll("a, button, summary");
+      window.addEventListener("mousemove", move);
+      targets.forEach((target) => { target.addEventListener("mouseenter", grow); target.addEventListener("mouseleave", shrink); });
+      cleanup = () => {
+        window.removeEventListener("mousemove", move);
+        targets.forEach((target) => { target.removeEventListener("mouseenter", grow); target.removeEventListener("mouseleave", shrink); });
+      };
+    });
+    return () => { disposed = true; cleanup?.(); };
   }, []);
 
-  useGSAP(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const counter = { value: 0 };
-    const intro = gsap.timeline({ defaults: { ease: "power4.out" } });
+  useEffect(() => {
+    const container = root.current;
+    if (!container) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const intro = container.querySelector<HTMLElement>("[data-intro]");
+      if (intro) intro.style.display = "none";
+      return;
+    }
+    let disposed = false;
+    let cleanup: (() => void) | undefined;
+    void Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(([gsapModule, scrollTriggerModule]) => {
+      if (disposed) return;
+      const gsap = gsapModule.default;
+      const ScrollTrigger = scrollTriggerModule.ScrollTrigger;
+      gsap.registerPlugin(ScrollTrigger);
+      const context = gsap.context(() => {
+      const counter = { value: 0 };
+      const intro = gsap.timeline({ defaults: { ease: "power4.out" } });
     intro
       .from("[data-intro-word]", { yPercent: 125, duration: 0.72, stagger: 0.08, ease: "power4.inOut" })
       .to("[data-intro-rule]", { scaleX: 1, duration: 0.42, ease: "power3.inOut" }, "-=.32")
@@ -88,8 +112,15 @@ export function LandingPage({ locale }: { locale: Locale }) {
     gsap.to("[data-method-image]", { scale: 1.07, ease: "none", scrollTrigger: { trigger: "[data-method]", start: "top bottom", end: "bottom top", scrub: 1 } });
     gsap.fromTo("[data-route-line]", { scaleY: 0 }, { scaleY: 1, ease: "none", scrollTrigger: { trigger: "[data-route]", start: "top 72%", end: "bottom 70%", scrub: 0.8 } });
     gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => gsap.from(element, { autoAlpha: 0, y: 52, duration: 0.82, ease: "power3.out", scrollTrigger: { trigger: element, start: "top 87%", once: true } }));
-    gsap.utils.toArray<HTMLElement>("[data-scale]").forEach((element) => gsap.from(element, { scale: 0.9, autoAlpha: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: element, start: "top 84%", once: true } }));
-  }, { scope: root });
+      gsap.utils.toArray<HTMLElement>("[data-scale]").forEach((element) => gsap.from(element, { scale: 0.9, autoAlpha: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: element, start: "top 84%", once: true } }));
+      }, container);
+      cleanup = () => context.revert();
+    }).catch(() => {
+      const intro = container.querySelector<HTMLElement>("[data-intro]");
+      if (intro) intro.style.display = "none";
+    });
+    return () => { disposed = true; cleanup?.(); };
+  }, []);
 
   return (
     <div className={styles.page} lang={mm ? "my" : "en"} ref={root}>

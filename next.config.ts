@@ -10,11 +10,19 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
+  outputFileTracingRoot: process.cwd(),
+  turbopack: { root: process.cwd() },
   poweredByHeader: false,
   images: {
+    minimumCacheTTL: 60 * 60 * 24 * 7,
+    deviceSizes: [360, 390, 640, 768, 1024, 1280, 1536, 1920],
+    imageSizes: [32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [{ protocol: "https", hostname: "lh3.googleusercontent.com" }],
   },
-  experimental: { serverActions: { bodySizeLimit: "10mb" } },
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+    serverActions: { bodySizeLimit: "10mb" },
+  },
   headers: async () => [{
     source: "/(.*)",
     headers: [

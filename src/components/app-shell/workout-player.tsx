@@ -256,7 +256,7 @@ function ExerciseVideoCarousel({ locale, videos }: { locale: Locale; videos: Wor
       if (track.clientWidth) setIndex(Math.round(track.scrollLeft / track.clientWidth));
     }} className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {videos.map((video) => <article key={video.id} className="min-w-full snap-center">
-        <div className="relative aspect-video overflow-hidden bg-black"><video className="h-full w-full object-contain" controls playsInline preload="metadata" src={video.url} /></div>
+        <div className="relative aspect-video overflow-hidden bg-black"><video className="h-full w-full object-contain" controls playsInline preload={video.id === videos[index]?.id ? "metadata" : "none"} src={video.url} /></div>
         <div className="flex items-start gap-3 p-4 sm:p-5"><span className={`mt-0.5 grid h-8 w-8 flex-none place-items-center ${video.role === "alternative" ? "bg-white text-charcoal" : "bg-sky text-charcoal"}`}><Video size={15} /></span><div><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">{mm ? video.title_mm : video.title_en}</strong><span className="rounded-full border border-white/15 px-2 py-0.5 text-[8px] font-bold tracking-wider text-white/55">{video.role === "alternative" ? (mm ? "အစားထိုးနည်း" : "Alternative") : (mm ? "ပုံမှန်နည်း" : "Main version")}</span></div>{(mm ? video.cue_mm : video.cue_en) ? <p className="mt-1 text-xs leading-5 text-white/55" lang={mm ? "my" : "en"}>{mm ? video.cue_mm : video.cue_en}</p> : null}</div></div>
       </article>)}
     </div>

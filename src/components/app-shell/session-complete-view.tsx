@@ -59,7 +59,7 @@ export function SessionCompleteView({
           <div className="grid gap-4 p-5 sm:p-6">
             {assets.map((asset) => asset.kind === "video" ? (
               <article key={asset.id} className="overflow-hidden rounded-2xl border border-charcoal/10 bg-charcoal text-white">
-                <video controls preload="metadata" playsInline className="aspect-video w-full bg-black" src={`/api/member-media/${asset.assetId}`} />
+                <video controls preload="none" playsInline className="aspect-video w-full bg-black" src={`/api/member-media/${asset.assetId}`} />
                 <div className="flex items-center justify-between gap-4 px-4 py-3"><span className="flex items-center gap-2 text-sm font-semibold"><Play size={15} />{asset.title}</span>{asset.durationSeconds ? <span className="font-mono text-[10px] text-white/40">{Math.ceil(asset.durationSeconds / 60)} MIN</span> : null}</div>
               </article>
             ) : (

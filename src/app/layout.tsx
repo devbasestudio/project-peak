@@ -5,10 +5,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 const archivo = localFont({
-  src: [
-    { path: "./fonts/archivo-variable.ttf", style: "normal" },
-    { path: "./fonts/archivo-italic-variable.ttf", style: "italic" },
-  ],
+  src: "./fonts/archivo-variable.ttf",
   variable: "--font-archivo",
   display: "swap",
 });
@@ -17,12 +14,14 @@ const geist = localFont({
   src: "./fonts/geist-variable.ttf",
   variable: "--font-geist",
   display: "swap",
+  preload: false,
 });
 
 const geistMono = localFont({
   src: "./fonts/geist-mono-variable.ttf",
   variable: "--font-geist-mono",
   display: "swap",
+  preload: false,
 });
 
 const myanmarSagar = localFont({

@@ -217,7 +217,7 @@ function PaymentCard({ locale, order, email }: { locale: Locale; order: NonNulla
     <section className="overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-[0_16px_50px_rgba(6,17,26,.06)]">
       <div className="grid lg:grid-cols-[300px_1fr]">
         <div className="bg-[#0d5aad] p-5">
-          <div className="overflow-hidden rounded-xl bg-white p-2"><Image src="/payment/kbzpay-project-peak.jpg" alt="KBZPay QR code" width={828} height={1228} className="h-auto w-full" priority /></div>
+          <div className="overflow-hidden rounded-xl bg-white p-2"><Image src="/payment/kbzpay-project-peak.jpg" alt="KBZPay QR code" width={828} height={1228} sizes="(max-width: 1024px) 100vw, 300px" className="h-auto w-full" /></div>
           <p className="mt-3 text-center text-xs leading-5 text-white/70">{mm ? "KBZPay နဲ့ scan ဖတ်ပြီး 75,000 MMK ပေးချေပါ။" : "Scan with KBZPay and pay 75,000 MMK."}</p>
         </div>
         <div className="p-6 sm:p-8">

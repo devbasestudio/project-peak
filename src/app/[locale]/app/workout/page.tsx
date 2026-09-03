@@ -37,32 +37,54 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
   if ((completed ?? 0) >= 47) redirect(`/${locale}/app/completion`);
   const dayNumber = (completed ?? 0) + 1;
   const weekNumber = getCurrentProgramWeek(completed ?? 0);
-  const { count: scheduledSlots } = await supabase
-    .from("weekly_schedule_slots")
-    .select("id", { count: "exact", head: true })
-    .eq("program_id", program.id)
-    .eq("week_number", weekNumber);
+  const [scheduledSlotsResult, scheduledDayResult, dayResult] = await Promise.all([
+    supabase
+      .from("weekly_schedule_slots")
+      .select("id", { count: "exact", head: true })
+      .eq("program_id", program.id)
+      .eq("week_number", weekNumber),
+    supabase
+      .from("weekly_schedule_slots")
+      .select("scheduled_date")
+      .eq("program_id", program.id)
+      .eq("day_number", dayNumber)
+      .maybeSingle(),
+    supabase
+      .from("program_days")
+      .select("id,day_number,day_type,phase")
+      .eq("program_id", program.id)
+      .eq("day_number", dayNumber)
+      .single(),
+  ]);
+  const { count: scheduledSlots } = scheduledSlotsResult;
   if ((scheduledSlots ?? 0) !== 4) redirect(`/${locale}/app/schedule`);
-  const { data: scheduledDay } = await supabase
-    .from("weekly_schedule_slots")
-    .select("scheduled_date")
-    .eq("program_id", program.id)
-    .eq("day_number", dayNumber)
-    .maybeSingle();
+  const { data: scheduledDay } = scheduledDayResult;
   if (!scheduledDay?.scheduled_date) redirect(`/${locale}/app/schedule`);
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
   if (scheduledDay.scheduled_date > today) redirect(`/${locale}/app/rest`);
 
-  const { data: day } = await supabase.from("program_days").select("id,day_number,day_type,phase").eq("program_id", program.id).eq("day_number", dayNumber).single();
+  const { data: day } = dayResult;
   if (!day) throw new Error("The next program day is not configured");
-  const { data: rawItems } = await supabase.from("program_day_items").select("id,position,sets,reps_min,reps_max,target_kg,rest_seconds,program_exercises(id,name_mm,name_en,cue_mm,cue_en,equipment_mm,equipment_en,unilateral)").eq("program_day_id", day.id).order("position");
+  const [itemResult, sessionResult] = await Promise.all([
+    supabase.from("program_day_items").select("id,position,sets,reps_min,reps_max,target_kg,rest_seconds,program_exercises(id,name_mm,name_en,cue_mm,cue_en,equipment_mm,equipment_en,unilateral)").eq("program_day_id", day.id).order("position"),
+    supabase.from("workout_sessions").select("id").eq("program_id", program.id).eq("day_number", dayNumber).maybeSingle(),
+  ]);
+  const { data: rawItems } = itemResult;
+  const { data: session } = sessionResult;
   const exerciseIds = ((rawItems ?? []) as RawItem[]).map((item) => {
     const exercise = Array.isArray(item.program_exercises) ? item.program_exercises[0] : item.program_exercises;
     return exercise?.id;
   }).filter(Boolean) as string[];
-  const { data: videoRows } = exerciseIds.length
-    ? await supabase.from("program_exercise_videos").select("id,program_exercise_id,asset_id,position,role,title_mm,title_en,cue_mm,cue_en").in("program_exercise_id", exerciseIds).order("position")
-    : { data: [] };
+  const [videoResult, logResult] = await Promise.all([
+    exerciseIds.length
+      ? supabase.from("program_exercise_videos").select("id,program_exercise_id,asset_id,position,role,title_mm,title_en,cue_mm,cue_en").in("program_exercise_id", exerciseIds).order("position")
+      : Promise.resolve({ data: [] }),
+    session
+      ? supabase.from("set_logs").select("program_day_item_id,set_index,weight_kg,reps").eq("session_id", session.id)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const { data: videoRows } = videoResult;
+  const { data: logs } = logResult;
   const videos = (videoRows ?? []) as RawExerciseVideo[];
   const assetIds = [...new Set(videos.map((video) => video.asset_id))];
   const { data: assets } = assetIds.length
@@ -91,9 +113,6 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
     };
   });
   if (!items.length) throw new Error("No exercises are configured for this session");
-
-  const { data: session } = await supabase.from("workout_sessions").select("id").eq("program_id", program.id).eq("day_number", dayNumber).maybeSingle();
-  const { data: logs } = session ? await supabase.from("set_logs").select("program_day_item_id,set_index,weight_kg,reps").eq("session_id", session.id) : { data: [] };
 
   return <><FixedGuideScreen dayNumber={dayNumber} dayType={day.day_type.toUpperCase()} locale={locale} variant="workout" /><WorkoutPlayer locale={locale} programId={program.id} dayNumber={dayNumber} dayType={day.day_type.toUpperCase()} phase={day.phase} items={items} existingSessionId={session?.id ?? null} initialLogs={logs ?? []} /></>;
 }

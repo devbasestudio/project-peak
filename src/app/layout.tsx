@@ -5,30 +5,48 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 const archivo = localFont({
-  src: "./fonts/archivo-variable.ttf",
+  src: "./fonts/english/heading/archivo-extra-bold.ttf",
   variable: "--font-archivo",
+  weight: "800",
   display: "swap",
+});
+
+const englishSubheading = localFont({
+  src: "./fonts/english/subheading/archivo-semi-bold.ttf",
+  variable: "--font-english-subheading",
+  weight: "600",
+  display: "swap",
+  preload: false,
 });
 
 const geist = localFont({
-  src: "./fonts/geist-variable.ttf",
+  src: "./fonts/english/body/geist-variable.ttf",
   variable: "--font-geist",
+  weight: "100 900",
   display: "swap",
   preload: false,
 });
 
-const geistMono = localFont({
-  src: "./fonts/geist-mono-variable.ttf",
+const smallTitle = localFont({
+  src: "./fonts/english/small-title/albert-sans-semi-bold.ttf",
   variable: "--font-geist-mono",
+  weight: "600",
   display: "swap",
   preload: false,
 });
 
-const myanmarSagar = localFont({
-  src: "./fonts/myanmar-sagar.ttf",
+const myanmarHeading = localFont({
+  src: "./fonts/myanmar/subheading/pt21-mandalay-bold.ttf",
+  variable: "--font-myanmar-heading",
+  weight: "700",
+  display: "swap",
+  preload: false,
+});
+
+const myanmarBody = localFont({
+  src: "./fonts/myanmar/body/shwe-pa-chi-04-medium.ttf",
   variable: "--font-myanmar",
-  weight: "400",
-  style: "normal",
+  weight: "500",
   display: "swap",
 });
 
@@ -84,7 +102,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const locale = (await headers()).get("x-project-peak-locale") === "en" ? "en" : "mm";
 
   return (
-    <html lang={locale} className={`${archivo.variable} ${geist.variable} ${geistMono.variable} ${myanmarSagar.variable}`}>
+    <html lang={locale} className={`${archivo.variable} ${englishSubheading.variable} ${geist.variable} ${smallTitle.variable} ${myanmarHeading.variable} ${myanmarBody.variable}`}>
       <body>
         {children}
         <Toaster position="top-center" richColors={false} closeButton />

@@ -31,7 +31,7 @@
 .heroTitle span { display: block; overflow: hidden; padding: .05em 0 .09em; }
 .heroTitle i { display: block; font-style: normal; will-change: transform; }
 .heroTitle .accent { color: #05abdd; }
-.page[lang="my"] .heroTitle { font-family: var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(4rem,8vw,8.8rem); line-height: .92; letter-spacing: -.045em; }
+.page[lang="my"] .heroTitle { font-family: var(--font-myanmar-heading),var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(4rem,8vw,8.8rem); line-height: 1.18; letter-spacing: 0; }
 .heroCopy { max-width: 570px; margin: 26px 0 0; color: rgba(6,17,26,.66); font-size: clamp(14px,1.25vw,18px); line-height: 1.8; }
 .heroActions { display: flex; align-items: center; gap: 22px; margin-top: 28px; }
 .primary,.purchaseButton { min-height: 54px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 0 22px; background: #06111a; color: white; font: 800 11px/1 var(--font-geist),sans-serif; letter-spacing: .08em; text-transform: uppercase; transition: background .22s ease,color .22s ease,transform .22s ease; }
@@ -51,7 +51,7 @@
 .openingNumber { color: #05abdd; font: 620 clamp(9rem,24vw,24rem)/.72 var(--font-archivo),sans-serif; letter-spacing: -.11em; }
 .openingNumber span { color: #06111a; font-size: .2em; letter-spacing: 0; }
 .opening h2,.routeIntro h2,.foundations h2,.weekSticky h2,.proof h2,.equipment h2,.faq h2 { margin: 22px 0 0; font: 620 clamp(3rem,6.4vw,7.3rem)/.88 var(--font-archivo),sans-serif; letter-spacing: -.07em; }
-.page[lang="my"] .opening h2,.page[lang="my"] .routeIntro h2,.page[lang="my"] .foundations h2,.page[lang="my"] .weekSticky h2,.page[lang="my"] .proof h2,.page[lang="my"] .equipment h2,.page[lang="my"] .faq h2 { font-family: var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(2.5rem,5vw,5.8rem); line-height: 1.05; letter-spacing: -.035em; }
+.page[lang="my"] .opening h2,.page[lang="my"] .routeIntro h2,.page[lang="my"] .foundations h2,.page[lang="my"] .weekSticky h2,.page[lang="my"] .proof h2,.page[lang="my"] .equipment h2,.page[lang="my"] .faq h2 { font-family: var(--font-myanmar-heading),var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(2.5rem,5vw,5.8rem); line-height: 1.28; letter-spacing: 0; }
 .opening > div:last-child > p:last-child,.routeIntro > p:last-child,.foundations header > p:last-child,.weekSticky > p:last-child,.equipment > div > p:last-child { max-width: 690px; margin: 30px 0 0; color: rgba(6,17,26,.57); font-size: clamp(15px,1.35vw,19px); line-height: 1.85; }
 
 .route { display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(50px,8vw,130px); padding: clamp(100px,12vw,180px) clamp(18px,6vw,96px); border-top: 1px solid rgba(6,17,26,.14); background: white; }
@@ -72,7 +72,7 @@
 .methodCopy { display: flex; flex-direction: column; justify-content: center; padding: clamp(48px,7vw,110px); }
 .methodCopy .sectionLabel { color: rgba(255,255,255,.48); }
 .methodCopy h2 { margin: 28px 0 0; font: 620 clamp(3rem,5.3vw,6.3rem)/.86 var(--font-archivo),sans-serif; letter-spacing: -.07em; }
-.page[lang="my"] .methodCopy h2 { font-family: var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(2.7rem,4.6vw,5.2rem); line-height: 1.05; letter-spacing: -.03em; }
+.page[lang="my"] .methodCopy h2 { font-family: var(--font-myanmar-heading),var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(2.7rem,4.6vw,5.2rem); line-height: 1.28; letter-spacing: 0; }
 .methodCopy > p { margin: 28px 0 0; color: rgba(255,255,255,.58); line-height: 1.85; }
 .ruleFormula { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; margin-top: 44px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.18); font: 750 10px/1 var(--font-geist-mono),monospace; letter-spacing: .1em; }
 .ruleFormula b { color: #05abdd; }
@@ -101,7 +101,7 @@
 .weekSystem { padding: clamp(100px,12vw,170px) clamp(18px,6vw,96px); border-top: 1px solid rgba(6,17,26,.15); background: #d9f3fc; }
 .weekHead { display: grid; grid-template-columns: 1.15fr .85fr; align-items: end; gap: clamp(45px,8vw,130px); }
 .weekHead h2 { max-width: 890px; margin: 22px 0 0; font: 620 clamp(3rem,5.6vw,6.2rem)/.88 var(--font-archivo),sans-serif; letter-spacing: -.07em; }
-.page[lang="my"] .weekHead h2 { font-family: var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(2.7rem,4.8vw,5.2rem); line-height: 1.08; letter-spacing: -.025em; }
+.page[lang="my"] .weekHead h2 { font-family: var(--font-myanmar-heading),var(--font-myanmar),"Myanmar Text",sans-serif; font-size: clamp(2.7rem,4.8vw,5.2rem); line-height: 1.28; letter-spacing: 0; }
 .weekHead>div:last-child>p { max-width: 590px; margin: 0; color: rgba(6,17,26,.58); line-height: 1.85; }
 .weekLegend { display: flex; gap: 22px; margin-top: 26px; padding-top: 18px; border-top: 1px solid rgba(6,17,26,.18); }
 .weekLegend span { display: flex; align-items: center; gap: 8px; font: 750 8px/1 var(--font-geist-mono),monospace; letter-spacing: .1em; }

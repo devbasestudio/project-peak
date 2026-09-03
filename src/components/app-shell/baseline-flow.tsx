@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Minus, Plus, TimerReset } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Play, TimerReset } from "lucide-react";
 import { toast } from "sonner";
 import { saveBaseline } from "@/app/actions";
+import { NumericField } from "@/components/app-shell/numeric-field";
 import type { Locale } from "@/lib/i18n";
 
-type Movement = { id: string; name_mm: string; name_en: string; equipment_mm: string | null; equipment_en: string | null };
+type Movement = { id: string; name_mm: string; name_en: string; equipment_mm: string | null; equipment_en: string | null; videoUrl?: string | null };
 
 export function BaselineFlow({ locale, programId, movements }: { locale: Locale; programId: string; movements: Movement[] }) {
   const [index, setIndex] = useState(0);
@@ -78,14 +79,22 @@ export function BaselineFlow({ locale, programId, movements }: { locale: Locale;
             <h2 className="mt-3 font-display text-4xl font-bold tracking-[-.04em] sm:text-5xl" lang={mm ? "my" : "en"}>{mm ? movement.name_mm : movement.name_en}</h2>
             <p className="mt-2 text-sm text-charcoal/45">{mm ? movement.equipment_mm : movement.equipment_en}</p>
             <div className="mt-7 rounded-xl bg-[#f4f6f5] p-4 text-sm leading-7 text-charcoal/58" lang={mm ? "my" : "en"}>{mm ? "Form မပျက်ခင်အထိ လုပ်ပါ။ ပြီးရင် အောက်မှာ အကြိမ်ရေကို ထည့်ပြီး ဆက်သွားပါ။" : "Stop before your form breaks. Enter the reps, then continue."}</div>
+            {movement.videoUrl ? (
+              <div className="mt-5 overflow-hidden rounded-xl bg-charcoal">
+                <video className="aspect-video w-full object-contain" controls playsInline preload="metadata" src={movement.videoUrl} />
+              </div>
+            ) : (
+              <div className="mt-5 flex items-center gap-3 rounded-xl border border-dashed border-charcoal/15 px-4 py-3 text-xs text-charcoal/45">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ice text-aqua"><Play size={15} /></span>
+                <span lang={mm ? "my" : "en"}>{mm ? "ဒီလှုပ်ရှားမှုအတွက် Video ထည့်ထားရင် ဒီနေရာမှာ ပေါ်ပါမယ်။" : "The movement video appears here when it is available."}</span>
+              </div>
+            )}
           </div>
 
           <aside className="border-t border-charcoal/8 bg-[#fafbfa] p-6 lg:border-l lg:border-t-0">
             <p className="text-center text-xs font-semibold text-charcoal/42">{mm ? "ရရှိတဲ့အကြိမ်" : "Reps completed"}</p>
-            <div className="mt-4 flex items-center justify-center gap-4">
-              <button type="button" onClick={() => setValues((current) => ({ ...current, [movement.id]: Math.max(0, current[movement.id] - 1) }))} className="grid h-12 w-12 place-items-center rounded-xl border border-charcoal/10 bg-white" aria-label="Decrease reps"><Minus size={20} /></button>
-              <span aria-live="polite" className="mono min-w-24 text-center text-5xl font-bold tracking-[-.05em]">{values[movement.id]}</span>
-              <button type="button" onClick={() => setValues((current) => ({ ...current, [movement.id]: Math.min(999, current[movement.id] + 1) }))} className="grid h-12 w-12 place-items-center rounded-xl bg-sky" aria-label="Increase reps"><Plus size={20} /></button>
+            <div className="mt-4">
+              <NumericField label={mm ? "အကြိမ်ရေကို တိုက်ရိုက်ရိုက်နိုင်ပါတယ်" : "Type your completed reps"} value={values[movement.id]} onChange={(value) => setValues((current) => ({ ...current, [movement.id]: value }))} />
             </div>
 
             {rest !== null && rest > 0 ? (

@@ -34,7 +34,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
     supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("program_id", program.id).eq("status", "completed"),
   ]);
   if (!baselineCount) redirect(`/${locale}/app/baseline`);
-  if ((completed ?? 0) >= 48) redirect(`/${locale}/app/progress`);
+  if ((completed ?? 0) >= 47) redirect(`/${locale}/app/completion`);
   const dayNumber = (completed ?? 0) + 1;
   const weekNumber = getCurrentProgramWeek(completed ?? 0);
   const { count: scheduledSlots } = await supabase
@@ -43,6 +43,15 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
     .eq("program_id", program.id)
     .eq("week_number", weekNumber);
   if ((scheduledSlots ?? 0) !== 4) redirect(`/${locale}/app/schedule`);
+  const { data: scheduledDay } = await supabase
+    .from("weekly_schedule_slots")
+    .select("scheduled_date")
+    .eq("program_id", program.id)
+    .eq("day_number", dayNumber)
+    .maybeSingle();
+  if (!scheduledDay?.scheduled_date) redirect(`/${locale}/app/schedule`);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
+  if (scheduledDay.scheduled_date > today) redirect(`/${locale}/app/rest`);
 
   const { data: day } = await supabase.from("program_days").select("id,day_number,day_type,phase").eq("program_id", program.id).eq("day_number", dayNumber).single();
   if (!day) throw new Error("The next program day is not configured");

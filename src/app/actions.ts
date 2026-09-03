@@ -54,5 +54,5 @@ export async function saveBaseline(programId: string, rawValues: Array<{ movemen
   if (error) throw error;
   if (!attemptId) throw new Error("Baseline was not saved");
   revalidatePath(`/${locale}/app`);
-  redirect(`/${locale}/app`);
+  redirect(`/${locale}/app/baseline/result`);
 }

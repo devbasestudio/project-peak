@@ -27,7 +27,26 @@ export default async function CompletionPage({ params }: { params: Promise<{ loc
     .select("id", { count: "exact", head: true })
     .eq("program_id", program.id)
     .eq("status", "completed");
-  if ((completedSessions ?? 0) < 48) redirect(`/${locale}/app/progress`);
+  if ((completedSessions ?? 0) < 47) redirect(`/${locale}/app/progress`);
+
+  const { data: savedFinalAttempt } = await supabase
+    .from("assessment_attempts")
+    .select("id")
+    .eq("program_id", program.id)
+    .eq("kind", "final")
+    .eq("status", "completed")
+    .maybeSingle();
+  if (!savedFinalAttempt && (completedSessions ?? 0) === 47) {
+    const { data: finalSlot } = await supabase
+      .from("weekly_schedule_slots")
+      .select("scheduled_date")
+      .eq("program_id", program.id)
+      .eq("day_number", 48)
+      .maybeSingle();
+    if (!finalSlot?.scheduled_date) redirect(`/${locale}/app/schedule`);
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
+    if (finalSlot.scheduled_date > today) redirect(`/${locale}/app/rest`);
+  }
 
   const [movementsResult, attemptsResult, questionsResult, quizAttemptResult] = await Promise.all([
     supabase

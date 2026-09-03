@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { CustomerDashboard } from "@/components/app-shell/customer-dashboard";
-import { FixedGuideScreen } from "@/components/app-shell/fixed-guide-screen";
 import { isLocale } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -22,8 +21,8 @@ export default async function MemberHome({ params }: { params: Promise<{ locale:
   let program = null;
   let habits = null;
   let weekSchedule: WeeklyScheduleDay[] = [];
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
   if (rawProgram) {
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
     const [{ count }, { count: baselineCount }, { data: habit }] = await Promise.all([
       supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("program_id", rawProgram.id).eq("status", "completed"),
       supabase.from("assessment_attempts").select("id", { count: "exact", head: true }).eq("program_id", rawProgram.id).eq("kind", "baseline").eq("status", "completed"),
@@ -53,5 +52,5 @@ export default async function MemberHome({ params }: { params: Promise<{ locale:
     }
   }
 
-  return <CustomerDashboard locale={locale} order={order} program={program} email={user.email ?? ""} habits={habits} weekSchedule={weekSchedule} milestoneGuide={program?.completed === 12 ? <FixedGuideScreen locale={locale} variant="phase2" /> : null} />;
+  return <CustomerDashboard locale={locale} order={order} program={program} email={user.email ?? ""} habits={habits} weekSchedule={weekSchedule} today={today} />;
 }

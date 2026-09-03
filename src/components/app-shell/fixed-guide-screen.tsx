@@ -75,9 +75,9 @@ const copy: Record<FixedGuideVariant, {
     description: { mm: "Baseline တုန်းက Form နဲ့အခြေအနေတူအောင် စမ်းပြီး အခုရတဲ့အကြိမ်ရေကိုမှတ်ပါ။ ပြီးရင် Program ထဲက အဓိက Knowledge Quiz ကိုဖြေပါမယ်။", en: "Repeat the baseline under the same conditions, record today’s result, then complete the program knowledge check." },
     safety: { mm: "ရလဒ်က နံပါတ်တစ်ခုတည်းမဟုတ်ပါဘူး။ Form၊ control၊ consistency နဲ့ habit တွေပါ တိုးတက်မှုထဲပါပါတယ်။", en: "Progress is more than one number. Form, control, consistency, and habits count too." },
     metrics: [
-      { value: "48", label: { mm: "Session ပြီး", en: "Sessions complete" } },
+      { value: "47", label: { mm: "Workout Session ပြီး", en: "Workouts complete" } },
       { value: "04", label: { mm: "ပြန်စမ်းမယ့် လှုပ်ရှားမှု", en: "Retest movements" } },
-      { value: "01", label: { mm: "Final Quiz", en: "Final quiz" } },
+      { value: "48", label: { mm: "Final Challenge", en: "Final challenge" } },
     ],
     steps: [
       { icon: Activity, title: { mm: "အခြေအနေတူအောင်ထားပါ", en: "Match the conditions" }, text: { mm: "တူညီတဲ့ Form၊ equipment နဲ့ warm-up ကိုသုံးပါ။", en: "Use the same form, equipment, and warm-up." } },

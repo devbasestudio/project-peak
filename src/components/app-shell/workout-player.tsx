@@ -127,7 +127,7 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
       const { error } = await supabase.rpc("complete_session", { p_program_id: programId, p_day_number: dayNumber, p_local_date: localDate, p_mutation_id: crypto.randomUUID() });
       if (error) throw error;
       toast.success(mm ? "Session ပြီးပြီ 💪" : "Session complete 💪");
-      router.push(`/${locale}/app?completed=${dayNumber}`);
+      router.push(`/${locale}/app/session-complete?day=${dayNumber}`);
       router.refresh();
     } catch (error) { toast.error(mm ? "Session ကို finish မလုပ်နိုင်သေးဘူး" : "Could not finish this session", { description: error instanceof Error ? error.message : undefined }); }
     finally { setFinishing(false); }

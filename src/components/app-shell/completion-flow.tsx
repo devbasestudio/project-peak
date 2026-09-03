@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Minus, Plus, Trophy, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, TimerReset, Trophy, X } from "lucide-react";
 import { toast } from "sonner";
 import { saveFinalAssessment } from "@/app/customer-actions";
 import { createClient } from "@/lib/supabase/client";
 import type { Locale } from "@/lib/i18n";
 import { AscentMark, AscentRule } from "@/components/app-shell/ascent-mark";
+import { NumericField } from "@/components/app-shell/numeric-field";
 
 export type FinalMovement = {
   id: string;
@@ -66,7 +67,16 @@ export function CompletionFlow({
   const [answering, setAnswering] = useState(false);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [movementIndex, setMovementIndex] = useState(0);
+  const [restSeconds, setRestSeconds] = useState(0);
   const question = questions[questionIndex];
+  const movement = movements[movementIndex];
+
+  useEffect(() => {
+    if (restSeconds <= 0) return;
+    const timer = window.setInterval(() => setRestSeconds((current) => Math.max(0, current - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [restSeconds]);
 
   async function saveRetest() {
     if (!movements.length) {
@@ -164,15 +174,32 @@ export function CompletionFlow({
   return (
     <div className="mx-auto max-w-4xl">
       <header className="mb-8"><p className="font-mono text-[10px] font-bold uppercase tracking-[.2em] text-charcoal/45">WEEK 12 · SUMMIT RETEST</p><h1 className="mt-3 max-w-3xl font-display text-3xl font-black leading-tight tracking-[-.045em] sm:text-5xl">{mm ? "ပထမနေ့က လှုပ်ရှားမှုတွေကို ပြန်စမ်းမယ်" : "Meet your day-one self"}</h1><p className="mt-4 max-w-2xl text-sm leading-7 text-charcoal/55" lang={mm ? "my" : "en"}>{mm ? "ပထမနေ့က ပုံစံအတိုင်း အများဆုံးလုပ်နိုင်တဲ့အကြိမ်ရေကို စမ်းပါ။ တစ်ခုပြီးတိုင်း ၃ မိနစ်နားပါ။" : "Use the same form and conditions. Test your max reps, then rest three minutes between movements."}</p></header>
-      <section className="divide-y divide-charcoal/10 overflow-hidden rounded-3xl border border-charcoal/15 bg-white shadow-sm">{movements.map((movement) => <RetestRow key={movement.id} locale={locale} movement={movement} value={values[movement.id] ?? 0} onChange={(value) => setValues((current) => ({ ...current, [movement.id]: value }))} />)}{movements.length === 0 ? <div className="p-8 text-center text-sm text-charcoal/42">{mm ? "Final movements မထည့်ရသေးဘူး" : "Final movements have not been configured yet."}</div> : null}</section>
-      <button type="button" disabled={saving || movements.length === 0} onClick={saveRetest} className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-charcoal px-5 text-sm font-bold text-white disabled:opacity-45">{saving ? (mm ? "သိမ်းနေတယ်…" : "Saving…") : (mm ? "Week 12 ရလဒ် သိမ်းမယ်" : "Save Week 12 results")}<ArrowRight size={17} /></button>
+      <div className="mb-4 flex items-center justify-between gap-4"><span className="font-mono text-[10px] font-bold text-charcoal/40">MOVEMENT {Math.min(movementIndex + 1, movements.length)} / {movements.length}</span><div className="flex gap-1.5">{movements.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-[width,background-color] ${index === movementIndex ? "w-8 bg-sky" : index < movementIndex ? "w-4 bg-charcoal" : "w-4 bg-charcoal/12"}`} />)}</div></div>
+      <section className="relative overflow-hidden rounded-3xl border border-charcoal/15 bg-white shadow-sm">
+        {movement ? <RetestMovement locale={locale} movement={movement} value={values[movement.id] ?? 0} onChange={(value) => setValues((current) => ({ ...current, [movement.id]: value }))} /> : <div className="p-8 text-center text-sm text-charcoal/42">{mm ? "Final movements မထည့်ရသေးဘူး" : "Final movements have not been configured yet."}</div>}
+        {restSeconds > 0 ? <div className="absolute inset-0 grid place-items-center bg-charcoal/95 p-6 text-center text-white"><div><TimerReset className="mx-auto text-sky" size={30} /><p className="mt-5 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-white/40">RECOVERY TIMER</p><strong className="mt-3 block font-mono text-6xl font-black tracking-[-.06em] sm:text-8xl">{formatTimer(restSeconds)}</strong><p className="mt-4 text-sm text-white/55" lang={mm ? "my" : "en"}>{mm ? "အသက်ရှူမှန်အောင်ထားပြီး နောက်လှုပ်ရှားမှုအတွက် ပြင်ဆင်ပါ။" : "Breathe, reset, and prepare for the next movement."}</p><button type="button" onClick={() => setRestSeconds(0)} className="mt-6 min-h-11 border border-white/20 px-5 text-xs font-bold text-white">{mm ? "နားချိန် ကျော်မယ်" : "Skip rest"}</button></div></div> : null}
+      </section>
+      <div className="mt-5 grid grid-cols-[auto_1fr] gap-3">
+        <button type="button" disabled={movementIndex === 0 || saving || restSeconds > 0} onClick={() => setMovementIndex((index) => Math.max(0, index - 1))} className="grid min-h-14 min-w-14 place-items-center rounded-2xl border border-charcoal/15 bg-white disabled:opacity-35" aria-label={mm ? "အရင်တစ်ခု" : "Previous movement"}><ArrowLeft size={18} /></button>
+        <button type="button" disabled={saving || movements.length === 0 || restSeconds > 0} onClick={() => {
+          if (movementIndex === movements.length - 1) void saveRetest();
+          else {
+            setMovementIndex((index) => index + 1);
+            setRestSeconds(movement?.restSeconds ?? 180);
+          }
+        }} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-charcoal px-5 text-sm font-bold text-white disabled:opacity-45">{saving ? (mm ? "သိမ်းနေတယ်…" : "Saving…") : movementIndex === movements.length - 1 ? (mm ? "Final Challenge ရလဒ် သိမ်းမယ်" : "Save final challenge") : (mm ? "ပြီးပြီ · နောက်တစ်ခု" : "Done · next movement")}<ArrowRight size={17} /></button>
+      </div>
     </div>
   );
 }
 
-function RetestRow({ locale, movement, value, onChange }: { locale: Locale; movement: FinalMovement; value: number; onChange: (value: number) => void }) {
+function RetestMovement({ locale, movement, value, onChange }: { locale: Locale; movement: FinalMovement; value: number; onChange: (value: number) => void }) {
   const mm = locale === "mm";
-  return <div className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-7"><div className="grid grid-cols-[3rem_1fr] gap-4"><span className="font-mono text-3xl font-black text-charcoal/15">{String(movement.position).padStart(2, "0")}</span><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">MOVEMENT</p><h2 className="mt-2 font-display text-2xl font-black uppercase">{mm ? movement.nameMm : movement.nameEn}</h2><p className="mt-1 text-xs text-charcoal/38">{mm ? movement.equipmentMm : movement.equipmentEn}</p><p className="mono mt-3 text-xs font-bold text-charcoal/42">BASELINE · {movement.baseline}</p></div></div><div className="flex min-h-14 items-center justify-between gap-5 border border-charcoal/15 bg-paper p-1 sm:min-w-64"><button type="button" onClick={() => onChange(Math.max(0, value - 1))} className="grid h-11 w-11 place-items-center border-r border-charcoal/10 bg-white" aria-label="Decrease reps"><Minus size={17} /></button><div className="text-center"><span className="mono text-2xl font-bold">{value}</span><p className="font-mono text-[8px] font-bold uppercase tracking-wider text-charcoal/28">REPS</p></div><button type="button" onClick={() => onChange(Math.min(999, value + 1))} className="grid h-11 w-11 place-items-center bg-sky" aria-label="Increase reps"><Plus size={17} /></button></div></div>;
+  return <div className="grid gap-7 p-6 sm:grid-cols-[1fr_280px] sm:items-center sm:p-9"><div className="grid grid-cols-[3rem_1fr] gap-4"><span className="font-mono text-3xl font-black text-charcoal/15">{String(movement.position).padStart(2, "0")}</span><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-charcoal/40">FINAL MOVEMENT</p><h2 className="mt-2 font-display text-3xl font-black uppercase tracking-[-.04em] sm:text-4xl">{mm ? movement.nameMm : movement.nameEn}</h2><p className="mt-2 text-xs text-charcoal/38">{mm ? movement.equipmentMm : movement.equipmentEn}</p><div className="mt-5 inline-flex items-center gap-3 rounded-full bg-ice px-4 py-2"><span className="font-mono text-[9px] font-bold uppercase tracking-wider text-aqua">BASELINE</span><strong className="font-mono text-lg">{movement.baseline}</strong></div></div></div><NumericField label={mm ? "ဒီနေ့ အများဆုံးအကြိမ်" : "Today’s max reps"} value={value} onChange={onChange} suffix="REPS" /></div>;
+}
+
+function formatTimer(seconds: number) {
+  return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function Summary({ locale, programName, comparisons }: { locale: Locale; programName: string; comparisons: CompletionComparison[] }) {

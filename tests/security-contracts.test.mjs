@@ -57,3 +57,36 @@ test("production hardening migration owns the critical transactions", async () =
   ]) assert.match(migration, new RegExp(`function public\\.${fn}`));
   assert.match(migration, /enable row level security/i);
 });
+
+test("the saved weekly date is enforced before a member can train", async () => {
+  const workout = await read("src/app/[locale]/app/workout/page.tsx");
+  const completion = await read("src/app/[locale]/app/completion/page.tsx");
+  const migration = await read("supabase/migrations/20260903063037_align_member_flow_with_final_challenge.sql");
+  assert.match(workout, /scheduledDay\.scheduled_date > today/);
+  assert.match(workout, /app\/rest/);
+  assert.match(completion, /finalSlot\.scheduled_date > today/);
+  assert.match(migration, /function private\.enforce_weekly_schedule_gate/);
+  assert.match(migration, /v_scheduled_date > v_today/);
+});
+
+test("Day 48 is an atomic final challenge instead of a regular workout", async () => {
+  const action = await read("src/app/customer-actions.ts");
+  const migration = await read("supabase/migrations/20260903063037_align_member_flow_with_final_challenge.sql");
+  const workout = await read("src/app/[locale]/app/workout/page.tsx");
+  assert.match(action, /complete_final_challenge/);
+  assert.match(migration, /function public\.complete_final_challenge/);
+  assert.match(migration, /day_number = 48/);
+  assert.match(migration, /session_type, status/);
+  assert.match(migration, /'challenge', 'completed'/);
+  assert.match(workout, />= 47\) redirect\(`\/\$\{locale\}\/app\/completion`\)/);
+});
+
+test("regular workout completion opens a dedicated summary and learning screen", async () => {
+  const player = await read("src/components/app-shell/workout-player.tsx");
+  const route = await read("src/app/[locale]/app/session-complete/page.tsx");
+  const view = await read("src/components/app-shell/session-complete-view.tsx");
+  assert.match(player, /app\/session-complete\?day=/);
+  assert.match(route, /program_day_assets/);
+  assert.match(view, /Today’s work is done/);
+  assert.match(view, /variant="phase2"/);
+});

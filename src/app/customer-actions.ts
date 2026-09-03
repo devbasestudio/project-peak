@@ -119,8 +119,8 @@ export async function saveFinalAssessment(
   ]);
 
   if (!program) return { ok: false, message: locale === "mm" ? "Program ကို ရှာမတွေ့ဘူး" : "Program not found." };
-  if ((completedSessions ?? 0) < 48) {
-    return { ok: false, message: locale === "mm" ? "Session 48 ပြီးမှ final result သိမ်းလို့ရမယ်" : "Complete session 48 before saving the final assessment." };
+  if ((completedSessions ?? 0) < 47) {
+    return { ok: false, message: locale === "mm" ? "Session 47 ပြီးမှ Final Challenge စလို့ရမယ်" : "Complete session 47 before starting the final challenge." };
   }
 
   const allowedIds = new Set((movements ?? []).map((movement) => movement.id));
@@ -129,34 +129,14 @@ export async function saveFinalAssessment(
   }
 
   const localDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yangon" }).format(new Date());
-  const { data: attempt, error: attemptError } = await supabase
-    .from("assessment_attempts")
-    .upsert(
-      {
-        program_id: parsedProgramId.data,
-        user_id: user.id,
-        kind: "final",
-        status: "completed",
-        local_date: localDate,
-        completed_at: new Date().toISOString(),
-      },
-      { onConflict: "program_id,kind" },
-    )
-    .select("id")
-    .single();
-
-  if (attemptError || !attempt) return { ok: false, message: attemptError?.message ?? "Could not save the assessment." };
-
-  const { error: resultsError } = await supabase.from("assessment_results").upsert(
-    parsedValues.data.map((item) => ({
-      attempt_id: attempt.id,
-      movement_id: item.movementId,
-      value: item.value,
-    })),
-    { onConflict: "attempt_id,movement_id" },
-  );
-
-  if (resultsError) return { ok: false, message: resultsError.message };
+  const { error } = await supabase.rpc("complete_final_challenge", {
+    p_program_id: parsedProgramId.data,
+    p_local_date: localDate,
+    p_values: parsedValues.data,
+    p_mutation_id: crypto.randomUUID(),
+  });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath(`/${locale}/app`);
   revalidatePath(`/${locale}/app/completion`);
   revalidatePath(`/${locale}/app/progress`);
   return { ok: true };

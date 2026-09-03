@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,7 +26,7 @@ import type { WeeklyScheduleDay } from "@/lib/weekly-schedule";
 type Order = { reference_code: string; status: string; amount_minor: number; currency: string } | null;
 type Program = { id: string; status: string; name_mm: string; name_en: string; completed: number; hasBaseline: boolean } | null;
 
-export function CustomerDashboard({ locale, order, program, email, habits, weekSchedule, milestoneGuide }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; weekSchedule: WeeklyScheduleDay[]; milestoneGuide?: ReactNode }) {
+export function CustomerDashboard({ locale, order, program, email, habits, weekSchedule, today }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; weekSchedule: WeeklyScheduleDay[]; today: string }) {
   const [pending, setPending] = useState(false);
   const mm = locale === "mm";
 
@@ -79,7 +78,21 @@ export function CustomerDashboard({ locale, order, program, email, habits, weekS
   const dayType = nextDay === 48 ? (mm ? "နောက်ဆုံးစမ်းသပ်မှု" : "Final challenge") : nextDay % 2 === 1 ? "PUSH" : "PULL";
   const progress = Math.round((completed / 48) * 100);
   const scheduleReady = weekSchedule.length === 4 && weekSchedule.every((day) => Boolean(day.scheduledDate));
-  const actionHref = !program.hasBaseline ? `/${locale}/app/baseline` : scheduleReady ? `/${locale}/app/workout` : `/${locale}/app/schedule`;
+  const nextSchedule = weekSchedule.find((day) => day.dayNumber === nextDay);
+  const waitingForScheduledDay = Boolean(scheduleReady && nextSchedule?.scheduledDate && nextSchedule.scheduledDate > today);
+  const finalChallengeReady = completed >= 47;
+  const programFinished = completed >= 48;
+  const actionHref = !program.hasBaseline
+    ? `/${locale}/app/baseline`
+    : programFinished
+      ? `/${locale}/app/completion`
+      : !scheduleReady
+      ? `/${locale}/app/schedule`
+      : waitingForScheduledDay
+        ? `/${locale}/app/rest`
+        : finalChallengeReady
+          ? `/${locale}/app/completion`
+          : `/${locale}/app/workout`;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -101,17 +114,21 @@ export function CustomerDashboard({ locale, order, program, email, habits, weekS
               <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/70">{mm ? `Session ${nextDay} / 48` : `Session ${nextDay} of 48`}</span>
               <span className="text-xs font-medium text-white/45">{48 - completed} {mm ? "ခု ကျန်" : "remaining"}</span>
             </div>
-            <h2 className="mt-8 font-display text-5xl font-bold tracking-[-.05em] sm:text-6xl">{!program.hasBaseline ? (mm ? "Baseline Test" : "Baseline test") : scheduleReady ? dayType : (mm ? `အပတ် ${week} စီစဉ်မယ်` : `Plan week ${week}`)}</h2>
+            <h2 className="mt-8 font-display text-5xl font-bold tracking-[-.05em] sm:text-6xl">{!program.hasBaseline ? (mm ? "Baseline Test" : "Baseline test") : !scheduleReady ? (mm ? `အပတ် ${week} စီစဉ်မယ်` : `Plan week ${week}`) : waitingForScheduledDay ? (mm ? "ဒီနေ့ နားရက်" : "Recovery day") : dayType}</h2>
             <p className="mt-3 max-w-lg text-sm leading-7 text-white/55" lang={mm ? "my" : "en"}>
               {!program.hasBaseline
                 ? (mm ? "Workout မစခင် လက်ရှိအားကို တိုင်းပြီး Week 12 မှာ ပြန်နှိုင်းယှဉ်ပါမယ်။" : "Measure your starting point before your first workout.")
-                : scheduleReady
-                  ? (mm ? "ဒီနေ့ session ကို ဖွင့်ပြီး set တစ်ခုပြီးတိုင်း reps နဲ့ weight ကို မှတ်ပါ။" : "Open today’s session and log each set as you train.")
-                  : (mm ? "ဒီအပတ်မှာ ဆော့ရမယ့် session ၄ ခုကို ကြည့်ပြီး ကိုယ်အားတဲ့ရက်တွေ ရွေးပါ။ အချိန်ဇယားသိမ်းပြီးမှ Workout ဖွင့်ပေးပါမယ်။" : "Review all four sessions, choose the days you are free, and save the week before training.")}
+                : !scheduleReady
+                  ? (mm ? "ဒီအပတ်မှာ ဆော့ရမယ့် session ၄ ခုကို ကြည့်ပြီး ကိုယ်အားတဲ့ရက်တွေ ရွေးပါ။ အချိန်ဇယားသိမ်းပြီးမှ Workout ဖွင့်ပေးပါမယ်။" : "Review all four sessions, choose the days you are free, and save the week before training.")
+                  : waitingForScheduledDay
+                    ? (mm ? `နောက် Session ကို ${nextSchedule?.scheduledDate ?? "ရွေးထားတဲ့ရက်"} မှာ စမယ်။ ဒီနေ့ recovery ကို ဦးစားပေးပါ။` : `Your next session is planned for ${nextSchedule?.scheduledDate}. Recover today.`)
+                    : finalChallengeReady
+                      ? (mm ? "ပထမနေ့က လှုပ်ရှားမှု ၄ ခုကို ပြန်စမ်းပြီး Week 1 နဲ့ Week 12 ကို နှိုင်းယှဉ်မယ်။" : "Repeat the four starting movements and compare Week 1 with Week 12.")
+                      : (mm ? "ဒီနေ့ session ကို ဖွင့်ပြီး set တစ်ခုပြီးတိုင်း reps နဲ့ weight ကို မှတ်ပါ။" : "Open today’s session and log each set as you train.")}
             </p>
             <Link href={actionHref} className="mt-7 flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-sky px-5 text-sm font-bold text-charcoal sm:w-fit sm:min-w-64">
-              {program.hasBaseline && !scheduleReady ? <CalendarDays size={18} /> : <Play size={17} fill="currentColor" />}
-              {!program.hasBaseline ? (mm ? "Baseline Test စမယ်" : "Start baseline test") : scheduleReady ? (mm ? "ဒီနေ့ Workout စမယ်" : "Start today’s workout") : (mm ? "အားတဲ့ရက်တွေ ရွေးမယ်" : "Choose training days")}
+              {program.hasBaseline && (!scheduleReady || waitingForScheduledDay) ? <CalendarDays size={18} /> : <Play size={17} fill="currentColor" />}
+              {!program.hasBaseline ? (mm ? "Baseline Test စမယ်" : "Start baseline test") : !scheduleReady ? (mm ? "အားတဲ့ရက်တွေ ရွေးမယ်" : "Choose training days") : waitingForScheduledDay ? (mm ? "နားရက် လမ်းညွှန်ကြည့်မယ်" : "View recovery day") : finalChallengeReady ? (mm ? "Final Challenge စမယ်" : "Start final challenge") : (mm ? "ဒီနေ့ Workout စမယ်" : "Start today’s workout")}
               <ArrowRight size={17} />
             </Link>
           </div>
@@ -124,9 +141,7 @@ export function CustomerDashboard({ locale, order, program, email, habits, weekS
         </div>
       </section>
 
-      {program.hasBaseline ? <WeeklyScheduleOverview locale={locale} week={week} days={weekSchedule} ready={scheduleReady} /> : null}
-
-      {milestoneGuide}
+      {program.hasBaseline && weekSchedule.length ? <WeeklyScheduleOverview locale={locale} week={week} days={weekSchedule} ready={scheduleReady} /> : null}
 
       <section className="mt-5 overflow-hidden rounded-2xl border border-charcoal/10 bg-white">
         <div className="flex items-center justify-between gap-4 border-b border-charcoal/8 px-5 py-4">

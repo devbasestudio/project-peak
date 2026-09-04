@@ -14,7 +14,7 @@ export default async function MemberHome({ params }: { params: Promise<{ locale:
   const supabase = await createClient();
 
   const [{ data: order }, { data: rawProgram }] = await Promise.all([
-    supabase.from("payment_orders").select("reference_code,status,amount_minor,currency").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("payment_orders").select("reference_code,status,amount_minor,currency,review_note").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("programs").select("id,status,name_mm,name_en").eq("user_id", user.id).eq("status", "active").order("assigned_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 

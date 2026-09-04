@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronRight, Globe2, LogOut, Mail, Save, ShieldCheck, UserRound } from "lucide-react";
+import { Check, ChevronRight, Globe2, LogOut, Mail, RefreshCcw, Save, ShieldCheck, UserRound } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { signOut } from "@/app/actions";
@@ -100,6 +100,12 @@ export function AccountPanel({
           <div><p className="eyebrow text-charcoal/35">CURRENT PROGRAM</p><h2 className="mt-3 font-display text-2xl font-bold">{program.name}</h2><p className="mt-2 text-xs text-charcoal/42">{mm ? "Assign လုပ်ထားတဲ့ရက်" : "Assigned"} · {program.assignedDate}</p></div>
           <Link href={`/${locale}/app/progress`} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-charcoal/10 px-5 text-sm font-semibold hover:bg-paper">{mm ? "တိုးတက်မှုကြည့်မယ်" : "View progress"}<ChevronRight size={16} /></Link>
         </section>
+      ) : null}
+
+      {!program && (order?.status === "rejected" || order?.status === "cancelled") ? (
+        <Link href={`/${locale}/app`} className="mt-4 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-charcoal px-5 text-sm font-semibold text-white">
+          <RefreshCcw size={17} />{mm ? "Reference အသစ်ထုတ်မယ်" : "Create a new payment reference"}<ChevronRight size={16} />
+        </Link>
       ) : null}
 
       <form action={signOutWithLocale} className="mt-4">

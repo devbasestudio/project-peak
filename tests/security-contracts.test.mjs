@@ -90,3 +90,18 @@ test("regular workout completion opens a dedicated summary and learning screen",
   assert.match(view, /Today’s work is done/);
   assert.match(view, /variant="phase2"/);
 });
+
+test("a rejected payment returns the member to a fresh reference step", async () => {
+  const page = await read("src/app/[locale]/app/page.tsx");
+  const dashboard = await read("src/components/app-shell/customer-dashboard.tsx");
+  const account = await read("src/components/app-shell/account-panel.tsx");
+  const migration = await read("supabase/migrations/20260902112631_harden_project_peak_transactions_and_rls.sql");
+
+  assert.match(page, /review_note/);
+  assert.match(dashboard, /orderNeedsReplacement/);
+  assert.match(dashboard, /Reference အသစ်ထုတ်မယ်/);
+  assert.match(dashboard, /window\.setInterval\(refresh, 10_000\)/);
+  assert.match(account, /Create a new payment reference/);
+  assert.match(migration, /status in \('awaiting_payment', 'submitted', 'approved'\)/);
+  assert.doesNotMatch(migration, /status in \('awaiting_payment', 'submitted', 'approved', 'rejected'\)/);
+});

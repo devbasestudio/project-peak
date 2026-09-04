@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowRight,
   CalendarCheck2,
   CalendarDays,
@@ -23,12 +25,25 @@ import { createPurchaseOrder } from "@/app/actions";
 import type { Locale } from "@/lib/i18n";
 import type { WeeklyScheduleDay } from "@/lib/weekly-schedule";
 
-type Order = { reference_code: string; status: string; amount_minor: number; currency: string } | null;
+type Order = { reference_code: string; status: string; amount_minor: number; currency: string; review_note: string | null } | null;
 type Program = { id: string; status: string; name_mm: string; name_en: string; completed: number; hasBaseline: boolean } | null;
 
 export function CustomerDashboard({ locale, order, program, email, habits, weekSchedule, today }: { locale: Locale; order: Order; program: Program; email: string; habits: { protein: boolean; water: boolean; sleep_hours: number | null } | null; weekSchedule: WeeklyScheduleDay[]; today: string }) {
   const [pending, setPending] = useState(false);
+  const router = useRouter();
   const mm = locale === "mm";
+  const orderNeedsReplacement = order?.status === "rejected" || order?.status === "cancelled";
+
+  useEffect(() => {
+    if (program || !order || !["awaiting_payment", "submitted"].includes(order.status)) return;
+    const refresh = () => router.refresh();
+    const interval = window.setInterval(refresh, 10_000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [order, program, router]);
 
   if (!program) {
     return (
@@ -36,23 +51,44 @@ export function CustomerDashboard({ locale, order, program, email, habits, weekS
         <header className="mb-7">
           <p className="text-xs font-semibold text-sky">PROJECT PEAK · 12 WEEKS</p>
           <h1 className="mt-2 max-w-2xl font-display text-3xl font-bold tracking-[-.04em] sm:text-5xl" lang={mm ? "my" : "en"}>
-            {order ? (mm ? "Payment အတည်ပြုချက် စောင့်နေပါတယ်" : "Your payment is being reviewed") : (mm ? "12 ပတ် Program ကို စတင်မယ်" : "Start your 12-week program")}
+            {orderNeedsReplacement
+              ? (mm ? "Reference code အသစ်ထုတ်ပါ" : "Create a new payment reference")
+              : order
+                ? (mm ? "Payment အတည်ပြုချက် စောင့်နေပါတယ်" : "Your payment is being reviewed")
+                : (mm ? "12 ပတ် Program ကို စတင်မယ်" : "Start your 12-week program")}
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-charcoal/58" lang={mm ? "my" : "en"}>
-            {order
-              ? (mm ? "Admin အတည်ပြုပြီးတာနဲ့ Baseline Test ကနေ စနိုင်ပါပြီ။" : "Once approved, your program opens at the baseline test.")
-              : (mm ? "Reference code ထုတ်ပြီး KBZPay နဲ့ ငွေပေးချေပါ။ ပြီးရင် code နဲ့ email ကို Admin ဆီပို့ရုံပါပဲ။" : "Create your reference, pay by KBZPay, then send the code and your email to the admin.")}
+            {orderNeedsReplacement
+              ? (mm ? "အရင် reference code ကို ပိတ်ထားပြီးပါပြီ။ Code အသစ်ထုတ်ပြီး payment အချက်အလက်ကို Admin ဆီ ပြန်ပို့ပါ။" : "Your previous reference is closed. Create a new one and send the new payment details to the admin.")
+              : order
+                ? (mm ? "Admin အတည်ပြုပြီးတာနဲ့ Baseline Test ကနေ စနိုင်ပါပြီ။" : "Once approved, your program opens at the baseline test.")
+                : (mm ? "Reference code ထုတ်ပြီး KBZPay နဲ့ ငွေပေးချေပါ။ ပြီးရင် code နဲ့ email ကို Admin ဆီပို့ရုံပါပဲ။" : "Create your reference, pay by KBZPay, then send the code and your email to the admin.")}
           </p>
         </header>
 
-        {!order ? (
+        {!order || orderNeedsReplacement ? (
           <form
             action={async () => {
               setPending(true);
-              try { await createPurchaseOrder(locale); } finally { setPending(false); }
+              try {
+                await createPurchaseOrder(locale);
+                router.refresh();
+              } finally {
+                setPending(false);
+              }
             }}
             className="overflow-hidden rounded-2xl border border-charcoal/10 bg-white shadow-[0_16px_50px_rgba(6,17,26,.06)]"
           >
+            {orderNeedsReplacement ? <div className="flex items-start gap-3 border-b border-[#efcccc] bg-[#fff4f4] px-6 py-4 text-sm text-[#8f3434] sm:px-8" role="alert">
+              <AlertTriangle className="mt-0.5 shrink-0" size={18} />
+              <div>
+                <strong className="block">{mm ? "အရင် Reference ကို ပြန်မသုံးပါနဲ့" : "Do not reuse the previous reference"}</strong>
+                <p className="mt-1 break-words text-xs leading-5 text-[#8f3434]/75">
+                  {mm ? `ပိတ်ထားသော code · ${order.reference_code}` : `Closed reference · ${order.reference_code}`}
+                  {order.review_note ? ` · ${order.review_note}` : ""}
+                </p>
+              </div>
+            </div> : null}
             <div className="grid gap-6 p-6 sm:grid-cols-[1fr_auto] sm:items-end sm:p-8">
               <div>
                 <p className="text-xs font-semibold text-charcoal/45">12 weeks · 48 sessions · home workout</p>
@@ -60,7 +96,7 @@ export function CustomerDashboard({ locale, order, program, email, habits, weekS
                 <p className="mt-3 text-sm leading-6 text-charcoal/55">{mm ? "တစ်ကြိမ်ပေးချေပြီး Program အပြည့်သုံးနိုင်ပါတယ်။" : "One payment gives you the complete program."}</p>
               </div>
               <button disabled={pending} className="flex min-h-13 items-center justify-center gap-3 rounded-xl bg-charcoal px-6 text-sm font-semibold text-white disabled:opacity-55">
-                {pending ? (mm ? "လုပ်ဆောင်နေပါတယ်…" : "Creating…") : (mm ? "Reference code ထုတ်မယ်" : "Create payment reference")}
+                {pending ? (mm ? "လုပ်ဆောင်နေပါတယ်…" : "Creating…") : orderNeedsReplacement ? (mm ? "Reference အသစ်ထုတ်မယ်" : "Create a new reference") : (mm ? "Reference code ထုတ်မယ်" : "Create payment reference")}
                 <ArrowRight size={17} />
               </button>
             </div>

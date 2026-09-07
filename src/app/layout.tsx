@@ -51,7 +51,7 @@ const myanmarBody = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://homeworkout.projectpeak.fit"),
   title: {
     default: "Project Peak — 12 Week Home Workout",
     template: "%s · Project Peak",

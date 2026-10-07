@@ -108,8 +108,8 @@ export function WorkoutPlayer({ locale, programId, dayNumber, dayType, phase, it
     await enqueueMutation({ id: mutationId, table: "set_logs", payload });
     if (navigator.onLine) {
       const supabase = createClient();
-      const { error } = await supabase.from("set_logs").upsert(payload, { onConflict: "session_id,program_day_item_id,set_index" });
-      if (!error) await flushQueue(supabase);
+      const result = await flushQueue(supabase);
+      if (result.remaining) toast.info(mm ? "Device မှာ သိမ်းထားပါတယ်။ Sync ပြန်လုပ်ပါမယ်။" : "Saved on this device; sync is pending.");
     }
     setRest(active.rest_seconds);
     setRunning(true);

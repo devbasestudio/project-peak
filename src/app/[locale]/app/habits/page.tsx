@@ -33,6 +33,7 @@ export default async function HabitsPage({ params, searchParams }: { params: Pro
 
   return (
     <HabitEditor
+      key={`${user.id}:${selectedDate}`}
       locale={locale}
       programId={program.id}
       userId={user.id}
